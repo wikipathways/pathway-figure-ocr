@@ -3,7 +3,7 @@ The sections below detail the steps taken to generate files and run scripts for 
 
 ## PubMed Central Image Extraction
 
-This url returns >40k figures from PMC articles matching "signaling pathways". Approximately 80% of these are actually pathway figures. These make a reasonably efficient source of sample figures to test methods. *Consider other search terms and other sources when scaling up.*
+This url returns >77k figures from PMC articles matching "signaling pathways". Approximately 80% of these are actually pathway figures. These make a reasonably efficient source of sample figures to test methods. *Consider other search terms and other sources when scaling up.*
 
 ```
 http://www.ncbi.nlm.nih.gov/pmc/?term=signaling+pathway&report=imagesdocsum
@@ -14,7 +14,7 @@ For sample sets you can simply save dozens of pages of results and quickly get 1
 
 ```
 Set Display Settings: to max (100)
-Save raw html to designated folder, e.g., pmc/signaling_pathway/#.#_rawhtml
+Save raw html to designated folder, e.g., pmc/20150501/raw_html
 ```
 
 Next, configure and run this php script to generated annotated sets of image and html files.
@@ -27,8 +27,12 @@ php pmc_image_parse.php
 * outputs images as "PMC######__<filename>.<ext>
 * outputs caption as "PMC######__<filename>.<ext>.html
 
+*Consider loading caption information directly into database and skip exporting this html file*
+
+These files are exported to a designated folder, e.g., pmc/20150501/images_all
+
 ### Prune Images
-Another manual step here to increase accuracy of downstream counts. Make a copy of the figures dir, incrementing the version. View the extracted images in Finder, for example, and delete pairs of files associated with figures that are not actually pathways. In this first sample run, ~20% of images were pruned away. The most common non-pathway figures wer of gel electrophoresis runs. *Consider automated ways to either exclude gel figures or select only pathway images to scale this step up.*
+Another manual step here to increase accuracy of downstream counts. Make a copy of the images_all dir, renaming to images_pruned. View the extracted images in Finder, for example, and delete pairs of files associated with figures that are not actually pathways. In this first sample run, ~20% of images were pruned away. The most common non-pathway figures wer of gel electrophoresis runs. *Consider automated ways to either exclude gel figures or select only pathway images to scale this step up.*
 
 ### Load into Database
 Load filenames (or paths) and extracted content into database
