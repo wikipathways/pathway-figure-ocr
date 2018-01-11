@@ -53,6 +53,7 @@ convert test1_gr_th.jpg -define connected-components:verbose=true -define connec
 
 ### Run Google Cloud Vision
 * Set parameters
+  * 'LanguageCode':'en' - to restrict to English language characters
 * Produce JSON files
 
 ### Load filnames (paths) into database
