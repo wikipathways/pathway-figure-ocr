@@ -83,13 +83,13 @@ convert test1_gr_th.jpg -define connected-components:verbose=true -define connec
 3. Delete rows without entrez_id mappings
 4. In separate tabs, expanded 'alias symbol' and 'prev symbol' lists into single-value rows, maintaining entrez_id mappings for each row. Used Data>Text to Columns>Other:|>Column types:Text. Deleted empty rows. Collapsed multiple columns by pasting entrez_id before each column, sorting and stacking. 
 5. Set all entries to uppercase and filtered each list for unique (only affected alias and prev)
-6. Consider removing hyphens (see if this creates duplicates in hgnc_symbol table)
-6. Exported as separate CSV files.
+6. Removed all hyphens. Note that this did not create any duplicate, non-unique cases. 
+7. Exported as separate CSV files.
 
 #### bioentities lexicon file
 1. Starting with this file from our fork of bioentities: https://github.com/wikipathways/bioentities/blob/master/relations.csv
 2. Captures complexes, generic symbols and gene families, e.g., "WNT" mapping to each of the WNT## entries
-3. Set all entries to uppercase.
+3. Set all entries to uppercase, remove hyphens and filter for unique.
 4. Add entrez_id column via lookup in hgnc lexicon file.
 5. Exported as CSV file.
 
