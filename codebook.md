@@ -77,18 +77,21 @@ convert test1_gr_th.jpg -define connected-components:verbose=true -define connec
 * run (timestamp, parameters, paper_count, figure_count,  total_word_gross, total_word_unique, total_xrefs_gross, total_xrefs_unique)
 
 ## Generating Files and Initial Tables
-#### hgnc_list_all_FINAL.txt
-1. Downloaded Total Approved Symbols as txt from http://www.genenames.org/cgi-bin/statistics
-2. Imported txt into Excel, explicitly choosing "text" for symbol and alias columns during import wizard (to avoid date conversion of SEPT1, etc)
-3. Extracted 'symbol', 'alias symbol', and 'prev symbol' into single column with single entries
-4. Set all entries to uppercase
-5. Added generic symbols for gene families, e.g., "WNT" in addition to all the WNT## entries
-6. Also added copies of symbols without hyphens, e.g., "ERVK1" in addition to original "ERVK-1"
-7. Note: these two additions above help cover common mistakes/practices among figure makers
-8. Saved list as txt file for ID lookup and eng.user-words: hgnc_list_all_FINAL.txt
-9. Open in TextWrangler to switch linefeed to "Unix(LF)" to work with php scripts
+#### hgnc lexicon files
+1. Downloaded ```protein-coding-gene``` TXT file from http://www.genenames.org/cgi-bin/statistics
+2. Imported txt into Excel, first setting all columns to "skip" then explicitly choosing "text" for symbol, alias_symbol, prev_symbol and entrez_id columns during import wizard (to avoid date conversion of SEPT1, etc)
+3. Delete rows without entrez_id mappings
+4. In separate tabs, expanded 'alias symbol' and 'prev symbol' lists into single-value rows, maintaining entrez_id mappings for each row. Used Data>Text to Columns>Other:|>Column types:Text. Deleted empty rows. Collapsed multiple columns by pasting entrez_id before each column, sorting and stacking. 
+5. Set all entries to uppercase and filtered each list for unique (only affected alias and prev)
+6. Consider removing hyphens (see if this creates duplicates in hgnc_symbol table)
+6. Exported as separate CSV files.
 
-**Note: a mapping table can be used to map any hits from aliases, prev symbols, or generic symbols to hgnc identifiers.**
+#### bioentities lexicon file
+1. Starting with this file from our fork of bioentities: https://github.com/wikipathways/bioentities/blob/master/relations.csv
+2. Captures complexes, generic symbols and gene families, e.g., "WNT" mapping to each of the WNT## entries
+3. Set all entries to uppercase.
+4. Add entrez_id column via lookup in hgnc lexicon file.
+5. Exported as CSV file.
 
 #### WikiPathways all and human lists
 1. Downloaded http://www.pathvisio.org/data/bots/gmt/wikipathways.gmt
