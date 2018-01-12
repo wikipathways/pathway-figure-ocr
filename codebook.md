@@ -79,7 +79,7 @@ convert test1_gr_th.jpg -define connected-components:verbose=true -define connec
 ## Generating Files and Initial Tables
 #### hgnc lexicon files
 1. Downloaded ```protein-coding-gene``` TXT file from http://www.genenames.org/cgi-bin/statistics
-2. Imported txt into Excel, first setting all columns to "skip" then explicitly choosing "text" for symbol, alias_symbol, prev_symbol and entrez_id columns during import wizard (to avoid date conversion of SEPT1, etc)
+2. Imported TXT into Excel, first setting all columns to "skip" then explicitly choosing "text" for symbol, alias_symbol, prev_symbol and entrez_id columns during import wizard (to avoid date conversion of SEPT1, etc)
 3. Delete rows without entrez_id mappings
 4. In separate tabs, expanded 'alias symbol' and 'prev symbol' lists into single-value rows, maintaining entrez_id mappings for each row. Used Data>Text to Columns>Other:|>Column types:Text. Deleted empty rows. Collapsed multiple columns by pasting entrez_id before each column, sorting and stacking. 
 5. Set all entries to uppercase and filtered each list for unique (only affected alias and prev)
@@ -87,10 +87,11 @@ convert test1_gr_th.jpg -define connected-components:verbose=true -define connec
 7. Exported as separate CSV files.
 
 #### bioentities lexicon file
-1. Starting with this file from our fork of bioentities: https://github.com/wikipathways/bioentities/blob/master/relations.csv
-2. Captures complexes, generic symbols and gene families, e.g., "WNT" mapping to each of the WNT## entries
-3. Set all entries to uppercase, remove hyphens and filter for unique.
-4. Add entrez_id column via lookup in hgnc lexicon file.
+1. Starting with this file from our fork of bioentities: https://github.com/wikipathways/bioentities/blob/master/relations.csv. It captures complexes, generic symbols and gene families, e.g., "WNT" mapping to each of the WNT## entrie.
+2. Imported CSV into Excel, setting identifier columns to import as "text".
+3. Made separate tabs for rows with "BE" and "HGNC" as first column value. Add column to "HGNC" tab based on =LOOKUP(B2,be!B2:B116,be!D2:D116). Be sure to sort column B to get correct result. Get rid of #N/A and then copy HGNC column to generate additional pairs. Sort and stack.
+3. Set all entries to uppercase, replace underscore with space, remove hyphens and filter for unique.
+4. Add entrez_id column via lookup in hgnc lexicon file using =LOOKUP(B2,n_symbol.csv!$B$2:$B$19177,n_symbol.csv!$A$2:$A$19177).
 5. Exported as CSV file.
 
 #### WikiPathways all and human lists
