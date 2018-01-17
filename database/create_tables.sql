@@ -1,7 +1,3 @@
-/* as any user that has been granted the pfocr role:
-psql pfocr
-//*/
-
 SET ROLE pfocr;
 
 CREATE TABLE xrefs (
@@ -11,7 +7,6 @@ CREATE TABLE xrefs (
 
 CREATE TABLE lexicon (
         id serial PRIMARY KEY,
-	/* NOTE: an symbol can be the official symbol, a deprecated symbol/name, a synonym, etc. */
 	symbol text UNIQUE NOT NULL,
 	xref_id integer REFERENCES xrefs NOT NULL,
 	source text 
@@ -57,16 +52,12 @@ CREATE TABLE runs (
         timestamp timestamp NOT NULL,
 	batch_id integer REFERENCES batches NOT NULL,
         ocr_engine text NOT NULL,
-        /* List the step(s) we took when doing the processing.
-           Use the format of a JSON array, e.g.,
-           ["convert INPUT_PATH -rotate "270" OUTPUT_PATH", "ocr", "uppercase"]
-        */
         processing jsonb NOT NULL
 );
 
 CREATE TABLE words (
         id serial PRIMARY KEY,
-	word text UNIQUE NOT NULL,
+	word text UNIQUE NOT NULL
 );
 
 CREATE TABLE runs_figures (
@@ -83,16 +74,13 @@ CREATE TABLE runs_figures_words (
 	word_id integer REFERENCES words NOT NULL
 );
 
-/* TODO: use CREATE MATERIALIZED VIEW so we don't have to recalculate these views from scratch every time.
-https://www.postgresql.org/docs/9.6/static/sql-creatematerializedview.html
-*/
 CREATE VIEW words_lexicon AS
 	SELECT lexicon.id AS lexicon_id, lexicon.xref_id, words.id AS word_id, lexicon.symbol, words.word, lexicon.source
 	FROM words
 	INNER JOIN lexicon ON words.word = lexicon.symbol;
 
 CREATE VIEW figures_xrefs AS
-	SELECT figures.id AS figure_id, xrefs.id AS xref_id, figures.path2img, lexicon.symbol, words.word, xrefs.xref, runs_figures_words.position, runs.ocr_engine, runs.processing
+	SELECT figures.id AS figure_id, xrefs.id AS xref_id, figures.path2img, lexicon.symbol, words.word, xrefs.xref, runs.ocr_engine, runs.processing
 	FROM figures
 	INNER JOIN runs_figures_words ON figures.id = runs_figures_words.figure_id
 	INNER JOIN runs ON runs_figures_words.run_id = runs.id
