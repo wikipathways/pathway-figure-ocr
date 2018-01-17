@@ -1,26 +1,23 @@
-/* as postgres user:
+/* Run this file as the postgres user:
+sudo su - postgres
 psql
+\i /home/pfocr/pathway-figure-ocr/database/setup.sql
 */
 
 CREATE ROLE pfocr;
-CREATE DATABASE pfocr;
-ALTER DATABASE pfocr OWNER TO pfocr;
 
-CREATE USER ariutta WITH CREATEDB IN ROLE pfocr;
-CREATE DATABASE ariutta;
-ALTER DATABASE ariutta OWNER TO ariutta;
+CREATE USER ariutta WITH SUPERUSER CREATEDB IN ROLE pfocr;
+CREATE DATABASE ariutta WITH owner = ariutta;
 
-CREATE USER apico WITH CREATEDB IN ROLE pfocr;
-CREATE DATABASE apico;
-ALTER DATABASE apico OWNER TO apico;
+CREATE USER apico WITH SUPERUSER CREATEDB IN ROLE pfocr;
+CREATE DATABASE apico WITH owner = apico;
 
-CREATE USER khanspers WITH CREATEDB IN ROLE pfocr;
-CREATE DATABASE khanspers;
-ALTER DATABASE khanspers OWNER TO khanspers;
+CREATE USER khanspers WITH SUPERUSER CREATEDB IN ROLE pfocr;
+CREATE DATABASE khanspers WITH owner = khanspers;
+
+CREATE DATABASE pfocr WITH owner = pfocr;
 
 /* switch to pfocr database:
 \c pfocr
-or
-\q
-psql pfocr
-//*/
+\i /home/pfocr/pathway-figure-ocr/database/create_pfocr_db.sql
+*/
