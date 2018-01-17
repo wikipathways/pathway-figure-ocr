@@ -7,7 +7,7 @@ CREATE TABLE xrefs (
 
 CREATE TABLE lexicon (
         id serial PRIMARY KEY,
-	symbol text UNIQUE NOT NULL,
+	symbol text NOT NULL,
 	xref_id integer REFERENCES xrefs NOT NULL,
 	source text 
 );
