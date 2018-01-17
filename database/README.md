@@ -1,6 +1,6 @@
 ```sh
 adduser postgres
-sudo su -c 'nix-setup-user postgres'
+nix-setup-user postgres
 sudo mkdir /home/postgres/data
 sudo chown -R postgres:pfocr /home/postgres/data
 sudo chmod -R 0700 /home/postgres/data

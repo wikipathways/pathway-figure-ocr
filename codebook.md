@@ -1,6 +1,15 @@
 # Codebook for Pathway Figure OCR project
 The sections below detail the steps taken to generate files and run scripts for this project.
 
+### Install Dependencies
+```sh
+sudo su - root
+nix-env -iA nixos.postgresql
+nix-env -iA nixos.python3
+nix-env -iA nixos.python36Packages.psycopg2
+exit
+```
+
 ## PubMed Central Image Extraction
 
 This url returns >77k figures from PMC articles matching "signaling pathways". Approximately 80% of these are actually pathway figures. These make a reasonably efficient source of sample figures to test methods. *Consider other search terms and other sources when scaling up.*
@@ -39,6 +48,12 @@ Load filenames (or paths) and extracted content into database
 
 * papers (id, pmcid, title, url)
 * figures (id, paperid, path2img, fignumber, caption)
+
+```sh
+nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 ])'
+python3 /home/pfocr/pathway-figure-ocr/load_pmc.py
+# Use CTRL-D to exit nix-shell
+```
 
 ## Optical Character Recognition
 
