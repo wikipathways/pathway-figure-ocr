@@ -7,6 +7,7 @@ sudo su - root
 nix-env -iA nixos.postgresql
 nix-env -iA nixos.python3
 nix-env -iA nixos.python36Packages.psycopg2
+nix-env -iA nixos.python36Packages.requests
 exit
 ```
 
@@ -74,6 +75,12 @@ convert test1_gr_th.jpg -define connected-components:verbose=true -define connec
 * Set parameters
   * 'LanguageCode':'en' - to restrict to English language characters
 * Produce JSON files
+
+```sh
+nix-shell -p 'python36.withPackages(ps: with ps; [ requests ])'
+/home/pfocr/pathway-figure-ocr/gcv.py /home/pfocr/pmc/20150501/images_pruned/PMC120796__mr0320019001.jpg
+# Use CTRL-D to exit nix-shell
+```
 
 ### Load filnames (paths) into database
 * figures (gcv_json)
