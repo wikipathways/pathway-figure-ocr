@@ -34,55 +34,41 @@ exit
 ```
 
 ## Loading Lexicon 
-First, load each of your source lexicon files to populate a temporary xrefs table, from which a unique selection populates the final xres table.
+Load each of your source lexicon files (in order of preference) to populate a unique xrefs and symbols tables which are then referenced by the lexicon table. A temporary s table holds *previously seen* symbols from preferred sources to exclude redundancy across sources. However, many-to-many mappings are expected *within* a source, e.g., complexes and families.
 
 ```sh
-create temporary table x (xref text);
+create temporary table s (symbol text);
 create temporary table t (entrez_id text, n_symbol text);
-\copy t (entrez_id, n_symbol) from '/home/pfocr/pathway-figure-ocr/lexicon/n_symbol.csv' with (delimiter ',', format csv, header);
-insert into x (xref) select entrez_id from t;
-drop table t;
-
-create temporary table t (entrez_id text, n_symbol text);
-\copy t (entrez_id, n_symbol) from '/home/pfocr/pathway-figure-ocr/lexicon/n_alias_symbol.csv' with (delimiter ',', format csv, header);
-insert into x (xref) select entrez_id from t;
+\copy t (entrez_id, n_symbol) from '/home/pfocr/pathway-figure-ocr/lexicon/1_n_symbol.csv' with (delimiter ',', format csv, header);
+insert into xrefs (xref) select entrez_id from t ON CONFLICT DO NOTHING;
+insert into symbols (symbol) select n_symbol from t ON CONFLICT DO NOTHING;
+insert into lexicon (symbol_id, xref_id, source) select symbols.id, xrefs.id,'hgnc_symbol' from t inner join xrefs on xrefs.xref=t.entrez_id inner join symbols on symbols.symbol=t.n_symbol ON CONFLICT DO NOTHING;
+insert into s (symbol) select n_symbol from t;
 drop table t;
 
 create temporary table t (entrez_id text, n_symbol text);
-\copy t (entrez_id, n_symbol) from '/home/pfocr/pathway-figure-ocr/lexicon/n_prev_symbol.csv' with (delimiter ',', format csv, header);
-insert into x (xref) select entrez_id from t;
-drop table t;
-
-create temporary table t (n_symbol text, entrez_id text);
-\copy t (n_symbol, entrez_id) from '/home/pfocr/pathway-figure-ocr/lexicon/n_bioentities.csv' with (delimiter ',', format csv, header);
-insert into x (xref) select entrez_id from t;
-drop table t;
-
-insert into xrefs (xref) select distinct xref from x;
-drop table x;
-```
-
-Then, load each file again to to populate the lexicon table that references xrefs.id. Symbols should not be unique within a source. Encode the source preference by ascending numeric prefixes for future consideration, e.g., 1_hgnc_symbol.
-
-```sh
-create temporary table t (entrez_id text, n_symbol text);
-\copy t (entrez_id, n_symbol) from '/home/pfocr/pathway-figure-ocr/lexicon/n_symbol.csv' with (delimiter ',', format csv, header);
-insert into lexicon (symbol, xref_id, source) select t.n_symbol, xrefs.id,'1_hgnc_symbol' from t inner join xrefs on xrefs.xref=t.entrez_id;
+\copy t (n_symbol, entrez_id) from '/home/pfocr/pathway-figure-ocr/lexicon/2_n_bioentities.csv' with (delimiter ',', format csv, header);
+insert into xrefs (xref) select entrez_id from t ON CONFLICT DO NOTHING;
+insert into symbols (symbol) select n_symbol from t ON CONFLICT DO NOTHING;
+insert into lexicon (symbol_id, xref_id, source) select symbols.id, xrefs.id,'bioentities_symbol' from t inner join xrefs on xrefs.xref=t.entrez_id inner join symbols on symbols.symbol=t.n_symbol where not exists (select 1 from s where t.n_symbol = s.symbol) ON CONFLICT DO NOTHING;
+insert into s (symbol) select n_symbol from t;
 drop table t;
 
 create temporary table t (entrez_id text, n_symbol text);
-\copy t (entrez_id, n_symbol) from '/home/pfocr/pathway-figure-ocr/lexicon/n_alias_symbol.csv' with (delimiter ',', format csv, header);
-insert into lexicon (symbol, xref_id, source) select t.n_symbol, xrefs.id,'3_hgnc_alias_symbol' from t inner join xrefs on xrefs.xref=t.entrez_id;
+\copy t (entrez_id, n_symbol) from '/home/pfocr/pathway-figure-ocr/lexicon/3_n_alias_symbol.csv' with (delimiter ',', format csv, header);
+insert into xrefs (xref) select entrez_id from t ON CONFLICT DO NOTHING;
+insert into symbols (symbol) select n_symbol from t ON CONFLICT DO NOTHING;
+insert into lexicon (symbol_id, xref_id, source) select symbols.id, xrefs.id,'hgnc_alias_symbol' from t inner join xrefs on xrefs.xref=t.entrez_id inner join symbols on symbols.symbol=t.n_symbol where not exists (select 1 from s where t.n_symbol = s.symbol) ON CONFLICT DO NOTHING;
+insert into s (symbol) select n_symbol from t;
 drop table t;
 
 create temporary table t (entrez_id text, n_symbol text);
-\copy t (entrez_id, n_symbol) from '/home/pfocr/pathway-figure-ocr/lexicon/n_prev_symbol.csv' with (delimiter ',', format csv, header);
-insert into lexicon (symbol, xref_id, source) select t.n_symbol, xrefs.id,'4_hgnc_prev_symbol' from t inner join xrefs on xrefs.xref=t.entrez_id;
+\copy t (entrez_id, n_symbol) from '/home/pfocr/pathway-figure-ocr/lexicon/4_n_prev_symbol.csv' with (delimiter ',', format csv, header);
+insert into xrefs (xref) select entrez_id from t ON CONFLICT DO NOTHING;
+insert into symbols (symbol) select n_symbol from t ON CONFLICT DO NOTHING;
+insert into lexicon (symbol_id, xref_id, source) select symbols.id, xrefs.id,'hgnc_prev_symbol' from t inner join xrefs on xrefs.xref=t.entrez_id inner join symbols on symbols.symbol=t.n_symbol where not exists (select 1 from s where t.n_symbol = s.symbol) ON CONFLICT DO NOTHING;
+insert into s (symbol) select n_symbol from t;
 drop table t;
-
-create temporary table t (entrez_id text, n_symbol text);
-\copy t (n_symbol, entrez_id) from '/home/pfocr/pathway-figure-ocr/lexicon/n_bioentities.csv' with (delimiter ',', format csv, header);
-insert into lexicon (symbol, xref_id, source) select t.n_symbol, xrefs.id,'2_bioentities_symbol' from t inner join xrefs on xrefs.xref=t.entrez_id;
-drop table t;
+drop table s;
 ```
 

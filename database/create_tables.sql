@@ -5,9 +5,14 @@ CREATE TABLE xrefs (
 	xref text UNIQUE NOT NULL
 );
 
-CREATE TABLE lexicon (
+CREATE TABLE symbols (
         id serial PRIMARY KEY,
-	symbol text NOT NULL,
+	symbol text UNIQUE NOT NULL
+);
+
+CREATE TABLE lexicon (
+        PRIMARY KEY (symbol_id, xref_id),
+	symbol_id integer REFERENCES symbols NOT NULL,
 	xref_id integer REFERENCES xrefs NOT NULL,
 	source text 
 );
@@ -74,17 +79,14 @@ CREATE TABLE runs_figures_words (
 	word_id integer REFERENCES words NOT NULL
 );
 
-CREATE VIEW words_lexicon AS
-	SELECT lexicon.id AS lexicon_id, lexicon.xref_id, words.id AS word_id, lexicon.symbol, words.word, lexicon.source
+CREATE VIEW words_lexicon AS SELECT words.id AS word_id, words.word, symbols.symbol, xrefs.id AS xref_id, xrefs.xref, lexicon.source
 	FROM words
-	INNER JOIN lexicon ON words.word = lexicon.symbol;
+	INNER JOIN symbols ON words.word = symbols.symbol
+	INNER JOIN lexicon ON symbols.id = lexicon.symbol_id
+	INNER JOIN xrefs ON lexicon.xref_id = xrefs.id;
 
-CREATE VIEW figures_xrefs AS
-	SELECT figures.id AS figure_id, xrefs.id AS xref_id, figures.path2img, lexicon.symbol, words.word, xrefs.xref, runs.ocr_engine, runs.processing
+CREATE VIEW figures_xrefs AS SELECT figures.id AS figure_id, words_lexicon.xref, words_lexicon.symbol, figures.path2img, runs_figures_words.run_id
 	FROM figures
 	INNER JOIN runs_figures_words ON figures.id = runs_figures_words.figure_id
-	INNER JOIN runs ON runs_figures_words.run_id = runs.id
-	INNER JOIN words_lexicon ON runs_figures_words.word_id = words_lexicon.word_id
-	INNER JOIN words ON words_lexicon.word_id = words.id
-	INNER JOIN lexicon ON words_lexicon.lexicon_id = lexicon.id
-	INNER JOIN xrefs ON words_lexicon.xref_id = xrefs.id;
+	INNER JOIN words_lexicon ON runs_figures_words.word_id = words_lexicon.word_id;
+
