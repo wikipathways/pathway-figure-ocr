@@ -37,7 +37,7 @@ CREATE TABLE figures (
 
 CREATE TABLE batches (
         id serial PRIMARY KEY,
-	timestamp timestamp NOT NULL,
+	timestamp timestamp DEFAULT CURRENT_TIMESTAMP,
 	paper_count integer,
 	figure_count integer,
 	total_text_gross integer,
@@ -54,7 +54,7 @@ CREATE TABLE batches (
 
 CREATE TABLE runs (
         id serial PRIMARY KEY,
-        timestamp timestamp NOT NULL,
+	timestamp timestamp DEFAULT CURRENT_TIMESTAMP,
 	batch_id integer REFERENCES batches NOT NULL,
         ocr_engine text NOT NULL,
         processing jsonb NOT NULL
