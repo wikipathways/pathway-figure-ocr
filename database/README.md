@@ -34,7 +34,7 @@ exit
 ```
 
 ## Loading Lexicon 
-Load each of your source lexicon files (in order of preference) to populate a unique xrefs and symbols tables which are then referenced by the lexicon table. A temporary s table holds *previously seen* symbols from preferred sources to exclude redundancy across sources. However, many-to-many mappings are expected *within* a source, e.g., complexes and families.
+Load each of your source lexicon files in order of preference (use filename numbering, e.g., ```1_n_symbol.csv```) to populate unique ```xrefs``` and ```symbols``` tables which are then referenced by the ```lexicon``` table. A temporary ```s``` table holds *previously seen* symbols (i.e., from preferred sources) to exclude redundancy across sources. However, many-to-many mappings are expected *within* a source, e.g., complexes and families.
 
 ```sh
 create temporary table s (symbol text);
