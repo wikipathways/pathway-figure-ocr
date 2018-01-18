@@ -78,7 +78,13 @@ convert test1_gr_th.jpg -define connected-components:verbose=true -define connec
 
 ```sh
 nix-shell -p 'python36.withPackages(ps: with ps; [ requests ])'
-/home/pfocr/pathway-figure-ocr/gcv.py /home/pfocr/pmc/20150501/images_pruned/PMC120796__mr0320019001.jpg
+/home/pfocr/pathway-figure-ocr/gcv_cli.py /home/pfocr/pmc/20150501/images_pruned/PMC120796__mr0320019001.jpg
+# Use CTRL-D to exit nix-shell
+```
+
+```sh
+nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 requests ])'
+python3 /home/pfocr/pathway-figure-ocr/gcv_pmc.py
 # Use CTRL-D to exit nix-shell
 ```
 
