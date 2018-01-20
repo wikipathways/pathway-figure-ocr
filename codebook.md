@@ -95,7 +95,7 @@ Note: `gcv_pmc.py` calls `ocr_pmc.py` at the end, passing along args and functio
   
 ```
   Example psql query to select words from result:
-  select ta->>'description' AS word from ocr_processors__figures opf, json_array_elements(opf.result::json->'textAnnotations') AS ta;
+  select regexp_replace(ta->>'description', E'[\\n\\r]+',',','g') as word from ocr_processors__figures opf, json_array_elements(opf.result::json->'textAnnotations') AS ta ;
 ```
 
 ## Process Results
