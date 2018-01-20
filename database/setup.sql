@@ -19,5 +19,5 @@ CREATE DATABASE pfocr WITH owner = pfocr;
 
 /* switch to pfocr database:
 \c pfocr
-\i /home/pfocr/pathway-figure-ocr/database/create_pfocr_db.sql
+\i /home/pfocr/pathway-figure-ocr/database/create_tables.sql
 */
