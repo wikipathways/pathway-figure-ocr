@@ -2,12 +2,12 @@ SET ROLE pfocr;
 
 CREATE TABLE xrefs (
         id serial PRIMARY KEY,
-	xref text UNIQUE NOT NULL
+	xref text UNIQUE NOT NULL CHECK (xref <> '')
 );
 
 CREATE TABLE symbols (
         id serial PRIMARY KEY,
-	symbol text UNIQUE NOT NULL
+	symbol text UNIQUE NOT NULL CHECK (symbol <> '')
 );
 
 CREATE TABLE lexicon (
@@ -19,7 +19,7 @@ CREATE TABLE lexicon (
 
 CREATE TABLE papers (
         id serial PRIMARY KEY,
-	pmcid text UNIQUE NOT NULL,
+	pmcid text UNIQUE NOT NULL CHECK (pmcid <> ''),
 	title text,
 	url text,
 	abstract text,
@@ -30,8 +30,8 @@ CREATE TABLE papers (
 CREATE TABLE figures (
         id serial PRIMARY KEY,
 	paper_id integer REFERENCES papers NOT NULL,
-	path2img text UNIQUE NOT NULL,
-	figure_number text NOT NULL,
+	filepath text UNIQUE NOT NULL CHECK (filepath <> ''),
+	figure_number text NOT NULL CHECK (figure_number <> ''),
 	caption text
 );
 
@@ -52,41 +52,48 @@ CREATE TABLE batches (
 	total_new_overall_unique integer
 );
 
-CREATE TABLE runs (
+CREATE TABLE ocr_processors (
         id serial PRIMARY KEY,
-	timestamp timestamp DEFAULT CURRENT_TIMESTAMP,
-	batch_id integer REFERENCES batches NOT NULL,
-        ocr_engine text NOT NULL,
-        processing jsonb NOT NULL
+	created timestamp DEFAULT CURRENT_TIMESTAMP,
+        engine text NOT NULL CHECK (engine <> ''),
+        prepare_image text NOT NULL CHECK (prepare_image <> ''),
+        perform_ocr text NOT NULL CHECK (perform_ocr <> ''),
+	hash text NOT NULL CHECK (hash <> '')
 );
+
+CREATE TABLE batches__ocr_processors (
+	PRIMARY KEY (batch_id, ocr_processor_id),
+	batch_id integer REFERENCES batches NOT NULL,
+	ocr_processor_id integer REFERENCES ocr_processors NOT NULL
+); 
 
 CREATE TABLE words (
         id serial PRIMARY KEY,
-	word text UNIQUE NOT NULL
+	word text UNIQUE NOT NULL CHECK (word <> '')
 );
 
-CREATE TABLE runs_figures (
-	PRIMARY KEY (run_id, figure_id),
-	run_id integer REFERENCES runs NOT NULL,
+CREATE TABLE ocr_processors__figures (
+	PRIMARY KEY (ocr_processor_id, figure_id),
+	ocr_processor_id integer REFERENCES ocr_processors NOT NULL,
 	figure_id integer REFERENCES figures NOT NULL,
 	result jsonb
 ); 
 
-CREATE TABLE runs_figures_words (
-	PRIMARY KEY (run_id, figure_id, word_id),
-	run_id integer REFERENCES runs NOT NULL,
+CREATE TABLE ocr_processors__figures__words (
+	PRIMARY KEY (ocr_processor_id, figure_id, word_id),
+	ocr_processor_id integer REFERENCES ocr_processors NOT NULL,
 	figure_id integer REFERENCES figures NOT NULL,
 	word_id integer REFERENCES words NOT NULL
 );
 
-CREATE VIEW words_lexicon AS SELECT words.id AS word_id, words.word, symbols.symbol, xrefs.id AS xref_id, xrefs.xref, lexicon.source
+CREATE VIEW words__lexicon AS SELECT words.id AS word_id, words.word, symbols.symbol, xrefs.id AS xref_id, xrefs.xref, lexicon.source
 	FROM words
 	INNER JOIN symbols ON words.word = symbols.symbol
 	INNER JOIN lexicon ON symbols.id = lexicon.symbol_id
 	INNER JOIN xrefs ON lexicon.xref_id = xrefs.id;
 
-CREATE VIEW figures_xrefs AS SELECT figures.id AS figure_id, words_lexicon.xref, words_lexicon.symbol, figures.path2img, runs_figures_words.run_id
+CREATE VIEW figures__xrefs AS SELECT figures.id AS figure_id, words__lexicon.xref, words__lexicon.symbol, figures.filepath, ocr_processors__figures__words.ocr_processor_id
 	FROM figures
-	INNER JOIN runs_figures_words ON figures.id = runs_figures_words.figure_id
-	INNER JOIN words_lexicon ON runs_figures_words.word_id = words_lexicon.word_id;
+	INNER JOIN ocr_processors__figures__words ON figures.id = ocr_processors__figures__words.figure_id
+	INNER JOIN words__lexicon ON ocr_processors__figures__words.word_id = words__lexicon.word_id;
 
