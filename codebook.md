@@ -48,18 +48,18 @@ Another manual step here to increase accuracy of downstream counts. Make a copy 
 Load filenames (or paths) and extracted content into database
 
 * papers (id, pmcid, title, url)
-* figures (id, paperid, path2img, fignumber, caption)
+* figures (id, paperid, filepath, fignumber, caption)
 
 ```sh
 nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 ])'
-python3 /home/pfocr/pathway-figure-ocr/load_pmc.py
+./load_pmc.py
 # Use CTRL-D to exit nix-shell
 ```
 
 ## Optical Character Recognition
 
 ### Read in Files from Database
-* figures (path2img)
+* figures (filepath)
 
 ### Image Preprocessing
 #### Imagemagick
@@ -76,26 +76,21 @@ convert test1_gr_th.jpg -define connected-components:verbose=true -define connec
   * 'LanguageCode':'en' - to restrict to English language characters
 * Produce JSON files
 
+Caution: if you don't specify an `end` value, it'll run until the last figure. Default `start` value is 0.
 ```sh
-nix-shell -p 'python36.withPackages(ps: with ps; [ requests ])'
-/home/pfocr/pathway-figure-ocr/gcv_cli.py /home/pfocr/pmc/20150501/images_pruned/PMC120796__mr0320019001.jpg
+nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
+./gcv_pmc.py --start 0 --end 20
 # Use CTRL-D to exit nix-shell
 ```
-
-```sh
-nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 requests ])'
-python3 /home/pfocr/pathway-figure-ocr/gcv_pmc.py
-# Use CTRL-D to exit nix-shell
-```
-
-### Load filnames (paths) into database
-* figures (gcv_json)
 
 ## Process Results
+
+postprocess.py is a start at this, but it's not done yet.
+
 ### Create/update word tables for all extracted text
 * Apply normalization
-* word (id, word, n_word)
-* figure_word (figure_id, word_id)
+* word (id, word, word)
+* figures__words (figure_id, word_id)
 
 ### Create/update xref tables for all lexicon "hits"
 * xref (id, xref)

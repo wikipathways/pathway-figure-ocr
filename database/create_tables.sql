@@ -58,7 +58,7 @@ CREATE TABLE ocr_processors (
         engine text NOT NULL CHECK (engine <> ''),
         prepare_image text NOT NULL CHECK (prepare_image <> ''),
         perform_ocr text NOT NULL CHECK (perform_ocr <> ''),
-	hash text NOT NULL CHECK (hash <> '')
+	hash text UNIQUE NOT NULL CHECK (hash <> '')
 );
 
 CREATE TABLE batches__ocr_processors (
