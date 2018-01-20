@@ -7,4 +7,5 @@ normalize_re = re.compile('[^A-Z0-9]')
 def normalize(word):
     word_upper = word.upper()
     word_regexed = normalize_re.sub('', word_upper)
-    return word_regexed
+    word_unhyph = word_regexed.replace('-', '')
+    return word_unhyph
