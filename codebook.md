@@ -12,6 +12,8 @@ exit
 ```
 
 ## PubMed Central Image Extraction
+_These scripts are capable of populating the database with structured paper and figure information for future OCR runs._
+
 
 This url returns >77k figures from PMC articles matching "signaling pathways". Approximately 80% of these are actually pathway figures. These make a reasonably efficient source of sample figures to test methods. *Consider other search terms and other sources when scaling up.*
 
@@ -57,6 +59,7 @@ nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 ])'
 ```
 
 ## Optical Character Recognition
+_These scripts are capable of reading selected sets of figures from the database and performing individual runs of OCR_
 
 ### Read in Files from Database
 * figures (filepath)
@@ -92,20 +95,27 @@ Note: `gcv_pmc.py` calls `ocr_pmc.py` at the end, passing along args and functio
   
 
 ## Process Results
-
-postprocess.py is a start at this, but it's not done yet.
+_These scripts are capable of processing the results from one or more ocr runs previously stored in the database._
 
 ### Create/update word tables for all extracted text
-* Apply normalization
-* word (id, word, word)
-* figures__words (figure_id, word_id)
+```sh
+nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 ])'
+./postprocess.py
+# Use CTRL-D to exit nix-shell
+```
+
+* Extract words from JSON in `ocr_processors__figures.result`
+* Applies normalization (see `normalize.py`)
+* populates `words` with unique occurences
+* populates `ocr_processors__figures__words` with all figure_id and word_id occurences
 
 ### Create/update xref tables for all lexicon "hits"
-* xref (id, xref)
-* figure_xref (figure_id, xref_id)
+* xrefs (id, xref)
+* figures__xrefs (figure_id, xref, symbol, filepath, ocr_processor_id)
 
 ### Collect run stats
-* run (timestamp, parameters, paper_count, figure_count,  total_word_gross, total_word_unique, total_xrefs_gross, total_xrefs_unique)
+* batches__ocr_processors (batch_id, ocr_processor_id)
+* batches (timestamp, parameters, paper_count, figure_count,  total_word_gross, total_word_unique, total_xrefs_gross, total_xrefs_unique)
 
 ## Generating Files and Initial Tables
 #### hgnc lexicon files
