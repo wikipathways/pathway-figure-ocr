@@ -93,6 +93,10 @@ Note: `gcv_pmc.py` calls `ocr_pmc.py` at the end, passing along args and functio
   * performs ocr
   * populates `ocr_processors__figures` with ocr_processor_id, figure_id and result
   
+```
+  Example psql query to select words from result:
+  select ta->>'description' AS word from ocr_processors__figures opf, json_array_elements(opf.result::json->'textAnnotations') AS ta;
+```
 
 ## Process Results
 _These scripts are capable of processing the results from one or more ocr runs previously stored in the database._
