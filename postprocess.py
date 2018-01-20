@@ -14,6 +14,6 @@ def postprocess(run_id, figure_id):
         normalized_word = normalize(text_annotation['description'])
         if normalized_word:
             # This might not be the best way to insert. TODO: look at the proper way to handle this.
-            words_cur.execute("INSERT INTO words (word) VALUES (%s) ON CONFLICT (word) DO UPDATE SET word = EXCLUDED.word RETURNING id;", (normalized_word, ))
+            words_cur.execute("INSERT INTO words (word) VALUES (%s) ON CONFLICT (word) DO UPDATE SET word = EXCLUDED.word RETURNING id;", (word, ))
             word_id = words_cur.fetchone()[0]
-            ocr_processors__figures__words_cur.execute("INSERT INTO ocr_processors__figures__words (ocr_processor_id, figure_id, word_id) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;", (run_id, figure_id, word_id))
+            ocr_processors__figures__words_cur.execute("INSERT INTO ocr_processors__figures__words (ocr_processor_id, figure_id, word_id) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;", (ocr_processor_id, figure_id, word_id))
