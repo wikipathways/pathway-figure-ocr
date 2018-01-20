@@ -82,6 +82,14 @@ nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
 ./gcv_pmc.py --start 0 --end 20
 # Use CTRL-D to exit nix-shell
 ```
+Note: `gcv_pmc.py` calls `ocr_pmc.py` at the end, passing along args and functions. The `ocr_pmc.py` script then:
+
+* gets an ocr_processor_id corresponding the unique hash of processing parameters
+* retrieves all figure rows and steps through rows `start` to `end`
+  * runs image pre-processing
+  * performs ocr
+  * populates `ocr_processors__figures` with ocr_processor_id, figure_id and result
+  
 
 ## Process Results
 
