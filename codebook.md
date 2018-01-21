@@ -123,32 +123,28 @@ nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 ])'
 
 ## Generating Files and Initial Tables
 #### hgnc lexicon files
-1. Downloaded ```protein-coding-gene``` TXT file from http://www.genenames.org/cgi-bin/statistics
-2. Imported TXT into Excel, first setting all columns to "skip" then explicitly choosing "text" for symbol, alias_symbol, prev_symbol and entrez_id columns during import wizard (to avoid date conversion of SEPT1, etc)
+1. Download ```protein-coding-gene``` TXT file from http://www.genenames.org/cgi-bin/statistics
+2. Import TXT into Excel, first setting all columns to "skip" then explicitly choosing "text" for symbol, alias_symbol, prev_symbol and entrez_id columns during import wizard (to avoid date conversion of SEPT1, etc)
 3. Delete rows without entrez_id mappings
-4. In separate tabs, expanded 'alias symbol' and 'prev symbol' lists into single-value rows, maintaining entrez_id mappings for each row. Used Data>Text to Columns>Other:|>Column types:Text. Deleted empty rows. Collapsed multiple columns by pasting entrez_id before each column, sorting and stacking. 
+4. In separate tabs, expand 'alias symbol' and 'prev symbol' lists into single-value rows, maintaining entrez_id mappings for each row. Used Data>Text to Columns>Other:|>Column types:Text. Delete empty rows. Collapse multiple columns by pasting entrez_id before each column, sorting and stacking. 
 5. Set all entries to uppercase and filtered each list for unique (only affected alias and prev)
-6. Removed all hyphens. Note that this did not create any duplicate, non-unique cases. 
-7. Exported as separate CSV files.
+6. Remove all hyphens. Note that this did not create any duplicate, non-unique cases. 
+7. Export as separate CSV files.
 
 #### bioentities lexicon file
 1. Starting with this file from our fork of bioentities: https://github.com/wikipathways/bioentities/blob/master/relations.csv. It captures complexes, generic symbols and gene families, e.g., "WNT" mapping to each of the WNT## entrie.
-2. Imported CSV into Excel, setting identifier columns to import as "text".
-3. Made separate tabs for rows with "BE" and "HGNC" as first column value. Add column to "HGNC" tab based on =LOOKUP(B2,be!B2:B116,be!D2:D116). Be sure to sort column B to get correct result. Get rid of #N/A and then copy HGNC column to generate additional pairs. Sort and stack.
+2. Import CSV into Excel, setting identifier columns to import as "text".
+3. Make separate tabs for rows with "BE" and "HGNC" as first column value. Add column to "HGNC" tab based on =LOOKUP(B2,be!B2:B116,be!D2:D116). Be sure to sort column B to get correct result. Get rid of #N/A and then copy HGNC column to generate additional pairs. Sort and stack.
 3. Set all entries to uppercase, replace underscore with space, remove hyphens and filter for unique.
 4. Add entrez_id column via lookup in hgnc lexicon file using =LOOKUP(B2,n_symbol.csv!$B$2:$B$19177,n_symbol.csv!$A$2:$A$19177).
-5. Exported as CSV file.
+5. Export as CSV file.
 
-#### WikiPathways all and human lists
-1. Downloaded http://www.pathvisio.org/data/bots/gmt/wikipathways.gmt
-2. Extracted Homo sapiens subset
-3. Used Biomart's ID Converter to get HGNC symbols (or Associated gene names) to then generate two files:
-  * hgnc_list_wp_human.txt
-  * hgnc_list_wp_all.txt
-4. These were made all uppercase and unique
-5. Then aliases and prior names were included by mapping to hgnc table (above)
-6. Similar processing was done to add generic and unhyphenated entries as well
-7. Saved as txt files for ID lookup script
-8. Open in TextWrangler to switch linefeed to "Unix(LF)" to work with php scripts
-
-
+#### WikiPathways human lists
+1. Download human GMT from http://data.wikipathways.org/current/gmt/
+2. Import GMT file into Excel
+3. Select complete matrix and name 'matrix' (upper left text field)
+4. Insert column and paste this in to A1
+  * =OFFSET(matrix,TRUNC((ROW()-ROW($A$1))/COLUMNS(matrix)),MOD(ROW()-ROW($A$1),COLUMNS(matrix)),1,1)
+5. Copy equation down to bottom of sheet, e.g., at least to =ROWS(matrix)\*COLUMNS(matrix)
+6. Filter out '0', then filter for unique
+7. Export as CSV file. 
