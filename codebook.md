@@ -115,7 +115,12 @@ nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 ])'
 
 ### Create/update xref tables for all lexicon "hits"
 * xrefs (id, xref)
-* figures__xrefs (figure_id, xref, symbol, filepath, ocr_processor_id)
+* figures__xrefs (ocr_processor_id, figure_id, xref, symbol, unique_wp_hs, filepath)
+
+```
+  Example psql query to rank order figures by unique xrefs:
+  select figure_id, count(unique_wp_hs) as unique from figures__xrefs where unique_wp_hs = TRUE group by figure_id order by 2 desc;
+```
 
 ### Collect run stats
 * batches__ocr_processors (batch_id, ocr_processor_id)
