@@ -5,6 +5,10 @@ CREATE TABLE xrefs (
 	xref text UNIQUE NOT NULL CHECK (xref <> '')
 );
 
+CREATE TABLE xrefs_wp_hs (
+	xref text UNIQUE NOT NULL CHECK (xref <> '')
+);
+
 CREATE TABLE symbols (
         id serial PRIMARY KEY,
 	symbol text UNIQUE NOT NULL CHECK (symbol <> '')
