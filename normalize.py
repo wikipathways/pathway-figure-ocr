@@ -3,9 +3,11 @@
 
 import re
 normalize_re = re.compile('[^A-Z0-9]')
+swaps = (‘ALPHA’:’A’,‘BETA’:’B’, ‘GAMMA’:’G’, ‘DELTA’:’D’, ‘EPSILON’:’E’)
+
 
 def normalize(word):
     word_upper = word.upper()
-    word_regexed = normalize_re.sub('', word_upper)
-    word_unhyph = word_regexed.replace('-', '')
-    return word_unhyph
+    word_swaped = replace.all(word_upper, swaps)
+    word_regexed = normalize_re.sub('', word_swaped)
+    return word_regexed
