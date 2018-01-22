@@ -8,6 +8,11 @@ swaps = (‘ALPHA’:’A’,‘BETA’:’B’, ‘GAMMA’:’G’, ‘DELTA�
 
 def normalize(word):
     word_upper = word.upper()
-    word_swaped = replace.all(word_upper, swaps)
+    word_swaped = multipleReplace(word_upper, swaps)
     word_regexed = normalize_re.sub('', word_swaped)
     return word_regexed
+
+def multipleReplace(text, wordDict):
+    for key in wordDict:
+        text = text.replace(key, wordDict[key])
+    return text
