@@ -90,14 +90,29 @@ CREATE TABLE ocr_processors__figures__words (
 	word_id integer REFERENCES words NOT NULL
 );
 
-CREATE VIEW words__lexicon AS SELECT words.id AS word_id, words.word, symbols.symbol, xrefs.id AS xref_id, xrefs.xref, lexicon.source
-	FROM words
+CREATE VIEW figures__xrefs AS SELECT pmcid, figures.filepath AS figure_filepath, words.word, xrefs.xref
+	FROM figures
+	INNER JOIN papers ON figures.paper_id = papers.id
+	INNER JOIN ocr_processors__figures__words ON figures.id = ocr_processors__figures__words.figure_id
+	INNER JOIN words ON ocr_processors__figures__words.word_id = words.id
 	INNER JOIN symbols ON words.word = symbols.symbol
 	INNER JOIN lexicon ON symbols.id = lexicon.symbol_id
-	INNER JOIN xrefs ON lexicon.xref_id = xrefs.id;
+	INNER JOIN xrefs ON lexicon.xref_id = xrefs.id
+        GROUP BY pmcid, figure_filepath, word, xref;
 
-CREATE VIEW figures__xrefs AS SELECT figures.id AS figure_id, words__lexicon.xref, words__lexicon.symbol, figures.filepath, ocr_processors__figures__words.ocr_processor_id
+CREATE VIEW stats AS SELECT ocr_processors.engine AS ocr_engine,
+		ocr_processors.prepare_image AS image_preprocessor,
+		COUNT(DISTINCT papers.pmcid) AS paper_count,
+		COUNT(DISTINCT figures.filepath) AS figure_count,
+		(SELECT COUNT(DISTINCT CONCAT(word_id, '\t', figure_id)) FROM ocr_processors__figures__words) AS hit_count_gross,
+		COUNT(DISTINCT words.word) AS hit_count_uniq,
+		COUNT(DISTINCT xrefs.xref) AS xref_count_uniq
 	FROM figures
+	INNER JOIN papers ON figures.paper_id = papers.id
 	INNER JOIN ocr_processors__figures__words ON figures.id = ocr_processors__figures__words.figure_id
-	INNER JOIN words__lexicon ON ocr_processors__figures__words.word_id = words__lexicon.word_id;
-
+	INNER JOIN ocr_processors ON ocr_processors__figures__words.ocr_processor_id = ocr_processors.id
+	INNER JOIN words ON ocr_processors__figures__words.word_id = words.id
+	INNER JOIN symbols ON words.word = symbols.symbol
+	INNER JOIN lexicon ON symbols.id = lexicon.symbol_id
+	INNER JOIN xrefs ON lexicon.xref_id = xrefs.id
+        GROUP BY ocr_engine, image_preprocessor;
