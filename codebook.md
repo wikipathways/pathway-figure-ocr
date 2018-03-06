@@ -53,8 +53,8 @@ Load filenames (or paths) and extracted content into database
 * figures (id, paperid, filepath, fignumber, caption)
 
 ```sh
-nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 ])'
-./load_pmc.py
+nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
+./pfocr.py load_figures
 # Use CTRL-D to exit nix-shell
 ```
 
@@ -82,16 +82,16 @@ convert test1_gr_th.jpg -define connected-components:verbose=true -define connec
 Caution: if you don't specify an `end` value, it'll run until the last figure. Default `start` value is 0.
 ```sh
 nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
-./gcv_pmc.py --start 0 --end 20
+./pfocr.py gcv_figures --start 0 --end 20
 # Use CTRL-D to exit nix-shell
 ```
-Note: `gcv_pmc.py` calls `ocr_pmc.py` at the end, passing along args and functions. The `ocr_pmc.py` script then:
+Note: This command calls `ocr_pmc.py` at the end, passing along args and functions. The `ocr_pmc.py` script then:
 
-* gets an ocr_processor_id corresponding the unique hash of processing parameters
+* gets an `ocr_processor_id` corresponding the unique hash of processing parameters
 * retrieves all figure rows and steps through rows `start` to `end`
   * runs image pre-processing
-  * performs ocr
-  * populates `ocr_processors__figures` with ocr_processor_id, figure_id and result
+  * performs OCR
+  * populates `ocr_processors__figures` with `ocr_processor_id`, `figure_id` and `result`
   
 ```
   Example psql query to select words from result:
@@ -103,15 +103,15 @@ _These scripts are capable of processing the results from one or more ocr runs p
 
 ### Create/update word tables for all extracted text
 ```sh
-nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 ])'
-./postprocess.py
+nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
+./pfocr.py postprocess
 # Use CTRL-D to exit nix-shell
 ```
 
 * Extract words from JSON in `ocr_processors__figures.result`
 * Applies normalization (see `normalize.py`)
-* populates `words` with unique occurences
-* populates `ocr_processors__figures__words` with all figure_id and word_id occurences
+* populates `words` with unique occurences of normalized words
+* populates `ocr_processors__figures__words` with all `figure_id` and `word_id` occurences
 
 ### Create/update xref tables for all lexicon "hits"
 * xrefs (id, xref)
