@@ -122,6 +122,11 @@ nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
   select figure_id, count(unique_wp_hs) as unique from figures__xrefs where unique_wp_hs = TRUE group by figure_id order by 2 desc;
 ```
 
+* Export a table view to file. Can only write to /tmp dir; then sftp to download.
+```
+copy (select * from figures__xrefs) to '/tmp/filename.csv' with csv;
+```
+
 ### Collect run stats
 * batches__ocr_processors (batch_id, ocr_processor_id)
 * batches (timestamp, parameters, paper_count, figure_count,  total_word_gross, total_word_unique, total_xrefs_gross, total_xrefs_unique)
