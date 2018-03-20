@@ -37,6 +37,13 @@ exit
 Load each of your source lexicon files in order of preference (use filename numbering, e.g., ```1_symbol.csv```) to populate unique ```xrefs``` and ```symbols``` tables which are then referenced by the ```lexicon``` table. A temporary ```s``` table holds *previously seen* symbols (i.e., from preferred sources) to exclude redundancy across sources. However, many-to-many mappings are expected *within* a source, e.g., complexes and families.
 
 ```sh
+
+# clear tables before inserting new content
+delete from lexicon;
+delete from xrefs;
+delete from symbols;
+
+# populate tables from files
 create temporary table s (symbol text);
 create temporary table t (entrez_id text, symbol text);
 \copy t (entrez_id, symbol) from '/home/pfocr/pathway-figure-ocr/lexicon/1_symbol.csv' with (delimiter ',', format csv, header);
