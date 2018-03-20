@@ -143,12 +143,13 @@ Do not apply upper() or remove non-alphanumerics during lexicon constuction. The
 6. Export as separate CSV files.
 
 #### bioentities lexicon file
-1. Starting with this file from our fork of bioentities: https://github.com/wikipathways/bioentities/blob/master/relations.csv. It captures complexes, generic symbols and gene families, e.g., "WNT" mapping to each of the WNT## entrie.
-2. Import CSV into Excel, setting identifier columns to import as "text".
-3. Make separate tabs for rows with "BE" and "HGNC" as first column value. Add column to "HGNC" tab based on =LOOKUP(B2,be!B2:B116,be!D2:D116). Be sure to sort column B to get correct result. Get rid of #N/A and then copy HGNC column to generate additional pairs. Sort and stack.
-3. Filter for unique.
-4. Add entrez_id column via lookup in hgnc lexicon file using =LOOKUP(B2,n_symbol.csv!$B$2:$B$19177,n_symbol.csv!$A$2:$A$19177).
-5. Export as CSV file.
+1. Starting with this file from our fork of bioentities: https://raw.githubusercontent.com/wikipathways/bioentities/master/relations.csv. It captures complexes, generic symbols and gene families, e.g., "WNT" mapping to each of the WNT## entries.
+2. Import CSV into Excel, setting identifier columns to import as "text". 
+3. Delete "isa" column. Add column names: type, symbol, type2, bioentities. Turn column filters on.
+4. Filter on 'type' and make separate tabs for rows with "BE" and "HGNC" values. Sort "be" tab by "symbol" (Column B).
+5. Add a column to "hgnc" tab based on =LOOKUP(D2,be!B$2:B$116,be!D$2:D$116). Copy/paste B and D into new tab and copy/paste-special B and E to append the list. Sort bioentities and remove rows with #N/A.
+6. Copy f_symbol tab (from hgnc protein-coding_gene workbook) and sort symbol column. Then add entrez_id column to bioentities via lookup on hgnc symbol using =LOOKUP(A2,n_symbol.csv!$B$2:$B$19177,n_symbol.csv!$A$2:$A$19177).
+7. Export as CSV file.
 
 #### WikiPathways human lists
 1. Download human GMT from http://data.wikipathways.org/current/gmt/
