@@ -87,10 +87,11 @@ CREATE TABLE ocr_processors__figures__words (
 	PRIMARY KEY (ocr_processor_id, figure_id, word_id),
 	ocr_processor_id integer REFERENCES ocr_processors NOT NULL,
 	figure_id integer REFERENCES figures NOT NULL,
-	word_id integer REFERENCES words NOT NULL
+	word_id integer REFERENCES words NOT NULL,
+	transforms jsonb
 );
 
-CREATE VIEW figures__xrefs AS SELECT pmcid, figures.filepath AS figure_filepath, words.word, xrefs.xref
+CREATE VIEW figures__xrefs AS SELECT pmcid, figures.filepath AS figure_filepath, words.word, xrefs.xref, ocr_processors__figures__words.transforms
 	FROM figures
 	INNER JOIN papers ON figures.paper_id = papers.id
 	INNER JOIN ocr_processors__figures__words ON figures.id = ocr_processors__figures__words.figure_id
@@ -98,7 +99,7 @@ CREATE VIEW figures__xrefs AS SELECT pmcid, figures.filepath AS figure_filepath,
 	INNER JOIN symbols ON words.word = symbols.symbol
 	INNER JOIN lexicon ON symbols.id = lexicon.symbol_id
 	INNER JOIN xrefs ON lexicon.xref_id = xrefs.id
-        GROUP BY pmcid, figure_filepath, word, xref;
+        GROUP BY pmcid, figure_filepath, word, xref, transforms;
 
 CREATE VIEW stats AS SELECT ocr_processors.engine AS ocr_engine,
 		ocr_processors.prepare_image AS image_preprocessor,

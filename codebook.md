@@ -102,9 +102,11 @@ Note: This command calls `ocr_pmc.py` at the end, passing along args and functio
 _These scripts are capable of processing the results from one or more ocr runs previously stored in the database._
 
 ### Create/update word tables for all extracted text
+-n for normalizations
+-m for mutations
 ```sh
 nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
-./pfocr.py postprocess
+./pfocr.py match -n stop -n nfkc -m dup -m split -n upper -n deburr -n alphanumeric -n ALPHA_to_A -m one_to_I
 # Use CTRL-D to exit nix-shell
 ```
 

@@ -6,8 +6,10 @@ import json
 from pathlib import Path
 import psycopg2
 import re
+import sys
+from itertools import zip_longest
 
-from postprocess import postprocess
+from match import match
 from ocr_pmc import ocr_pmc
 from gcv import gcv
 
@@ -100,10 +102,48 @@ parser_gcv_figures.set_defaults(func=gcv_figures)
 parser_load_figures = subparsers.add_parser('load_figures')
 parser_load_figures.set_defaults(func=load_figures)
 
-# create the parser for the "postprocess" command
-parser_postprocess = subparsers.add_parser('postprocess',
+# create the parser for the "match" command
+parser_match = subparsers.add_parser('match',
         help='Extract data from OCR result and put into DB tables.')
-parser_postprocess.set_defaults(func=postprocess)
+#parser_match.add_argument('args', nargs=argparse.REMAINDER)
+parser_match.add_argument('-n','--normalize',
+		action='append',
+		help='transform OCR result and lexicon')
+parser_match.add_argument('-m','--mutate',
+		action='append',
+		help='transform only OCR result')
+
+#parser_match.add_argument('-n','--normalize',
+#		action='append',
+#		help='transform OCR result and lexicon')
+#parser_match.add_argument('-m','--mutate',
+#		action='append',
+#		help='transform only OCR result')
+
+parser_match.set_defaults(func=match)
 
 args = parser.parse_args()
-args.func(args)
+
+# from python docs
+def grouper(iterable, n, fillvalue=None):
+    "Collect data into fixed-length chunks or blocks"
+    # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
+    args = [iter(iterable)] * n
+    return zip_longest(*args, fillvalue=fillvalue)
+
+raw = sys.argv
+normalization_flags = ["-n", "--normalize"]
+mutation_flags = ["-m", "--mutate"]
+if raw[1] == "match":
+    transforms = []
+    for arg_pair in grouper(raw[2:], 2, 'x'):
+        category_raw = arg_pair[0]
+        category_parsed = ""
+        if category_raw in normalization_flags:
+            category_parsed = "normalize"
+        elif category_raw in mutation_flags:
+            category_parsed = "mutate"
+        transforms.append({"name": arg_pair[1], "category": category_parsed})
+    args.func(transforms)
+else:
+    args.func(args)
