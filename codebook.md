@@ -152,7 +152,8 @@ Do not apply upper() or remove non-alphanumerics during lexicon constuction. The
 4. Filter on 'type' and make separate tabs for rows with "BE" and "HGNC" values. Sort "be" tab by "symbol" (Column B).
 5. Add a column to "hgnc" tab based on =VLOOKUP(D2,be!B$2:D$116,3,FALSE). Copy/paste B and D into new tab and copy/paste-special B and E to append the list. Sort bioentities and remove rows with #N/A.
 6. Copy f_symbol tab (from hgnc protein-coding_gene workbook) and sort symbol column. Then add entrez_id column to bioentities via lookup on hgnc symbol using =LOOKUP(A2,n_symbol.csv!$B$2:$B$19177,n_symbol.csv!$A$2:$A$19177).
-7. Export as CSV file.
+7. Copy/paste-special columns of entrez_id and bioentities into new tab. Filter for unique pairs.
+8. Export as CSV file.
 
 #### WikiPathways human lists
 1. Download human GMT from http://data.wikipathways.org/current/gmt/
