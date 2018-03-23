@@ -1,0 +1,26 @@
+#!/bin/bash
+function finish {
+  # Your cleanup code here
+  echo "Error on line $1"
+  exit 1
+}
+
+trap 'finish $LINENO' SIGINT SIGTERM ERR
+
+./pfocr.py clear;
+#./pfocr.py match -n stop -n nfkc -n upper -n ALPHA_to_A -n deburr -n alphanumeric -m root -m one_to_I;
+#./pfocr.py match -n stop -n nfkc -n upper -m root -n ALPHA_to_A -n deburr -n alphanumeric -m one_to_I;
+#./pfocr.py match -n stop -n nfkc -n upper -n ALPHA_to_A -n deburr -n alphanumeric -m one_to_I -m root;
+#./pfocr.py match -n stop -n nfkc -m expand -n stop -n nfkc -n upper;
+#./pfocr.py match -n stop -n nfkc -m expand -n stop -n nfkc -n deburr -n upper;
+#./pfocr.py match -n stop -n nfkc -m expand -n stop -n nfkc -n upper -n ALPHA_to_A -n deburr -n alphanumeric -m root -m one_to_I;
+
+# Note: upper messes with alphanumeric sometimes, e.g. NF-KB1
+./pfocr.py match -n stop -m expand -n stop -m root -n alphanumeric;
+# Note: need a pass without root to avoid missing things like Ras
+./pfocr.py match -n stop -m expand -n stop -n upper -n ALPHA_to_A -n alphanumeric -m one_to_I;
+./pfocr.py match -n stop -n nfkc -n deburr -m expand -n stop -m root -n upper -n ALPHA_to_A -n alphanumeric -m one_to_I;
+
+./pfocr.py summarize
+head -n 1 ./results.tsv > ./sample.tsv
+tail -n +1 ./results.tsv | shuf -n 1000 >> ./sample.tsv

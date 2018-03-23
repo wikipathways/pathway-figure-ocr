@@ -5,6 +5,7 @@ from . import expand
 from . import one_to_I
 from . import nfkc
 from . import noop
+from . import root
 from . import stop
 from . import upper
-__all__ = ["ALPHA_to_A", "alphanumeric", "deburr", "expand", "one_to_I", "nfkc", "noop", "stop", "upper"]
+__all__ = ["ALPHA_to_A", "alphanumeric", "deburr", "expand", "one_to_I", "nfkc", "noop", "root", "stop", "upper"]
