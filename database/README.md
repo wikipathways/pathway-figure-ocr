@@ -42,6 +42,8 @@ Load each of your source lexicon files in order of preference (use filename numb
 delete from lexicon;
 delete from xrefs;
 delete from symbols;
+alter sequence xrefs_id_seq restart with 1;
+alter sequence symbols_id_seq restart with 1;
 
 # populate tables from files
 create temporary table s (symbol text);
