@@ -54,7 +54,7 @@ insert into s (symbol) select symbol from t;
 drop table t;
 
 create temporary table t (entrez_id text, symbol text);
-\copy t (symbol, entrez_id) from '/home/pfocr/pathway-figure-ocr/lexicon/2_bioentities.csv' with (delimiter ',', format csv, header);
+\copy t (entrez_id, symbol) from '/home/pfocr/pathway-figure-ocr/lexicon/2_bioentities.csv' with (delimiter ',', format csv, header);
 insert into xrefs (xref) select entrez_id from t ON CONFLICT DO NOTHING;
 insert into symbols (symbol) select symbol from t ON CONFLICT DO NOTHING;
 insert into lexicon (symbol_id, xref_id, source) select symbols.id, xrefs.id,'bioentities_symbol' from t inner join xrefs on xrefs.xref=t.entrez_id inner join symbols on symbols.symbol=t.symbol where not exists (select 1 from s where t.symbol = s.symbol) ON CONFLICT DO NOTHING;
