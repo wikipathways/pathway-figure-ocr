@@ -64,7 +64,10 @@ def expand2(word):
             if is_shorthand(chunk):
                 result.append(base + chunk)
             else:
-                base = end_numeric_re.sub("", chunk)
+                if chunk[-1].isdigit():
+                    base = end_numeric_re.sub("", chunk)
+                else:
+                    base = end_numeric_re.sub("", chunk[0:-1])
                 result.append(chunk)
     return result
 
