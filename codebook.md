@@ -105,13 +105,14 @@ _These scripts are capable of processing the results from one or more ocr runs p
 -n for normalizations
 -m for mutations
 ```sh
+# TODO can the nix-shell line go into run.sh?
 nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
-./pfocr.py match -n stop -n nfkc -m expand -n upper -n deburr -n alphanumeric -n ALPHA_to_A -m one_to_I
+bash run.sh
 # Use CTRL-D to exit nix-shell
 ```
 
 * Extract words from JSON in `ocr_processors__figures.result`
-* Applies normalization (see `normalize.py`)
+* Applies transforms (see `transforms/*.py`)
 * populates `words` with unique occurences of normalized words
 * populates `ocr_processors__figures__words` with all `figure_id` and `word_id` occurences
 

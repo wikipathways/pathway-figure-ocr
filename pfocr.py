@@ -6,12 +6,14 @@ import json
 from pathlib import Path
 import psycopg2
 import re
+import os
 import sys
 from itertools import zip_longest
 
+from gcv import gcv
 from match import match
 from ocr_pmc import ocr_pmc
-from gcv import gcv
+from summarize import summarize
 
 
 def clear(args):
@@ -22,12 +24,19 @@ def clear(args):
     try:
         ocr_processors__figures__words_cur.execute("DELETE FROM ocr_processors__figures__words;")
         words_cur.execute("DELETE FROM words;")
-
         conn.commit()
+
+        os.remove("successes.txt")
+        os.remove("fails.txt")
+        os.remove("results.tsv")
 
         print('clear: SUCCESS')
 
-    except(psycopg2.DatabaseError, e):
+    except(OSError, FileNotFoundError) as e:
+        # we don't care if the file we tried to remove didn't exist 
+        pass
+
+    except(psycopg2.DatabaseError) as e:
         print('clear: FAIL')
         print('Error %s' % e)
         sys.exit(1)
@@ -93,7 +102,7 @@ def load_figures(args):
 
         print('load_figures: SUCCESS')
 
-    except(psycopg2.DatabaseError, e):
+    except(psycopg2.DatabaseError) as e:
         print('load_figures: FAIL')
         print('Error %s' % e)
         sys.exit(1)
@@ -114,6 +123,10 @@ subparsers = parser.add_subparsers(title='subcommands',
         description='valid subcommands',
         help='additional help')
 
+# create the parser for the "clear" command
+parser_clear = subparsers.add_parser('clear')
+parser_clear.set_defaults(func=clear)
+
 # create the parser for the "gcv_figures" command
 parser_gcv_figures = subparsers.add_parser('gcv_figures',
         help='Run GCV on PMC figures and save results to database.')
@@ -129,10 +142,6 @@ parser_gcv_figures.set_defaults(func=gcv_figures)
 parser_load_figures = subparsers.add_parser('load_figures')
 parser_load_figures.set_defaults(func=load_figures)
 
-# create the parser for the "clear" command
-parser_clear = subparsers.add_parser('clear')
-parser_clear.set_defaults(func=clear)
-
 # create the parser for the "match" command
 parser_match = subparsers.add_parser('match',
         help='Extract data from OCR result and put into DB tables.')
@@ -143,12 +152,9 @@ parser_match.add_argument('-m','--mutate',
 		action='append',
 		help='transform only OCR result')
 
-#parser_match.add_argument('-n','--normalize',
-#		action='append',
-#		help='transform OCR result and lexicon')
-#parser_match.add_argument('-m','--mutate',
-#		action='append',
-#		help='transform only OCR result')
+# create the parser for the "summarize" command
+parser_summarize = subparsers.add_parser('summarize')
+parser_summarize.set_defaults(func=summarize)
 
 parser_match.set_defaults(func=match)
 
