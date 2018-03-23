@@ -9,10 +9,10 @@ import transforms
 
 def match(args):
     transformations = []
-    for a in args:
-        name = a["name"]
+    for arg in args:
+        name = arg["name"]
         transform = getattr(getattr(transforms, name), name)
-        transformations.append({"transform": transform, "name": name, "category": a["category"]})
+        transformations.append({"transform": transform, "name": name, "category": arg["category"]})
 
     normalizations = []
     for t in transformations:
@@ -42,9 +42,6 @@ def match(args):
     ocr_processors__figures__words_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     try:
-        ocr_processors__figures__words_cur.execute("DELETE FROM ocr_processors__figures__words;")
-        words_cur.execute("DELETE FROM words;")
-
         ocr_results_query = '''
         /* This query might seem as if it could be simpler, but we have to account
            for the case of a result with just one textAnnotation. The extra
@@ -92,7 +89,7 @@ def match(args):
 
         word_ids_by_transformed_word = {}
         fails = []
-        print('SUCCESSES: found matches for the following')
+        #print('SUCCESSES: found matches for the following')
         for row in ocr_processor__figure__word_rows:
             ocr_processor_id = row[0]
             figure_id = row[1]
@@ -128,12 +125,13 @@ def match(args):
                             transformed_words.append(transformed_word)
 
             if len(matches) > 0 and ''.join(matches) != word:
-                print('\t' + word + ' => ' + ' & '.join(matches))
+                #print('\t' + word + ' => ' + ' & '.join(matches))
+                1 + 1
             else:
                 fails.append(word)
 
-        print('FAILS: could not find matches for the following')
-        print('\t\n\t'.join(fails))
+        #print('FAILS: could not find matches for the following')
+        #print('\t\n\t'.join(fails))
         conn.commit()
         print('matching done')
 

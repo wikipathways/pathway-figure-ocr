@@ -14,6 +14,32 @@ from ocr_pmc import ocr_pmc
 from gcv import gcv
 
 
+def clear(args):
+    conn = psycopg2.connect("dbname=pfocr")
+    words_cur = conn.cursor()
+    ocr_processors__figures__words_cur = conn.cursor()
+
+    try:
+        ocr_processors__figures__words_cur.execute("DELETE FROM ocr_processors__figures__words;")
+        words_cur.execute("DELETE FROM words;")
+
+        conn.commit()
+
+        print('clear: SUCCESS')
+
+    except(psycopg2.DatabaseError, e):
+        print('clear: FAIL')
+        print('Error %s' % e)
+        sys.exit(1)
+        
+    finally:
+        if words_cur:
+            words_cur.close()
+        if ocr_processors__figures__words_cur:
+            ocr_processors__figures__words_cur.close()
+        if conn:
+            conn.close()
+
 def gcv_figures(args):
     def prepare_image(filepath):
         return filepath
@@ -65,9 +91,10 @@ def load_figures(args):
 
         conn.commit()
 
-        print('load_pmc sucessfully completed.')
+        print('load_figures: SUCCESS')
 
     except(psycopg2.DatabaseError, e):
+        print('load_figures: FAIL')
         print('Error %s' % e)
         sys.exit(1)
         
@@ -102,10 +129,13 @@ parser_gcv_figures.set_defaults(func=gcv_figures)
 parser_load_figures = subparsers.add_parser('load_figures')
 parser_load_figures.set_defaults(func=load_figures)
 
+# create the parser for the "clear" command
+parser_clear = subparsers.add_parser('clear')
+parser_clear.set_defaults(func=clear)
+
 # create the parser for the "match" command
 parser_match = subparsers.add_parser('match',
         help='Extract data from OCR result and put into DB tables.')
-#parser_match.add_argument('args', nargs=argparse.REMAINDER)
 parser_match.add_argument('-n','--normalize',
 		action='append',
 		help='transform OCR result and lexicon')
@@ -143,7 +173,10 @@ if raw[1] == "match":
             category_parsed = "normalize"
         elif category_raw in mutation_flags:
             category_parsed = "mutate"
-        transforms.append({"name": arg_pair[1], "category": category_parsed})
+
+        if category_parsed:
+            transforms.append({"name": arg_pair[1], "category": category_parsed})
+
     args.func(transforms)
 else:
     args.func(args)
