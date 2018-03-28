@@ -1,6 +1,6 @@
 import re
 
-prefix_re = re.compile('^(c\-|p\-|P\-)')
+prefix_re = re.compile('^(GST\-|FLAG\-|Flag\-|FLAG\:|Flag\:|v\-|V\-|c\-|C\-|p\-|P\-)')
 suffix_re = re.compile('(\-p|\-P)$')
 plural_re = re.compile('s$')
 
