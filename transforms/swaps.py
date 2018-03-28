@@ -1,4 +1,7 @@
-swaps = {
+## Replaces character strings in uppercased words with matched strings in "swaps" dictionary.
+
+# NOTE: entries should be upper and may contain non-alphanumerics
+swap_list = {
 'ALPHA':'A',
 'BETA':'B', 
 'GAMMA':'G', 
@@ -19,7 +22,6 @@ swaps = {
 'M-CADHERIN':'CDH15',
 'KSP-CADHERIN':'CDH16',
 'LI-CADHERIN':'CDH17',
-'D1':'CYCLIN_D1',
 'P13K':'PI3K',
 'EB13':'EBI3'
 }
@@ -30,4 +32,4 @@ def multipleReplace(text, wordDict):
     return text
 
 def swaps(word):
-    return [multipleReplace(word, swaps)]
+    return [multipleReplace(word, swap_list)]
