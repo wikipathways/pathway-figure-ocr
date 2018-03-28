@@ -132,7 +132,7 @@ copy (select * from figures__xrefs) to '/tmp/filename.csv' with csv;
 
 * Explore words extracted per paper:
 ```
-select pmcid,transforms,word from ocr_processors__figures__words join words on words.id=word_id join figures on figures.id = figure_id join papers on papers.id=paper_id where pmcid='PMC2780819';
+select pmcid,figure_number,result from ocr_processors__figures join figures on figures.id=figure_id join papers on papers.id=figures.paper_id where pmcid='PMC2780819';
 ```
 
 ### Collect run stats
