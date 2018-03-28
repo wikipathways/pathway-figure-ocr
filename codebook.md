@@ -147,8 +147,10 @@ Do not apply upper() or remove non-alphanumerics during lexicon constuction. The
 2. Import TXT into Excel, first setting all columns to "skip" then explicitly choosing "text" for symbol, alias_symbol, prev_symbol and entrez_id columns during import wizard (to avoid date conversion of SEPT1, etc)
 3. Delete rows without entrez_id mappings
 4. In separate tabs, expand 'alias symbol' and 'prev symbol' lists into single-value rows, maintaining entrez_id mappings for each row. Used Data>Text to Columns>Other:|>Column types:Text. Delete empty rows. Collapse multiple columns by pasting entrez_id before each column, sorting and stacking. 
-5. Filter each list for unique (only affected alias and prev)
-6. Export as separate CSV files.
+5. Filter each list for unique pairs (only affected alias and prev)
+6. Enter these formulas into columns C and D, next to sorted alias_symbols in order to "tag" all instances of symbols that match more than one entrez. Delete **all** of these instances.
+  * `MATCH(B2,B3:B$###,0)` and `MATCH(B2,B$1:B1,0)`, where ### is last row in sheet.
+7. Export as separate CSV files.
 
 #### bioentities lexicon file
 1. Starting with this file from our fork of bioentities: https://raw.githubusercontent.com/wikipathways/bioentities/master/relations.csv. It captures complexes, generic symbols and gene families, e.g., "WNT" mapping to each of the WNT## entries.
