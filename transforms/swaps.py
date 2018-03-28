@@ -16,6 +16,7 @@ swap_list = {
 'κ':'K',
 'VE-CADHERIN':'CDH5',
 'E-CADHERIN':'CDH1',
+'N-CADHERIN':'CDH2',
 'K-CADHERIN':'CDH6',
 'R-CADHERIN':'CDH4',
 'T-CADHERIN':'CDH13',
@@ -28,7 +29,7 @@ swap_list = {
 
 def multipleReplace(text, wordDict):
     for key in wordDict:
-        text = text.replace(key, wordDict[key])
+        text = text.upper().replace(key, wordDict[key])
     return text
 
 def swaps(word):
