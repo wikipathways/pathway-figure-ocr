@@ -68,6 +68,9 @@ def match(args):
                         normalized_results.append(n)
                         if n not in symbol_ids_by_symbol: 
                             symbol_ids_by_symbol[n] = symbol_id
+                        # Also collect unique uppercased symbols for matching
+                        if n.upper() not in symbol_ids_by_symbol:
+                            symbol_ids_by_symbol[n.upper] = symbol_id
 
         #with open("./symbol_ids_by_symbol.json", "a+") as symbol_ids_by_symbol_file:
         #    symbol_ids_by_symbol_file.write(json.dumps(symbol_ids_by_symbol))
@@ -101,7 +104,8 @@ def match(args):
                 for transformed_word_orig in transformed_words:
                     transformed_words = []
                     for transformed_word in transformation["transform"](transformed_word_orig):
-                        if transformed_word in symbol_ids_by_symbol: 
+			# perform match for original and uppercased words
+                        if transformed_word in symbol_ids_by_symbol or transformed_word.upper() in symbol_ids_by_symbol: 
                             matches.append(transformed_word)
                             word_id = ""
                             if transformed_word not in word_ids_by_transformed_word: 
