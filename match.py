@@ -104,11 +104,42 @@ def match(args):
                 for transformed_word_orig in transformed_words:
                     transformed_words = []
                     for transformed_word in transformation["transform"](transformed_word_orig):
-			# perform match for original and uppercased words
-                        if transformed_word in symbol_ids_by_symbol or transformed_word.upper() in symbol_ids_by_symbol: 
+			# perform match for original and uppercased words (see elif)
+                        if transformed_word in symbol_ids_by_symbol: 
                             matches.append(transformed_word)
                             word_id = ""
                             if transformed_word not in word_ids_by_transformed_word: 
+                                # This might not be the best way to insert. TODO: look at the proper way to handle this.
+                                words_cur.execute(
+                                    '''
+                                    INSERT INTO words (word)
+                                    VALUES (%s)
+                                    ON CONFLICT (word) DO UPDATE SET word = EXCLUDED.word
+                                    RETURNING id;
+                                    ''',
+                                    (transformed_word, )
+                                )
+                                word_id = words_cur.fetchone()[0]
+                                word_ids_by_transformed_word[transformed_word] = word_id
+                            else:
+                                word_id = word_ids_by_transformed_word[transformed_word]
+                            if word_id:
+                                transform_names = []
+                                for t in args[0:len(transforms_applied)]:
+                                    transform_names.append(t["name"])
+
+                                ocr_processors__figures__words_cur.execute('''
+                                    INSERT INTO ocr_processors__figures__words (ocr_processor_id, figure_id, word_id, transforms)
+                                    VALUES (%s, %s, %s, %s)
+                                    ON CONFLICT DO NOTHING;
+                                    ''',
+                                    (ocr_processor_id, figure_id, word_id, json.dumps(transform_names))
+                                )
+                        elif transformed_word.upper() in symbol_ids_by_symbol:
+                            transformed_word = transformed_word.upper()
+                            matches.append(transformed_word)
+                            word_id = ""
+                            if transformed_word not in word_ids_by_transformed_word:
                                 # This might not be the best way to insert. TODO: look at the proper way to handle this.
                                 words_cur.execute(
                                     '''

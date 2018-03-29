@@ -21,7 +21,7 @@ trap 'finish $LINENO' SIGINT SIGTERM ERR
 #./pfocr.py match -n stop -m expand -n stop -n upper -n swaps -n alphanumeric ;
 #./pfocr.py match -n stop -n nfkc -n deburr -m expand -n stop -m root -n upper -n swaps -n alphanumeric;
 
-./pfocr.py match -n stop -n nfkc -n deburr -m expand -n stop -m root -n swaps -n alphanumeric;
+./pfocr.py match -n stop -n nfkc -n deburr -m expand -m root -n swaps -n alphanumeric;
 
 ./pfocr.py summarize
 head -n 1 ./results.tsv > ./sample.tsv
