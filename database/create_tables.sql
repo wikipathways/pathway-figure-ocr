@@ -14,6 +14,8 @@ CREATE TABLE symbols (
 	symbol text UNIQUE NOT NULL CHECK (symbol <> '')
 );
 
+CREATE UNIQUE INDEX symbol_unique_upper on symbols (UPPER(symbol));
+
 CREATE TABLE lexicon (
         PRIMARY KEY (symbol_id, xref_id),
 	symbol_id integer REFERENCES symbols NOT NULL,
