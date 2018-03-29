@@ -136,7 +136,6 @@ def match(args):
                                     (ocr_processor_id, figure_id, word_id, json.dumps(transform_names))
                                 )
                         elif transformed_word.upper() in symbol_ids_by_symbol:
-                            transformed_word = transformed_word.upper()
                             matches.append(transformed_word)
                             word_id = ""
                             if transformed_word not in word_ids_by_transformed_word:
