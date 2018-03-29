@@ -130,9 +130,14 @@ bash run.sh
 copy (select * from figures__xrefs) to '/tmp/filename.csv' with csv;
 ```
 
-* Explore words extracted per paper:
+#### Exploring results
+* Words extracted for a given paper:
 ```
 select pmcid,figure_number,result from ocr_processors__figures join figures on figures.id=figure_id join papers on papers.id=figures.paper_id where pmcid='PMC2780819';
+```
+* All paper figures for a given word:
+```
+select pmcid, figure_number, word from ocr_processors__figures__words join words on words.id=word_id join figures on figures.id=figure_id join papers on papers.id=paper_id where word = 'AC' group by pmcid, figure_number,word;
 ```
 
 ### Collect run stats
