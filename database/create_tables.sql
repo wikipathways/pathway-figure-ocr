@@ -96,7 +96,7 @@ CREATE VIEW figures__xrefs AS SELECT pmcid, figures.filepath AS figure_filepath,
 	INNER JOIN papers ON figures.paper_id = papers.id
 	INNER JOIN ocr_processors__figures__words ON figures.id = ocr_processors__figures__words.figure_id
 	INNER JOIN words ON ocr_processors__figures__words.word_id = words.id
-	INNER JOIN symbols ON words.word = symbols.symbol
+	INNER JOIN symbols ON UPPER(words.word) = UPPER(symbols.symbol)
 	INNER JOIN lexicon ON symbols.id = lexicon.symbol_id
 	INNER JOIN xrefs ON lexicon.xref_id = xrefs.id
         GROUP BY pmcid, figure_filepath, word, xref, transforms;
@@ -113,7 +113,7 @@ CREATE VIEW stats AS SELECT ocr_processors.engine AS ocr_engine,
 	INNER JOIN ocr_processors__figures__words ON figures.id = ocr_processors__figures__words.figure_id
 	INNER JOIN ocr_processors ON ocr_processors__figures__words.ocr_processor_id = ocr_processors.id
 	INNER JOIN words ON ocr_processors__figures__words.word_id = words.id
-	INNER JOIN symbols ON words.word = symbols.symbol
+	INNER JOIN symbols ON UPPER(words.word) = UPPER(symbols.symbol)
 	INNER JOIN lexicon ON symbols.id = lexicon.symbol_id
 	INNER JOIN xrefs ON lexicon.xref_id = xrefs.id
         GROUP BY ocr_engine, image_preprocessor;
