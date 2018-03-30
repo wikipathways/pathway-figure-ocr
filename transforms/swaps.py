@@ -14,6 +14,8 @@ swap_list = {
 'δ':'D',
 'ε':'E',
 'κ':'K',
+'IFNy':'IFNG',
+'SEMAy':'SEMAG',
 'VE-CADHERIN':'CDH5',
 'E-CADHERIN':'CDH1',
 'N-CADHERIN':'CDH2',
@@ -24,6 +26,10 @@ swap_list = {
 'KSP-CADHERIN':'CDH16',
 'LI-CADHERIN':'CDH17',
 'P13K':'PI3K',
+'NUCLEOLIN':'NCL',
+'VITRONECTIN':'VTN',
+'PLASMINOGEN':'PLG',
+'PLASMIN':'PLG',
 'EB13':'EBI3'
 }
 
