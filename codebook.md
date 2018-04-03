@@ -153,11 +153,13 @@ Do not apply upper() or remove non-alphanumerics during lexicon constuction. The
 3. Delete rows without entrez_id mappings
 4. In separate tabs, expand 'alias symbol' and 'prev symbol' lists into single-value rows, maintaining entrez_id mappings for each row. Used Data>Text to Columns>Other:|>Column types:Text. Delete empty rows. Collapse multiple columns by pasting entrez_id before each column, sorting and stacking. 
 5. Filter each list for unique pairs (only affected alias and prev)
-6. Enter these formulas into columns C and D, next to sorted alias_symbols in order to "tag" all instances of symbols that match more than one entrez. Delete **all** of these instances.
+6. For **prev** and **alias**, only keep symbols of 3 or more characters, using:
+   * `IF(LEN(B2)<3,"",B2)`
+7. Enter these formulas into columns C and D, next to sorted **alias** in order to "tag" all instances of symbols that match more than one entrez. Delete *all* of these instances.
    * `MATCH(B2,B3:B$###,0)` and `MATCH(B2,B$1:B1,0)`, where ### is last row in sheet.
-7. Then delete (ignore) all of these instances (i.e., rather than picking one arbitrarily via a unique function)
-   * `IF(AND(ISNA(C2),ISNA(D2)),A2,"")` and `IF(AND(ISNA(C2),ISNA(D2)),B2,"")`
-8. Export as separate CSV files.
+8. Then delete (ignore) all of these instances (i.e., rather than picking one arbitrarily via a unique function)
+   * `IF(AND(ISNA(C2),ISNA(D2)),A2,"")` and `IF(AND(ISNA(C2),ISNA(D2)),B2,"")`  
+9. Export as separate CSV files.
 
 #### bioentities lexicon file
 1. Starting with this file from our fork of bioentities: https://raw.githubusercontent.com/wikipathways/bioentities/master/relations.csv. It captures complexes, generic symbols and gene families, e.g., "WNT" mapping to each of the WNT## entries.
