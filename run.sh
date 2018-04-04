@@ -7,7 +7,7 @@ function finish {
 
 trap 'finish $LINENO' SIGINT SIGTERM ERR
 
-./pfocr.py clear;
+./pfocr.py clear matches;
 #./pfocr.py match -n stop -n nfkc -n upper -n swaps -n deburr -n alphanumeric -m root -m one_to_I;
 #./pfocr.py match -n stop -n nfkc -n upper -m root -n swaps -n deburr -n alphanumeric -m one_to_I;
 #./pfocr.py match -n stop -n nfkc -n upper -n swaps -n deburr -n alphanumeric -m one_to_I -m root;

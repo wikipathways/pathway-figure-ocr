@@ -9,6 +9,8 @@ import re
 import hashlib
 from dill.source import getsource
 
+from get_conn import get_conn
+
 def ocr_pmc(
         prepare_image,
         perform_ocr,
@@ -17,7 +19,7 @@ def ocr_pmc(
         end=None,
         *args,
         **kwargs):
-    conn = psycopg2.connect("dbname=pfocr")
+    conn = get_conn()
     figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     ocr_processors_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     ocr_processors__figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)

@@ -6,48 +6,84 @@ import psycopg2
 import psycopg2.extras
 import re
 import transforms
+from get_conn import get_conn
+
+def attempt_match(args, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, transformed_word):
+    matches.add(transformed_word)
+    transformed_word_id = ""
+
+    if transformed_word not in transformed_word_ids_by_transformed_word: 
+        # This might not be the best way to insert. TODO: look at the proper way to handle this.
+        transformed_words_cur.execute(
+            '''
+            INSERT INTO transformed_words (transformed_word)
+            VALUES (%s)
+            ON CONFLICT (transformed_word) DO UPDATE SET transformed_word = EXCLUDED.transformed_word
+            RETURNING id;
+            ''',
+            (transformed_word, )
+        )
+        transformed_word_id = transformed_words_cur.fetchone()[0]
+        transformed_word_ids_by_transformed_word[transformed_word] = transformed_word_id
+    else:
+        transformed_word_id = transformed_word_ids_by_transformed_word[transformed_word]
+
+    if transformed_word_id:
+        transform_args = []
+        for t in args[0:len(transforms_applied)]:
+            transform_args.append("-" + t["category"][0] + " " + t["name"])
+
+        match_attempts_cur.execute('''
+            INSERT INTO match_attempts (ocr_processor_id, figure_id, word, transformed_word_id, transforms_applied)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING;
+            ''',
+            (ocr_processor_id, figure_id, word, transformed_word_id, " ".join(transform_args))
+        )
 
 def match(args):
-    transformations = []
+    conn = get_conn()
+    ocr_processors__figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    symbols_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    matchers_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    transformed_words_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    match_attempts_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    # transforms_to_apply includes both mutations and normalizations
+    transforms_to_apply = []
     for arg in args:
+        category = arg["category"]
         name = arg["name"]
-        transform = getattr(getattr(transforms, name), name)
-        transformations.append({"transform": transform, "name": name, "category": arg["category"]})
+        t = getattr(getattr(transforms, name), name)
+        transforms_to_apply.append({"transform": t, "name": name, "category": category})
+
+    transforms_json = []
+    for t in transforms_to_apply:
+        category = t["category"]
+        name = t["name"]
+        transforms_json.append({"name": name, "category": category})
+
+    matchers_cur.execute(
+        '''
+        INSERT INTO matchers (transforms)
+        VALUES (%s)
+        ON CONFLICT (transforms) DO UPDATE SET transforms = EXCLUDED.transforms;
+        ''',
+        (json.dumps(transforms_json), )
+    )
 
     normalizations = []
-    for t in transformations:
+    for t in transforms_to_apply:
         t_category = t["category"]
         if t_category == "normalize":
             normalizations.append(t)
 
-    conn = psycopg2.connect("dbname=pfocr")
-    ocr_processors__figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    symbols_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    words_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    ocr_processors__figures__words_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-
     try:
-        ocr_results_query = '''
-        /* This query might seem as if it could be simpler, but we have to account
-           for the case of a result with just one textAnnotation. The extra
-           complexity of this query is to ensure we don't exclude
-           the description for such a lone textAnnotation. */
-        WITH descriptions AS (
-                SELECT ocr_processor_id, figure_id, jsonb_extract_path(jsonb_array_elements(jsonb_extract_path(result, 'textAnnotations')), 'description') AS description
-                FROM ocr_processors__figures
-        ),
-        first_descriptions AS (
-                SELECT jsonb_extract_path(result, 'textAnnotations', '0', 'description') AS first_description
-                FROM ocr_processors__figures
-                WHERE jsonb_array_length(jsonb_extract_path(result, 'textAnnotations')) > 1
-        )
-        SELECT DISTINCT ocr_processor_id, figure_id, description
-        FROM descriptions
-        LEFT JOIN first_descriptions
-        ON descriptions.description = first_descriptions.first_description
-        WHERE first_descriptions.first_description IS NULL;
+        ocr_processors__figures_query = '''
+        SELECT ocr_processor_id, figure_id, jsonb_extract_path(result, 'textAnnotations', '0', 'description') AS description
+        FROM ocr_processors__figures;
         '''
-        ocr_processors__figures_cur.execute(ocr_results_query)
+        ocr_processors__figures_cur.execute(ocr_processors__figures_query)
 
         symbols_query = '''
         SELECT id, symbol
@@ -75,17 +111,17 @@ def match(args):
         #with open("./symbol_ids_by_symbol.json", "a+") as symbol_ids_by_symbol_file:
         #    symbol_ids_by_symbol_file.write(json.dumps(symbol_ids_by_symbol))
 
-        word_ids_by_transformed_word = {}
-        words_cur.execute(
+        transformed_word_ids_by_transformed_word = {}
+        transformed_words_cur.execute(
             '''
-            SELECT id, word
-            FROM words;
+            SELECT id, transformed_word
+            FROM transformed_words;
             '''
         )
-        for w in words_cur:
-            word_id = w["id"]
-            word = w["word"]
-            word_ids_by_transformed_word[word] = word_id
+        for row in transformed_words_cur:
+            transformed_word_id = row["id"]
+            transformed_word = row["transformed_word"]
+            transformed_word_ids_by_transformed_word[transformed_word] = transformed_word_id
 
         successes = []
         fails = []
@@ -93,94 +129,42 @@ def match(args):
         for row in ocr_processors__figures_cur:
             ocr_processor_id = row["ocr_processor_id"]
             figure_id = row["figure_id"]
-            word = row["description"]
+            paragraph = row["description"]
+            if paragraph:
+                for line in paragraph.split("\n"):
+                    words = set()
+                    words.add(line.replace(" ", ""))
+                    matches = set()
+                    for w in line.split(" "):
+                        words.add(w)
+                    for word in words:
+                        transforms_applied = []
+                        transformed_words = [word]
+                        for transform_to_apply in transforms_to_apply:
+                            transforms_applied.append(transform_to_apply["name"])
+                            for transformed_word_prev in transformed_words:
+                                transformed_words = []
+                                for transformed_word in transform_to_apply["transform"](transformed_word_prev):
+                                    # perform match for original and uppercased words (see elif)
+                                    if transformed_word in symbol_ids_by_symbol: 
+                                        attempt_match(args, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, transformed_word)
+                                    elif transformed_word.upper() in symbol_ids_by_symbol:
+                                        attempt_match(args, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, transformed_word.upper())
+                                    else:
+                                        transformed_words.append(transformed_word)
 
-            transformed_words = [word]
-            transforms_applied = []
-
-            matches = []
-            for transformation in transformations:
-                transforms_applied.append(transformation["name"])
-                for transformed_word_orig in transformed_words:
-                    transformed_words = []
-                    for transformed_word in transformation["transform"](transformed_word_orig):
-			# perform match for original and uppercased words (see elif)
-                        if transformed_word in symbol_ids_by_symbol: 
-                            matches.append(transformed_word)
-                            word_id = ""
-                            if transformed_word not in word_ids_by_transformed_word: 
-                                # This might not be the best way to insert. TODO: look at the proper way to handle this.
-                                words_cur.execute(
-                                    '''
-                                    INSERT INTO words (word)
-                                    VALUES (%s)
-                                    ON CONFLICT (word) DO UPDATE SET word = EXCLUDED.word
-                                    RETURNING id;
-                                    ''',
-                                    (transformed_word, )
-                                )
-                                word_id = words_cur.fetchone()[0]
-                                word_ids_by_transformed_word[transformed_word] = word_id
-                            else:
-                                word_id = word_ids_by_transformed_word[transformed_word]
-                            if word_id:
-                                transform_names = []
-                                for t in args[0:len(transforms_applied)]:
-                                    transform_names.append(t["name"])
-
-                                ocr_processors__figures__words_cur.execute('''
-                                    INSERT INTO ocr_processors__figures__words (ocr_processor_id, figure_id, word_id, transforms)
-                                    VALUES (%s, %s, %s, %s)
-                                    ON CONFLICT DO NOTHING;
-                                    ''',
-                                    (ocr_processor_id, figure_id, word_id, json.dumps(transform_names))
-                                )
-                        elif transformed_word.upper() in symbol_ids_by_symbol:
-                            matches.append(transformed_word)
-                            word_id = ""
-                            if transformed_word not in word_ids_by_transformed_word:
-                                # This might not be the best way to insert. TODO: look at the proper way to handle this.
-                                words_cur.execute(
-                                    '''
-                                    INSERT INTO words (word)
-                                    VALUES (%s)
-                                    ON CONFLICT (word) DO UPDATE SET word = EXCLUDED.word
-                                    RETURNING id;
-                                    ''',
-                                    (transformed_word, )
-                                )
-                                word_id = words_cur.fetchone()[0]
-                                word_ids_by_transformed_word[transformed_word] = word_id
-                            else:
-                                word_id = word_ids_by_transformed_word[transformed_word]
-                            if word_id:
-                                transform_names = []
-                                for t in args[0:len(transforms_applied)]:
-                                    transform_names.append(t["name"])
-
-                                ocr_processors__figures__words_cur.execute('''
-                                    INSERT INTO ocr_processors__figures__words (ocr_processor_id, figure_id, word_id, transforms)
-                                    VALUES (%s, %s, %s, %s)
-                                    ON CONFLICT DO NOTHING;
-                                    ''',
-                                    (ocr_processor_id, figure_id, word_id, json.dumps(transform_names))
-                                )
-                        else:
-                            transformed_words.append(transformed_word)
-
-            if len(matches) > 0:
-                successes.append(word + ' => ' + ' & '.join(matches))
-            else:
-                fails.append(word)
+                    if len(matches) > 0:
+                        successes.append(line + ' => ' + ' & '.join(matches))
+                    else:
+                        fails.append(line)
 
         conn.commit()
 
-        #print('FAILS: could not find matches for the following')
         with open("./successes.txt", "a+") as successesfile:
-            successesfile.write('\t\n\t'.join(successes))
+            successesfile.write('\n'.join(successes))
 
         with open("./fails.txt", "a+") as failsfile:
-            failsfile.write('\t\n\t'.join(fails))
+            failsfile.write('\n'.join(fails))
 
         print('match: SUCCESS')
 

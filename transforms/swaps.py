@@ -16,6 +16,7 @@ swap_list = {
 'κ':'K',
 'IFNy':'IFNG',
 'SEMAy':'SEMAG',
+'KII':'K2',
 'VE-CADHERIN':'CDH5',
 'E-CADHERIN':'CDH1',
 'N-CADHERIN':'CDH2',
