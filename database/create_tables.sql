@@ -1,5 +1,5 @@
-CREATE DATABASE pfocr2;
-\c pfocr2;
+CREATE DATABASE pfocr;
+\c pfocr;
 SET ROLE pfocr;
 
 CREATE TABLE xrefs (
