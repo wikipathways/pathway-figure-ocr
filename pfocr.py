@@ -9,43 +9,79 @@ import re
 import os
 import sys
 from itertools import zip_longest
+import hashlib
 
 from gcv import gcv
 from match import match
 from ocr_pmc import ocr_pmc
 from summarize import summarize
+from get_conn import get_conn
 
+
+pmcid_re = re.compile('^(PMC\d+)__(.+)')
 
 def clear(args):
-    conn = psycopg2.connect("dbname=pfocr")
-    words_cur = conn.cursor()
-    ocr_processors__figures__words_cur = conn.cursor()
+    target = args.target
+    conn = get_conn()
 
     try:
-        ocr_processors__figures__words_cur.execute("DELETE FROM ocr_processors__figures__words;")
-        words_cur.execute("DELETE FROM words;")
+        if target == "matches" or target == "figures":
+            match_attempts_cur = conn.cursor()
+            transformed_words_cur = conn.cursor()
+
+            try:
+                match_attempts_cur.execute("DELETE FROM match_attempts;")
+                transformed_words_cur.execute("DELETE FROM transformed_words;")
+
+                os.remove("successes.txt")
+                os.remove("fails.txt")
+                os.remove("results.tsv")
+
+            except(OSError, FileNotFoundError) as e:
+                # we don't care if the file we tried to remove didn't exist 
+                pass
+
+            except(psycopg2.DatabaseError) as e:
+                print('Error %s' % e)
+                sys.exit(1)
+                
+            finally:
+                if match_attempts_cur:
+                    match_attempts_cur.close()
+                if transformed_words_cur:
+                    transformed_words_cur.close()
+
+        if target == "figures":
+            ocr_processors__figures_cur = conn.cursor()
+            figures_cur = conn.cursor()
+
+            try:
+                ocr_processors__figures_cur.execute("DELETE FROM ocr_processors__figures;")
+                figures_cur.execute("DELETE FROM figures;")
+
+            except(OSError, FileNotFoundError) as e:
+                # we don't care if the file we tried to remove didn't exist 
+                pass
+
+            except(psycopg2.DatabaseError) as e:
+                print('Error %s' % e)
+                sys.exit(1)
+                
+            finally:
+                if ocr_processors__figures_cur:
+                    ocr_processors__figures_cur.close()
+                if figures_cur:
+                    figures_cur.close()
+
         conn.commit()
-
-        os.remove("successes.txt")
-        os.remove("fails.txt")
-        os.remove("results.tsv")
-
-        print('clear: SUCCESS')
-
-    except(OSError, FileNotFoundError) as e:
-        # we don't care if the file we tried to remove didn't exist 
-        pass
+        print("clear %s: SUCCESS" % target)
 
     except(psycopg2.DatabaseError) as e:
-        print('clear: FAIL')
+        print('clear %s: FAIL' % target)
         print('Error %s' % e)
         sys.exit(1)
-        
+
     finally:
-        if words_cur:
-            words_cur.close()
-        if ocr_processors__figures__words_cur:
-            ocr_processors__figures__words_cur.close()
         if conn:
             conn.close()
 
@@ -68,15 +104,16 @@ def gcv_figures(args):
     ocr_pmc(prepare_image, do_gcv, "gcv", start, end)
 
 def load_figures(args):
-    # TODO don't hard code things like the figure path
-    pmcid_re = re.compile('^(PMC\d+)__(.+)')
+    figures_dir = args.dir
 
-    conn = psycopg2.connect("dbname=pfocr")
+    figure_paths = list(p.glob(figures_dir + '/*.{jpeg,jpg,png,JPEG,JPG,PNG}'))
+    ## TODO don't hard code things like the figure path
+    #p = Path(Path(__file__).parent)
+    #figure_paths = list(p.glob('../pmc/20150501/images_pruned/*.jpg'))
+
+    conn = get_conn()
     papers_cur = conn.cursor()
     figures_cur = conn.cursor()
-
-    p = Path(Path(__file__).parent)
-    figure_paths = list(p.glob('../pmc/20150501/images_pruned/*.jpg'))
 
     pmcid_to_paper_id = dict();
 
@@ -96,7 +133,15 @@ def load_figures(args):
                     paper_id = papers_cur.fetchone()[0]
                     pmcid_to_paper_id[pmcid] = paper_id
 
-                figures_cur.execute("INSERT INTO figures (filepath, figure_number, paper_id) VALUES (%s, %s, %s);", (filepath, figure_number, paper_id))
+                m = hashlib.sha256()
+                with open(filepath, "rb") as image_file:
+                    m.update(image_file.read())
+                figure_hash = m.hexdigest()
+
+                figures_cur.execute(
+                        "INSERT INTO figures (filepath, figure_number, paper_id, hash) VALUES (%s, %s, %s, %s);",
+                        (filepath, figure_number, paper_id, figure_hash)
+                        )
 
         conn.commit()
 
@@ -124,7 +169,11 @@ subparsers = parser.add_subparsers(title='subcommands',
         help='additional help')
 
 # create the parser for the "clear" command
-parser_clear = subparsers.add_parser('clear')
+parser_clear = subparsers.add_parser('clear',
+        help='Clear specified data from database.')
+parser_clear.add_argument('target',
+		help='What to clear',
+                choices=["figures", "matches"])
 parser_clear.set_defaults(func=clear)
 
 # create the parser for the "gcv_figures" command
@@ -139,7 +188,10 @@ parser_gcv_figures.add_argument('--end',
 parser_gcv_figures.set_defaults(func=gcv_figures)
 
 # create the parser for the "load_figures" command
-parser_load_figures = subparsers.add_parser('load_figures')
+parser_load_figures = subparsers.add_parser('load_figures',
+        help='Load figures and optionally papers from specified dir')
+parser_load_figures.add_argument('dir',
+        help='Directory containing figures and optionally papers')
 parser_load_figures.set_defaults(func=load_figures)
 
 # create the parser for the "match" command

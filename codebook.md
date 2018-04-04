@@ -47,6 +47,13 @@ These files are exported to a designated folder, e.g., pmc/20150501/images_all
 Another manual step here to increase accuracy of downstream counts. Make a copy of the images_all dir, renaming to images_pruned. View the extracted images in Finder, for example, and delete pairs of files associated with figures that are not actually pathways. In this first sample run, ~20% of images were pruned away. The most common non-pathway figures wer of gel electrophoresis runs. *Consider automated ways to either exclude gel figures or select only pathway images to scale this step up.*
 
 ### Load into Database
+Create database:
+
+```
+psql
+\i database/create_tables.sql 
+\q
+```
 Load filenames (or paths) and extracted content into database
 
 * papers (id, pmcid, title, url)
@@ -114,7 +121,7 @@ bash run.sh
 * Extract words from JSON in `ocr_processors__figures.result`
 * Applies transforms (see `transforms/*.py`)
 * populates `words` with unique occurences of normalized words
-* populates `ocr_processors__figures__words` with all `figure_id` and `word_id` occurences
+* populates `match_attempts` with all `figure_id` and `word_id` occurences
 
 ### Create/update xref tables for all lexicon "hits"
 * xrefs (id, xref)
@@ -137,7 +144,7 @@ select pmcid,figure_number,result from ocr_processors__figures join figures on f
 ```
 * All paper figures for a given word:
 ```
-select pmcid, figure_number, word from ocr_processors__figures__words join words on words.id=word_id join figures on figures.id=figure_id join papers on papers.id=paper_id where word = 'AC' group by pmcid, figure_number,word;
+select pmcid, figure_number, word from match_attempts join words on words.id=word_id join figures on figures.id=figure_id join papers on papers.id=paper_id where word = 'AC' group by pmcid, figure_number,word;
 ```
 
 ### Collect run stats
