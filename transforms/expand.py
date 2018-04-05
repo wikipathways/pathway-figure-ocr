@@ -28,25 +28,25 @@ def expand(word):
 
         # Case 1a: chunks are digits, e.g.,  WNT9/10, WNT11/4/15
         if last_chunk.isdigit():
-            root = slash_root_1a_re.match(word).group(1)
-            result.update(get_expanded_results(root,slash_split))
+            m = slash_root_1a_re.match(word)
+            result.update(get_expanded_results(m,slash_split))
             return(result)
 
         # Case 1b: chunk is single character, e.g., KDM6A/B, HCKA/B/C
         if len(last_chunk) == 1:
-            root = slash_root_1b_re.match(word).group(1)
-            result.update(get_expanded_results(root,slash_split))
+            m = slash_root_1b_re.match(word)
+            result.update(get_expanded_results(m,slash_split))
             return(result)
 
         # Case 2: chunks are all assumed to be 2 character, e.g., 5-HT2A/2B
         elif len(last_chunk) == 2:
             if last_chunk[0].isdigit():
-                root = slash_root_2a_re.match(word).group(1)
-                result.update(get_expanded_results(root,slash_split))
+                m = slash_root_2a_re.match(word)
+                result.update(get_expanded_results(m,slash_split))
                 return(result)
             else:  # e.g., VSPR1/R2
-                root = slash_root_2b_re.match(word).group(1)
-                result.update(get_expanded_results(root,slash_split))
+                m = slash_root_2b_re.match(word)
+                result.update(get_expanded_results(m,slash_split))
                 return(result)
 
         # Case 3: chunks are separate gene symbols, e.g., WNT5/ABP2
@@ -62,8 +62,11 @@ def expand(word):
         result.update(check_dash_case(word))
         return(result)
 
-def get_expanded_results(root,split):
+def get_expanded_results(match,split):
     expres = set()
+    root = split[0] #fallback in case match fails
+    if match is not None:
+        root = match.group(1)
     expres.add(split[0])
     for c in split[1:]:
         expres.add(root + c)
