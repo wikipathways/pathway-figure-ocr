@@ -120,8 +120,9 @@ CREATE VIEW stats AS SELECT ocr_processors.engine AS ocr_engine,
 		(SELECT COUNT(DISTINCT CONCAT(word, '\t', figure_id)) FROM match_attempts) AS word_count_gross,
 		COUNT(DISTINCT word) AS word_count_unique,
 		(SELECT COUNT(DISTINCT CONCAT(transformed_word, '\t', figure_filepath)) FROM figures__xrefs) AS hit_count_gross,
-		COUNT(DISTINCT transformed_word) AS hit_count_unique,
-		COUNT(DISTINCT xrefs.xref) AS xref_count_unique
+		(SELECT COUNT(DISTINCT transformed_word) FROM figures__xrefs) AS hit_count_unique,
+		(SELECT COUNT(DISTINCT CONCAT(xref, '\t', figure_filepath)) FROM figures__xrefs) AS xref_count_gross,
+		(SELECT COUNT(DISTINCT xref) FROM figures__xrefs) AS xref_count_unique
 	FROM figures
 	INNER JOIN papers ON figures.paper_id = papers.id
 	INNER JOIN match_attempts ON figures.id = match_attempts.figure_id
