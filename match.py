@@ -1,38 +1,42 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import hashlib
 import json
 import psycopg2
 import psycopg2.extras
 import re
 import transforms
+import sys
 from get_conn import get_conn
 
 def attempt_match(args, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, transformed_word):
-    matches.add(transformed_word)
     transformed_word_id = ""
+    if transformed_word:
+        if transformed_word[0:6] != 'dummy_':
+            matches.add(transformed_word)
+        if transformed_word not in transformed_word_ids_by_transformed_word: 
+	    # This might not be the best way to insert. TODO: look at the proper way to handle this.
+            transformed_words_cur.execute(
+                '''
+                INSERT INTO transformed_words (transformed_word)
+                VALUES (%s)
+                ON CONFLICT (transformed_word) DO UPDATE SET transformed_word = EXCLUDED.transformed_word
+                RETURNING id;
+                ''',
+                (transformed_word, )
+            )
+            transformed_word_id = transformed_words_cur.fetchone()[0]
+            transformed_word_ids_by_transformed_word[transformed_word] = transformed_word_id
+        else:
+            transformed_word_id = transformed_word_ids_by_transformed_word[transformed_word]
 
-    if transformed_word not in transformed_word_ids_by_transformed_word: 
-        # This might not be the best way to insert. TODO: look at the proper way to handle this.
-        transformed_words_cur.execute(
-            '''
-            INSERT INTO transformed_words (transformed_word)
-            VALUES (%s)
-            ON CONFLICT (transformed_word) DO UPDATE SET transformed_word = EXCLUDED.transformed_word
-            RETURNING id;
-            ''',
-            (transformed_word, )
-        )
-        transformed_word_id = transformed_words_cur.fetchone()[0]
-        transformed_word_ids_by_transformed_word[transformed_word] = transformed_word_id
-    else:
-        transformed_word_id = transformed_word_ids_by_transformed_word[transformed_word]
+    #if transformed_word_id:
+    transform_args = []
+    for t in args[0:len(transforms_applied)]:
+        transform_args.append("-" + t["category"][0] + " " + t["name"])
 
-    if transformed_word_id:
-        transform_args = []
-        for t in args[0:len(transforms_applied)]:
-            transform_args.append("-" + t["category"][0] + " " + t["name"])
-
+    if not word == '':
         match_attempts_cur.execute('''
             INSERT INTO match_attempts (ocr_processor_id, figure_id, word, transformed_word_id, transforms_applied)
             VALUES (%s, %s, %s, %s, %s)
@@ -59,9 +63,14 @@ def match(args):
 
     transforms_json = []
     for t in transforms_to_apply:
-        category = t["category"]
+        transform_json = {}
+        transform_json["category"] = t["category"]
         name = t["name"]
-        transforms_json.append({"name": name, "category": category})
+        transform_json["name"] = name
+        with open("./transforms/" + name + ".py", "r") as f:
+            code = f.read().encode()
+            transform_json["code_hash"] = hashlib.sha224(code).hexdigest()
+        transforms_json.append(transform_json)
 
     matchers_cur.execute(
         '''
@@ -152,7 +161,8 @@ def match(args):
                                         attempt_match(args, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, transformed_word.upper())
                                     else:
                                         transformed_words.append(transformed_word)
-
+                        if len(matches) == 0:
+                            attempt_match(args, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, "dummy_" + word)
                     if len(matches) > 0:
                         successes.append(line + ' => ' + ' & '.join(matches))
                     else:

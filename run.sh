@@ -1,4 +1,6 @@
 #!/bin/bash
+#nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
+
 function finish {
   # Your cleanup code here
   echo "Error on line $1"
