@@ -5,13 +5,16 @@ import re
 # Case 2: chunks are all assumed to be 2 character, e.g., 5-HT2A/2B
 # Case 3: chunks are separate gene symbols, e.g., WNT5/ABP2
 
+# FUTURE CASES TO HANDLE?
+# TGF-β1-3 
+
 slash_chunks_re = re.compile("\/")
 slash_root_1a_re = re.compile("(.+?)\d[\d\w]*\/\d+")
 slash_root_1b_re = re.compile("(.+?)\w\/\w")
 slash_root_2a_re = re.compile("(.+?)\d\w*\/\d\w")
 slash_root_2b_re = re.compile("(.+?)\w\d*\/\w\d")
 dash_chunks_re = re.compile("\-")
-dash_from_digit_re = re.compile(".+?(\d+)\-\d+")
+dash_from_digit_re = re.compile(".+?\D(\d+)\-\d+") #need non-digit \D check to avoid memory leak cases
 dash_root_re = re.compile("(.+?)\d+\-\d+")
 
 def expand(word):
@@ -79,7 +82,7 @@ def check_dash_case(word):
         last_chunk = dash_split[-1]
         if last_chunk.isdigit():
             to_digit = int(last_chunk)
-            if dash_from_digit_re.match(word) is not None:
+            if not dash_from_digit_re.match(word) is None:
                 from_digit = int(dash_from_digit_re.match(word).group(1))
                 if from_digit < to_digit:
                     root = dash_root_re.match(word).group(1)

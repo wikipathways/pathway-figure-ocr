@@ -54,7 +54,7 @@ CREATE TABLE ocr_processors (
 CREATE TABLE matchers (
         id serial PRIMARY KEY,
 	created timestamp DEFAULT CURRENT_TIMESTAMP,
-	transforms jsonb NOT NULL
+	transforms jsonb UNIQUE NOT NULL
 );
 
 CREATE TABLE summaries (

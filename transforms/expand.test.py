@@ -43,5 +43,8 @@ class TestExpand(unittest.TestCase):
     def test_simple_chunks(self):
         self.assertEqual(set(expand.expand('WNT1/HCK3/ABC')), {'WNT1','HCK3','ABC'})
 
+    def test_memory_leak(self):
+       self.assertEqual(set(expand.expand('4000-3295')), {'4000-3295'})
+
 if __name__ == '__main__':
     unittest.main()

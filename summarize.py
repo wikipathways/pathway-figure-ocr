@@ -54,7 +54,7 @@ def summarize(args):
                 running_transforms.append(transform)
 
         stats_query = '''
-        SELECT paper_count, figure_count, word_count_gross, word_count_unique, hit_count_gross, hit_count_unique, xref_count_unique
+        SELECT paper_count, figure_count, word_count_gross, word_count_unique, hit_count_gross, hit_count_unique, xref_count_gross, xref_count_unique
         FROM stats;
         '''
         stats_cur.execute(stats_query)
@@ -66,13 +66,14 @@ def summarize(args):
             word_count_unique = row["word_count_unique"]
             hit_count_gross = row["hit_count_gross"]
             hit_count_unique = row["hit_count_unique"]
+            xref_count_gross = row["xref_count_gross"]
             xref_count_unique = row["xref_count_unique"]
             
             summary_cur.execute("DELETE FROM summaries WHERE matcher_id=(SELECT id FROM matchers);")
             summary_cur.execute('''
-                    INSERT INTO summaries (matcher_id, ocr_processor_id, paper_count, figure_count, word_count_gross, word_count_unique, hit_count_gross, hit_count_unique, xref_count_unique)
-                    VALUES ((SELECT id FROM matchers), (SELECT id FROM ocr_processors), %s, %s, %s, %s, %s, %s, %s);''',
-                    (paper_count, figure_count, word_count_gross, word_count_unique, hit_count_gross, hit_count_unique, xref_count_unique)
+                    INSERT INTO summaries (matcher_id, ocr_processor_id, paper_count, figure_count, word_count_gross, word_count_unique, hit_count_gross, hit_count_unique, xref_count_gross, xref_count_unique)
+                    VALUES ((SELECT id FROM matchers), (SELECT id FROM ocr_processors), %s, %s, %s, %s, %s, %s, %s, %s);''',
+                    (paper_count, figure_count, word_count_gross, word_count_unique, hit_count_gross, hit_count_unique, xref_count_gross, xref_count_unique)
                     )
 
         conn.commit()
