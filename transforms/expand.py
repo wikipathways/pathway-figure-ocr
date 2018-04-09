@@ -80,8 +80,8 @@ def check_dash_case(word):
     dash_split = dash_chunks_re.split(word)
     if len(dash_split) == 2:
         last_chunk = dash_split[-1]
-        if last_chunk.isdigit():
-            to_digit = int(last_chunk)
+        if last_chunk.rstrip(',').isdigit():
+            to_digit = int(last_chunk.rstrip(','))
             if not dash_from_digit_re.match(word) is None:
                 from_digit = int(dash_from_digit_re.match(word).group(1))
                 if from_digit < to_digit:
