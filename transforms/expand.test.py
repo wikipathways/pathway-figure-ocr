@@ -46,5 +46,8 @@ class TestExpand(unittest.TestCase):
     def test_memory_leak(self):
        self.assertEqual(set(expand.expand('4000-3295')), {'4000-3295'})
 
+    def test_comma_case(self):
+       self.assertEqual(set(expand.expand('MEKK1-3,')), {'MEKK1','MEKK2','MEKK3'})
+
 if __name__ == '__main__':
     unittest.main()
