@@ -49,5 +49,10 @@ class TestExpand(unittest.TestCase):
     def test_comma_case(self):
        self.assertEqual(set(expand.expand('MEKK1-3,')), {'MEKK1','MEKK2','MEKK3'})
 
+    def test_not_increasing_slash(self):
+       self.assertEqual(set(expand.expand('TLR2/1')), {'TLR2','TLR1'})
+       self.assertEqual(set(expand.expand('TLR2/6')), {'TLR2','TLR6'})
+
+
 if __name__ == '__main__':
     unittest.main()

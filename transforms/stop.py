@@ -10,7 +10,7 @@ stop_list = ["2", "CO2", "HR", "GA", "CA2", "TYPE",
         "DAMAGE", "GK", "S21", "TAT", "L10","CYCLIN",
 	"CAMP","FOR","DAG","PIP","FATE","ANG",
 	"NOT","CAN","MIR","CEL","ECM","HITS","AID","HDS",
-	"REG"]
+	"REG","ROS"]
 
 
 def stop(word):
