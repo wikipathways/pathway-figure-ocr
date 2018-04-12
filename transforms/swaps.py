@@ -16,6 +16,7 @@ swap_list = {
 'ε':'E',
 'κ':'K',
 'Θ':'Q',
+'IKKP':'IKKG',
 'IKKY':'IKKG',
 'IFNY':'IFNG',
 'SEMAY':'SEMAG',
