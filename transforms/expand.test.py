@@ -53,6 +53,12 @@ class TestExpand(unittest.TestCase):
        self.assertEqual(set(expand.expand('TLR2/1')), {'TLR2','TLR1'})
        self.assertEqual(set(expand.expand('TLR2/6')), {'TLR2','TLR6'})
 
+    def text_digit_separators(self):
+       self.assertEqual(set(expand.expand('TLR1,2, 5')), {'TLR2','TLR1','TLR5'})
+       self.assertEqual(set(expand.expand('TLR1,2, and 5')), {'TLR2','TLR1','TLR5'})
+       self.assertEqual(set(expand.expand('TLR1,2 and 5')), {'TLR2','TLR1','TLR5'})
+       self.assertEqual(set(expand.expand('TLR1,2 or 5')), {'TLR2','TLR1','TLR5'})
+       self.assertEqual(set(expand.expand('TLR1,2or 5')), {'TLR2','TLR1','TLR5'})
 
 if __name__ == '__main__':
     unittest.main()
