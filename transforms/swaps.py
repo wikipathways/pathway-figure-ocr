@@ -20,6 +20,7 @@ swap_list = {
 'IKKY':'IKKG',
 'IFNY':'IFNG',
 'SEMAY':'SEMAG',
+'PLCY':'PLCG',
 'TGFBRI':'TGFBR1',
 'II':'2',
 'III':'3',
