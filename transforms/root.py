@@ -1,7 +1,7 @@
 import re
 
 prefix_re = re.compile('^(GST\-|FLAG\-|Flag\-|FLAG\:|Flag\:|v\-|V\-|c\-|C\-|p\-|P\-)')
-suffix_re = re.compile('(\-p|\-P)$')
+suffix_re = re.compile('(\-p|\-P|\-GDP|\-GTP|\-ATP|\-ADP|\-dependent|\-independent|\-WT|\-wildtype|\-mutant)$')
 plural_re = re.compile('s$')
 
 def root(word):

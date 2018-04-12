@@ -33,37 +33,37 @@ def expand(word):
         if last_chunk.isdigit():
             m = slash_root_1a_re.match(word)
             result.update(get_expanded_results(m,slash_split))
-            return(result)
+            return(list(result))
 
         # Case 1b: chunk is single character, e.g., KDM6A/B, HCKA/B/C
         if len(last_chunk) == 1:
             m = slash_root_1b_re.match(word)
             result.update(get_expanded_results(m,slash_split))
-            return(result)
+            return(list(result))
 
         # Case 2: chunks are all assumed to be 2 character, e.g., 5-HT2A/2B
         elif len(last_chunk) == 2:
             if last_chunk[0].isdigit():
                 m = slash_root_2a_re.match(word)
                 result.update(get_expanded_results(m,slash_split))
-                return(result)
+                return(list(result))
             else:  # e.g., VSPR1/R2
                 m = slash_root_2b_re.match(word)
                 result.update(get_expanded_results(m,slash_split))
-                return(result)
+                return(list(result))
 
         # Case 3: chunks are separate gene symbols, e.g., WNT5/ABP2
         elif len(last_chunk) > 2:
             for c in slash_split:
                 result.update(check_dash_case(c))
-            return(result)
+            return(list(result))
 
         else:
             return(word)
 
     else:
         result.update(check_dash_case(word))
-        return(result)
+        return(list(result))
 
 def get_expanded_results(match,split):
     expres = set()
