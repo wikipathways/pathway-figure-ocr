@@ -70,10 +70,8 @@ CREATE TABLE summaries (
 	hit_count_unique integer,
 	xref_count_gross integer,
 	xref_count_unique integer,
-	new_hs_gross integer,
-	new_hs_unique integer,
-	new_overall_gross integer,
-	new_overall_unique integer
+	xrefs_not_in_wp_all integer,
+	xrefs_not_in_wp_hs integer
 );
 
 CREATE TABLE ocr_processors__figures (
@@ -89,13 +87,19 @@ CREATE TABLE transformed_words (
 );
 
 CREATE TABLE match_attempts (
-	PRIMARY KEY (ocr_processor_id, figure_id, transformed_word_id),
+	id serial PRIMARY KEY,
 	ocr_processor_id integer REFERENCES ocr_processors NOT NULL,
+	matcher_id integer REFERENCES matchers NOT NULL,
+	transforms_applied text NOT NULL CHECK (transforms_applied <> ''),
 	figure_id integer REFERENCES figures NOT NULL,
 	word text NOT NULL CHECK (word <> ''),
 	transformed_word_id integer REFERENCES transformed_words,
-	transforms_applied text NOT NULL CHECK (transforms_applied <> '')
+	UNIQUE (ocr_processor_id, matcher_id, figure_id, transformed_word_id)
 );
+
+CREATE UNIQUE INDEX match_attempts_null_unique_idx
+ON match_attempts (ocr_processor_id, matcher_id, figure_id, transformed_word_id)
+WHERE transformed_word_id IS NULL;
 
 CREATE VIEW figures__xrefs AS SELECT pmcid,
 			figures.filepath AS figure_filepath,
@@ -104,14 +108,25 @@ CREATE VIEW figures__xrefs AS SELECT pmcid,
 			xrefs.xref,
 			lexicon.source,
 			match_attempts.transforms_applied
-		FROM figures
+		FROM match_attempts
+		INNER JOIN figures ON match_attempts.figure_id = figures.id
 		INNER JOIN papers ON figures.paper_id = papers.id
-		INNER JOIN match_attempts ON figures.id = match_attempts.figure_id
 		INNER JOIN transformed_words ON match_attempts.transformed_word_id = transformed_words.id
 		INNER JOIN symbols ON UPPER(transformed_words.transformed_word) = UPPER(symbols.symbol)
 		INNER JOIN lexicon ON symbols.id = lexicon.symbol_id
 		INNER JOIN xrefs ON lexicon.xref_id = xrefs.id
 		GROUP BY pmcid, figure_filepath, transformed_word, xref, word, source, transforms_applied;
+
+CREATE VIEW figures__xrefs_san_symbols AS SELECT pmcid,
+			figures.filepath AS figure_filepath,
+			match_attempts.word,
+			transformed_words.transformed_word,
+			match_attempts.transforms_applied
+		FROM match_attempts
+		INNER JOIN figures ON match_attempts.figure_id = figures.id
+		INNER JOIN papers ON figures.paper_id = papers.id
+		INNER JOIN transformed_words ON match_attempts.transformed_word_id = transformed_words.id
+		GROUP BY pmcid, figure_filepath, transformed_word, word, transforms_applied;
 
 CREATE VIEW stats AS SELECT ocr_processors.engine AS ocr_engine,
 		ocr_processors.prepare_image AS image_preprocessor,

@@ -1,5 +1,8 @@
-#!/usr/bin/env python3
+#! /usr/bin/env nix-shell
+#! nix-shell -i python3 -p postgresql -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
 # -*- coding: utf-8 -*-
+
+##!/usr/bin/env python3
 
 import json
 import os
@@ -7,6 +10,7 @@ import psycopg2
 import psycopg2.extras
 import re
 import transforms
+import sys
 
 from get_conn import get_conn
 
@@ -58,6 +62,23 @@ def summarize(args):
         FROM stats;
         '''
         stats_cur.execute(stats_query)
+            
+        # TODO are there any cases when the max ocr_processor_id value from match_attempts wouldn't be the ocr_processor we want to summarize?
+        summary_cur.execute("SELECT max(ocr_processor_id) FROM match_attempts;")
+        #summary_cur.execute("SELECT id FROM ocr_processors;")
+        ocr_processor_id = summary_cur.fetchone()[0]
+        summary_cur.execute("SELECT max(id) FROM ocr_processors;")
+        ocr_processor_id_alt = summary_cur.fetchone()[0]
+        if ocr_processor_id != ocr_processor_id_alt:
+            raise Exception("Error: ocr_processor_id mismatch in summarize.py. %s != %s" % (ocr_processor_id, ocr_processor_id_alt))
+
+        # TODO are there any cases when the max matcher_id value from match_attempts wouldn't be the matcher we want to summarize?
+        summary_cur.execute("SELECT max(matcher_id) FROM match_attempts;")
+        matcher_id = summary_cur.fetchone()[0]
+        summary_cur.execute("SELECT max(id) FROM matchers;")
+        matcher_id_alt = summary_cur.fetchone()[0]
+        if matcher_id != matcher_id_alt:
+            raise Exception("Error: matcher_id mismatch in summarize.py. %s != %s" % (matcher_id, matcher_id_alt))
 
         for row in stats_cur:
             paper_count = row["paper_count"]
@@ -68,12 +89,12 @@ def summarize(args):
             hit_count_unique = row["hit_count_unique"]
             xref_count_gross = row["xref_count_gross"]
             xref_count_unique = row["xref_count_unique"]
-            
-            summary_cur.execute("DELETE FROM summaries WHERE matcher_id=(SELECT id FROM matchers);")
+
+            summary_cur.execute("DELETE FROM summaries WHERE matcher_id=%s;", (matcher_id, ))
             summary_cur.execute('''
                     INSERT INTO summaries (matcher_id, ocr_processor_id, paper_count, figure_count, word_count_gross, word_count_unique, hit_count_gross, hit_count_unique, xref_count_gross, xref_count_unique)
-                    VALUES ((SELECT id FROM matchers), (SELECT id FROM ocr_processors), %s, %s, %s, %s, %s, %s, %s, %s);''',
-                    (paper_count, figure_count, word_count_gross, word_count_unique, hit_count_gross, hit_count_unique, xref_count_gross, xref_count_unique)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);''',
+                    (matcher_id, ocr_processor_id, paper_count, figure_count, word_count_gross, word_count_unique, hit_count_gross, hit_count_unique, xref_count_gross, xref_count_unique)
                     )
 
         conn.commit()

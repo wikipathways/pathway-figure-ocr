@@ -1,5 +1,8 @@
-#!/usr/bin/env python3
+#! /usr/bin/env nix-shell
+#! nix-shell -i python3 -p postgresql -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
 # -*- coding: utf-8 -*-
+
+##!/usr/bin/env python3
 
 import argparse
 import json
