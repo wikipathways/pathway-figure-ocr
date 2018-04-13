@@ -1,5 +1,8 @@
-#!/usr/bin/env python3
+#! /usr/bin/env nix-shell
+#! nix-shell -i python3 -p postgresql -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
 # -*- coding: utf-8 -*-
+
+##!/usr/bin/env python3
 
 import hashlib
 import json
@@ -10,11 +13,9 @@ import transforms
 import sys
 from get_conn import get_conn
 
-def attempt_match(args, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, transformed_word):
-    transformed_word_id = ""
+def attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, transformed_word):
     if transformed_word:
-        if transformed_word[0:6] != 'dummy_':
-            matches.add(transformed_word)
+        matches.add(transformed_word)
         if transformed_word not in transformed_word_ids_by_transformed_word: 
 	    # This might not be the best way to insert. TODO: look at the proper way to handle this.
             transformed_words_cur.execute(
@@ -30,19 +31,20 @@ def attempt_match(args, transformed_word_ids_by_transformed_word, matches, trans
             transformed_word_ids_by_transformed_word[transformed_word] = transformed_word_id
         else:
             transformed_word_id = transformed_word_ids_by_transformed_word[transformed_word]
+    else:
+        transformed_word_id = None
 
-    #if transformed_word_id:
     transform_args = []
     for t in args[0:len(transforms_applied)]:
         transform_args.append("-" + t["category"][0] + " " + t["name"])
 
     if not word == '':
         match_attempts_cur.execute('''
-            INSERT INTO match_attempts (ocr_processor_id, figure_id, word, transformed_word_id, transforms_applied)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO match_attempts (ocr_processor_id, matcher_id, figure_id, word, transformed_word_id, transforms_applied)
+            VALUES (%s, %s, %s, %s, %s, %s)
             ON CONFLICT DO NOTHING;
             ''',
-            (ocr_processor_id, figure_id, word, transformed_word_id, " ".join(transform_args))
+            (ocr_processor_id, matcher_id, figure_id, word, transformed_word_id, " ".join(transform_args))
         )
 
 def match(args):
@@ -72,14 +74,31 @@ def match(args):
             transform_json["code_hash"] = hashlib.sha224(code).hexdigest()
         transforms_json.append(transform_json)
 
+    transforms_json_str = json.dumps(transforms_json)
     matchers_cur.execute(
         '''
-        INSERT INTO matchers (transforms)
-        VALUES (%s)
-        ON CONFLICT (transforms) DO UPDATE SET transforms = EXCLUDED.transforms;
+        SELECT id FROM matchers WHERE transforms=%s;
         ''',
-        (json.dumps(transforms_json), )
+        (transforms_json_str, )
     )
+
+    matcher_ids = matchers_cur.fetchone()
+    if matcher_ids != None:
+        matcher_id = matcher_ids[0]
+    else:
+        matchers_cur.execute(
+            '''
+            INSERT INTO matchers (transforms)
+            VALUES (%s)
+            ON CONFLICT (transforms) DO UPDATE SET transforms = EXCLUDED.transforms
+            RETURNING id;
+            ''',
+            (transforms_json_str, )
+        )
+        matcher_id = matchers_cur.fetchone()[0]
+
+    if matcher_id == None:
+        raise Exception("matcher_id not found!");
 
     normalizations = []
     for t in transforms_to_apply:
@@ -156,13 +175,13 @@ def match(args):
                                 for transformed_word in transform_to_apply["transform"](transformed_word_prev):
                                     # perform match for original and uppercased words (see elif)
                                     if transformed_word in symbol_ids_by_symbol: 
-                                        attempt_match(args, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, transformed_word)
+                                        attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, transformed_word)
                                     elif transformed_word.upper() in symbol_ids_by_symbol:
-                                        attempt_match(args, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, transformed_word.upper())
+                                        attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, transformed_word.upper())
                                     else:
                                         transformed_words.append(transformed_word)
                         if len(matches) == 0:
-                            attempt_match(args, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, "dummy_" + word)
+                            attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, None)
                     if len(matches) > 0:
                         successes.append(line + ' => ' + ' & '.join(matches))
                     else:
