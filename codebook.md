@@ -2,14 +2,7 @@
 The sections below detail the steps taken to generate files and run scripts for this project.
 
 ### Install Dependencies
-```sh
-sudo su - root
-nix-env -iA nixos.postgresql
-nix-env -iA nixos.python3
-nix-env -iA nixos.python36Packages.psycopg2
-nix-env -iA nixos.python36Packages.requests
-exit
-```
+[Nix](https://nixos.org/nixos/nix-pills/install-on-your-running-system.html#idm140737316672400)
 
 ## PubMed Central Image Extraction
 _These scripts are capable of populating the database with structured paper and figure information for future OCR runs._
@@ -55,14 +48,17 @@ psql
 \q
 ```
 Load filenames (or paths) and extracted content into database
-
 * papers (id, pmcid, title, url)
 * figures (id, paperid, filepath, fignumber, caption)
 
+First time:
 ```sh
-nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
 ./pfocr.py load_figures
-# Use CTRL-D to exit nix-shell
+```
+
+After first time:
+```sh
+sh copy-tables.sh # optional
 ```
 
 ## Optical Character Recognition
@@ -88,9 +84,7 @@ convert test1_gr_th.jpg -define connected-components:verbose=true -define connec
 
 Caution: if you don't specify an `end` value, it'll run until the last figure. Default `start` value is 0.
 ```sh
-nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
 ./pfocr.py gcv_figures --start 0 --end 20
-# Use CTRL-D to exit nix-shell
 ```
 Note: This command calls `ocr_pmc.py` at the end, passing along args and functions. The `ocr_pmc.py` script then:
 
@@ -112,10 +106,7 @@ _These scripts are capable of processing the results from one or more ocr runs p
 -n for normalizations
 -m for mutations
 ```sh
-# TODO can the nix-shell line go into run.sh?
-nix-shell -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
 bash run.sh
-# Use CTRL-D to exit nix-shell
 ```
 
 * Extract words from JSON in `ocr_processors__figures.result`

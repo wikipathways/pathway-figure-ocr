@@ -13,7 +13,7 @@ import transforms
 import sys
 from get_conn import get_conn
 
-def attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, transformed_word):
+def attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, symbol_id, transformed_word):
     if transformed_word:
         matches.add(transformed_word)
         if transformed_word not in transformed_word_ids_by_transformed_word: 
@@ -40,11 +40,11 @@ def attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, ma
 
     if not word == '':
         match_attempts_cur.execute('''
-            INSERT INTO match_attempts (ocr_processor_id, matcher_id, figure_id, word, transformed_word_id, transforms_applied)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO match_attempts (ocr_processor_id, matcher_id, figure_id, word, transformed_word_id, symbol_id, transforms_applied)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT DO NOTHING;
             ''',
-            (ocr_processor_id, matcher_id, figure_id, word, transformed_word_id, " ".join(transform_args))
+            (ocr_processor_id, matcher_id, figure_id, word, transformed_word_id, symbol_id, " ".join(transform_args))
         )
 
 def match(args):
@@ -175,13 +175,19 @@ def match(args):
                                 for transformed_word in transform_to_apply["transform"](transformed_word_prev):
                                     # perform match for original and uppercased words (see elif)
                                     if transformed_word in symbol_ids_by_symbol: 
-                                        attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, transformed_word)
+                                        attempt_match(
+                                            args, matcher_id, transformed_word_ids_by_transformed_word, matches,
+                                            transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id,
+                                            figure_id, word, symbol_ids_by_symbol[transformed_word], transformed_word)
                                     elif transformed_word.upper() in symbol_ids_by_symbol:
-                                        attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, transformed_word.upper())
+                                        attempt_match(
+                                            args, matcher_id, transformed_word_ids_by_transformed_word, matches,
+                                            transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id,
+                                            figure_id, word, symbol_ids_by_symbol[transformed_word.upper()], transformed_word.upper())
                                     else:
                                         transformed_words.append(transformed_word)
                         if len(matches) == 0:
-                            attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, None)
+                            attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, None, None)
                     if len(matches) > 0:
                         successes.append(line + ' => ' + ' & '.join(matches))
                     else:
