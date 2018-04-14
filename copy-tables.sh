@@ -46,8 +46,7 @@ psql pfocr -c "\copy ocr_processors__figures (ocr_processor_id, figure_id, resul
 #psql pfocr -c "\copy match_attempts ($match_attempts_columns) FROM STDIN"
 #psql pfocr -c "SELECT setval('match_attempts_id_seq', (SELECT max(id) FROM match_attempts));"
 
-summaries_columns_old='matcher_id, ocr_processor_id, timestamp, paper_count, figure_count, word_count_gross, word_count_unique, hit_count_gross, hit_count_unique, xref_count_gross, xref_count_unique, new_hs_unique, new_overall_unique';
-summaries_columns='matcher_id, ocr_processor_id, timestamp, paper_count, figure_count, word_count_gross, word_count_unique, hit_count_gross, hit_count_unique, xref_count_gross, xref_count_unique, xrefs_not_in_wp_hs, xrefs_not_in_wp_all';
+summaries_columns='matcher_id, ocr_processor_id, timestamp, paper_count, nonwordless_paper_count, figure_count, nonwordless_figure_count, word_count_gross, word_count_unique, hit_count_gross, hit_count_unique, xref_count_gross, xref_count_unique, xref_not_in_wp_hs_count';
 psql pfocr4 -c \
-"\copy (SELECT $summaries_columns_old FROM summaries ORDER BY $summaries_columns_old) TO STDOUT" | \
+"\copy (SELECT $summaries_columns FROM summaries ORDER BY $summaries_columns) TO STDOUT" | \
 psql pfocr -c "\copy summaries ($summaries_columns) FROM STDIN"

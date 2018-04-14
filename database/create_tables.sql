@@ -63,15 +63,16 @@ CREATE TABLE summaries (
 	ocr_processor_id integer REFERENCES ocr_processors NOT NULL,
 	timestamp timestamp DEFAULT CURRENT_TIMESTAMP,
 	paper_count integer,
+	nonwordless_paper_count integer,
 	figure_count integer,
+	nonwordless_figure_count integer,
 	word_count_gross integer,
 	word_count_unique integer,
 	hit_count_gross integer,
 	hit_count_unique integer,
 	xref_count_gross integer,
 	xref_count_unique integer,
-	xrefs_not_in_wp_all integer,
-	xrefs_not_in_wp_hs integer
+	xref_not_in_wp_hs_count integer
 );
 
 CREATE TABLE ocr_processors__figures (
@@ -94,6 +95,7 @@ CREATE TABLE match_attempts (
 	figure_id integer REFERENCES figures NOT NULL,
 	word text NOT NULL CHECK (word <> ''),
 	transformed_word_id integer REFERENCES transformed_words,
+	symbol_id integer REFERENCES symbols,
 	UNIQUE (ocr_processor_id, matcher_id, figure_id, transformed_word_id)
 );
 
@@ -105,6 +107,7 @@ CREATE VIEW figures__xrefs AS SELECT pmcid,
 			figures.filepath AS figure_filepath,
 			match_attempts.word,
 			transformed_words.transformed_word,
+			symbols.symbol,
 			xrefs.xref,
 			lexicon.source,
 			match_attempts.transforms_applied
@@ -112,38 +115,30 @@ CREATE VIEW figures__xrefs AS SELECT pmcid,
 		INNER JOIN figures ON match_attempts.figure_id = figures.id
 		INNER JOIN papers ON figures.paper_id = papers.id
 		INNER JOIN transformed_words ON match_attempts.transformed_word_id = transformed_words.id
-		INNER JOIN symbols ON UPPER(transformed_words.transformed_word) = UPPER(symbols.symbol)
+		INNER JOIN symbols ON match_attempts.symbol_id = symbols.id
 		INNER JOIN lexicon ON symbols.id = lexicon.symbol_id
 		INNER JOIN xrefs ON lexicon.xref_id = xrefs.id
-		GROUP BY pmcid, figure_filepath, transformed_word, xref, word, source, transforms_applied;
-
-CREATE VIEW figures__xrefs_san_symbols AS SELECT pmcid,
-			figures.filepath AS figure_filepath,
-			match_attempts.word,
-			transformed_words.transformed_word,
-			match_attempts.transforms_applied
-		FROM match_attempts
-		INNER JOIN figures ON match_attempts.figure_id = figures.id
-		INNER JOIN papers ON figures.paper_id = papers.id
-		INNER JOIN transformed_words ON match_attempts.transformed_word_id = transformed_words.id
-		GROUP BY pmcid, figure_filepath, transformed_word, word, transforms_applied;
+		GROUP BY pmcid, figure_filepath, transformed_word, symbol, xref, word, source, transforms_applied;
 
 CREATE VIEW stats AS SELECT ocr_processors.engine AS ocr_engine,
 		ocr_processors.prepare_image AS image_preprocessor,
-		COUNT(DISTINCT papers.pmcid) AS paper_count,
-		COUNT(DISTINCT figures.filepath) AS figure_count,
+		(SELECT COUNT(id) FROM papers) AS paper_count,
+		COUNT(DISTINCT papers.pmcid) AS nonwordless_paper_count,
+		(SELECT COUNT(id) FROM figures) AS figure_count,
+		COUNT(DISTINCT figures.filepath) AS nonwordless_figure_count,
 		(SELECT COUNT(DISTINCT CONCAT(word, '\t', figure_id)) FROM match_attempts) AS word_count_gross,
 		COUNT(DISTINCT word) AS word_count_unique,
 		(SELECT COUNT(DISTINCT CONCAT(transformed_word, '\t', figure_filepath)) FROM figures__xrefs) AS hit_count_gross,
 		(SELECT COUNT(DISTINCT transformed_word) FROM figures__xrefs) AS hit_count_unique,
 		(SELECT COUNT(DISTINCT CONCAT(xref, '\t', figure_filepath)) FROM figures__xrefs) AS xref_count_gross,
-		(SELECT COUNT(DISTINCT xref) FROM figures__xrefs) AS xref_count_unique
+		(SELECT COUNT(DISTINCT xref) FROM figures__xrefs) AS xref_count_unique,
+		(SELECT COUNT(DISTINCT xref) FROM (SELECT xref FROM figures__xrefs EXCEPT SELECT xref FROM xrefs_wp_hs) as xrefs_not_in_wp_hs) as xref_not_in_wp_hs_count
 	FROM figures
 	INNER JOIN papers ON figures.paper_id = papers.id
 	INNER JOIN match_attempts ON figures.id = match_attempts.figure_id
 	INNER JOIN ocr_processors ON match_attempts.ocr_processor_id = ocr_processors.id
 	INNER JOIN transformed_words ON match_attempts.transformed_word_id = transformed_words.id
-	INNER JOIN symbols ON UPPER(transformed_words.transformed_word) = UPPER(symbols.symbol)
+	INNER JOIN symbols ON match_attempts.symbol_id = symbols.id
 	INNER JOIN lexicon ON symbols.id = lexicon.symbol_id
 	INNER JOIN xrefs ON lexicon.xref_id = xrefs.id
         GROUP BY ocr_engine, image_preprocessor;

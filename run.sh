@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /bin/bash
 
 function finish {
   # Your cleanup code here
@@ -25,5 +25,27 @@ trap 'finish $LINENO' SIGINT SIGTERM ERR
 ./pfocr.py match -n stop -n nfkc -n deburr -m expand -m root -n swaps -n alphanumeric;
 
 ./pfocr.py summarize
-head -n 1 ./results.tsv > ./sample.tsv
-tail -n +1 ./results.tsv | shuf -n 1000 >> ./sample.tsv
+
+results="./results.tsv";
+headless="./headless.tsv";
+sample="./sample.tsv";
+papers="./papers.tsv"
+
+# if papers haven't already been selected
+if [ ! -f "$papers" ]; then
+	tail -n +1 "$results" | cut -f 1 | sort | uniq | shuf -n 32 > "$papers"
+fi
+
+rm -rf "$headless";
+touch "$headless";
+
+rm -rf "$sample";
+touch "$sample";
+
+while read -r paper; do
+	grep -P "^""$paper" "$results" >> "$headless";
+done < "$papers"
+
+head -n 1 "$results" > "$sample"
+sort "$headless" >> "$sample"
+rm "$headless"
