@@ -42,6 +42,11 @@ Another manual step here to increase accuracy of downstream counts. Make a copy 
 ### Load into Database
 Create database:
 
+Enter nix-shell:
+```
+nix-shell
+```
+
 ```
 psql
 \i database/create_tables.sql 
@@ -51,6 +56,11 @@ Load filenames (or paths) and extracted content into database
 * papers (id, pmcid, title, url)
 * figures (id, paperid, filepath, fignumber, caption)
 
+Enter nix-shell:
+```
+nix-shell
+```
+
 First time:
 ```sh
 ./pfocr.py load_figures
@@ -58,7 +68,7 @@ First time:
 
 After first time:
 ```sh
-sh copy-tables.sh # optional
+sh ./copy_tables.sh
 ```
 
 ## Optical Character Recognition
@@ -82,14 +92,19 @@ convert test1_gr_th.jpg -define connected-components:verbose=true -define connec
   * 'LanguageCode':'en' - to restrict to English language characters
 * Produce JSON files
 
-Caution: if you don't specify an `end` value, it'll run until the last figure. Default `start` value is 0.
+Enter nix-shell:
+```
+nix-shell
+```
+
+Caution: if you don't specify a `limit` value, it'll run until the last figure. Default `start` value is 0.
 ```sh
-./pfocr.py gcv_figures --start 0 --end 20
+./pfocr.py ocr gcv --preprocessor noop --start 1 --limit 20
 ```
 Note: This command calls `ocr_pmc.py` at the end, passing along args and functions. The `ocr_pmc.py` script then:
 
 * gets an `ocr_processor_id` corresponding the unique hash of processing parameters
-* retrieves all figure rows and steps through rows `start` to `end`
+* retrieves all figure rows and steps through rows, starting with `start`
   * runs image pre-processing
   * performs OCR
   * populates `ocr_processors__figures` with `ocr_processor_id`, `figure_id` and `result`
@@ -105,6 +120,12 @@ _These scripts are capable of processing the results from one or more ocr runs p
 ### Create/update word tables for all extracted text
 -n for normalizations
 -m for mutations
+
+Enter nix-shell:
+```
+nix-shell
+```
+
 ```sh
 bash run.sh
 ```

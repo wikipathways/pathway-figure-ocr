@@ -1,5 +1,4 @@
-#! /usr/bin/env nix-shell
-#! nix-shell -i python3 -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])' -p postgresql
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import argparse
@@ -11,19 +10,24 @@ import os
 import sys
 from itertools import zip_longest
 import hashlib
+from wand.image import Image
 
-from gcv import gcv
 from match import match
 from ocr_pmc import ocr_pmc
 from summarize import summarize
-from get_conn import get_conn
+from get_pg_conn import get_pg_conn
 
 
 pmcid_re = re.compile('^(PMC\d+)__(.+)')
+#"Hs_Wnt_Signaling_in_Kidney_Disease_WP4150_94404.png"
+wp_re = re.compile('^([A-Z][a-z])_(.+?)_(WP\d+)_(\d+)$')
+
+cwd = os.getcwd()
+
 
 def clear(args):
     target = args.target
-    conn = get_conn()
+    conn = get_pg_conn()
 
     try:
         if target == "matches" or target == "figures":
@@ -34,9 +38,9 @@ def clear(args):
                 match_attempts_cur.execute("DELETE FROM match_attempts;")
                 transformed_words_cur.execute("DELETE FROM transformed_words;")
 
-                os.remove("successes.txt")
-                os.remove("fails.txt")
-                os.remove("results.tsv")
+                os.remove("./output/successes.txt")
+                os.remove("./output/fails.txt")
+                os.remove("./output/results.tsv")
 
             except(OSError, FileNotFoundError) as e:
                 # we don't care if the file we tried to remove didn't exist 
@@ -86,62 +90,72 @@ def clear(args):
         if conn:
             conn.close()
 
-def gcv_figures(args):
-    def prepare_image(filepath):
-        return filepath
-
-    def do_gcv(prepared_filepath):
-        gcv_result_raw = gcv(filepath=prepared_filepath, type='TEXT_DETECTION')
-        if len(gcv_result_raw['responses']) != 1:
-            print(gcv_result_raw)
-            raise ValueError("""
-                gcv_pmc.py expects the JSON result from GCV will always be {"responses": [...]},
-                with "responses" having just a single value, but
-                the result above indicates that assumption was incorrect.
-                """)
-        return gcv_result_raw['responses'][0]
+def ocr(args):
+    engine = args.engine
+    preprocessor = args.preprocessor
+    if not preprocessor:
+        preprocessor = "noop"
     start = args.start
-    end = args.end
-    ocr_pmc(prepare_image, do_gcv, "gcv", start, end)
+    limit = args.limit
+    ocr_pmc(engine, preprocessor, start, limit)
 
 def load_figures(args):
     figures_dir = args.dir
 
-    figure_paths = list(p.glob(figures_dir + '/*.{jpeg,jpg,png,JPEG,JPG,PNG}'))
-    ## TODO don't hard code things like the figure path
-    #p = Path(Path(__file__).parent)
-    #figure_paths = list(p.glob('../pmc/20150501/images_pruned/*.jpg'))
+    #figure_paths = list(Path(__file__).glob(figures_dir + '/*.{jpeg,jpg,png,JPEG,JPG,PNG}'))
+    figure_paths = list(Path(cwd).glob(figures_dir + '/*.png'))
 
-    conn = get_conn()
-    papers_cur = conn.cursor()
-    figures_cur = conn.cursor()
+    conn = get_pg_conn()
+    papers_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     pmcid_to_paper_id = dict();
 
     try:
+        papers_cur.execute("SELECT id, pmcid FROM papers;")
+        for row in papers_cur:
+            pmcid_to_paper_id[row["pmcid"]] = row["id"]
+
         for figure_path in figure_paths:
             filepath = str(figure_path.resolve())
-            name_components = pmcid_re.match(figure_path.stem)
-            if name_components:
-                pmcid = name_components[1]
-                figure_number = name_components[2]
-                print("Processing pmcid: " + pmcid + ", figure_number: " + figure_number)
-                paper_id = None
-                if pmcid in pmcid_to_paper_id:
-                    paper_id = pmcid_to_paper_id[pmcid]
-                else:
-                    papers_cur.execute("INSERT INTO papers (pmcid) VALUES (%s) RETURNING id;", (pmcid, ))
-                    paper_id = papers_cur.fetchone()[0]
-                    pmcid_to_paper_id[pmcid] = paper_id
+            filename_stem = figure_path.stem
+            paper_filename_components = pmcid_re.match(filename_stem)
+            wp_filename_components = wp_re.match(filename_stem)
+            if paper_filename_components:
+                pmcid = paper_filename_components[1]
+                figure_number = paper_filename_components[2]
+            elif wp_filename_components:
+                # not really the pmcid of this figure. kind of a hack.
+                # it's the pmcid of the wikipathways paper.
+                pmcid = 'PMC4702772'
+                organism = wp_filename_components[1]
+                pathway_name = wp_filename_components[2].replace('_', ' ')
+                wp_id = wp_filename_components[3]
+                wp_version = wp_filename_components[4]
+                figure_number = "http://identifiers.org/wikipathways/%s" % (wp_id)
+            else:
+                raise Exception("Could not parse filepath %s" % filepath)
 
-                m = hashlib.sha256()
-                with open(filepath, "rb") as image_file:
-                    m.update(image_file.read())
-                figure_hash = m.hexdigest()
+            print("Processing pmcid: %s figure_number: %s" % (pmcid, figure_number))
 
+            paper_id = None
+            if pmcid in pmcid_to_paper_id:
+                paper_id = pmcid_to_paper_id[pmcid]
+            else:
+                papers_cur.execute("INSERT INTO papers (pmcid) VALUES (%s) RETURNING id;", (pmcid, ))
+                paper_id = papers_cur.fetchone()[0]
+                pmcid_to_paper_id[pmcid] = paper_id
+
+            m = hashlib.sha256()
+            with open(filepath, "rb") as image_file:
+                m.update(image_file.read())
+            figure_hash = m.hexdigest()
+
+            with Image(filename=filepath) as img:
+                resolution = int(round(min(img.resolution)))
                 figures_cur.execute(
-                        "INSERT INTO figures (filepath, figure_number, paper_id, hash) VALUES (%s, %s, %s, %s);",
-                        (filepath, figure_number, paper_id, figure_hash)
+                        "INSERT INTO figures (filepath, figure_number, paper_id, resolution, hash) VALUES (%s, %s, %s, %s, %s);",
+                        (filepath, figure_number, paper_id, resolution, figure_hash)
                         )
 
         conn.commit()
@@ -177,16 +191,20 @@ parser_clear.add_argument('target',
                 choices=["figures", "matches"])
 parser_clear.set_defaults(func=clear)
 
-# create the parser for the "gcv_figures" command
-parser_gcv_figures = subparsers.add_parser('gcv_figures',
-        help='Run GCV on PMC figures and save results to database.')
-parser_gcv_figures.add_argument('--start',
+# create the parser for the "ocr" command
+parser_ocr = subparsers.add_parser('ocr',
+        help='Run OCR on PMC figures and save results to database.')
+parser_ocr.add_argument('engine',
+        help='OCR engine to use, e.g., gcv.')
+parser_ocr.add_argument('--preprocessor',
+        help='image preprocessor to use. default: no pre-processing.')
+parser_ocr.add_argument('--start',
 		type=int,
 		help='start of figures to process')
-parser_gcv_figures.add_argument('--end',
+parser_ocr.add_argument('--limit',
 		type=int,
-		help='end of figures to process')
-parser_gcv_figures.set_defaults(func=gcv_figures)
+		help='limit number of figures to process')
+parser_ocr.set_defaults(func=ocr)
 
 # create the parser for the "load_figures" command
 parser_load_figures = subparsers.add_parser('load_figures',

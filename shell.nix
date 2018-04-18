@@ -16,16 +16,20 @@ stdenv.mkDerivation rec {
   # Customizable development requirements
   buildInputs = [
     # Add packages from nix-env -qaP | grep -i needle queries
+    imagemagick
+    inkscape
     postgresql
 
     # With Python configuration requiring a special wrapper
+    # find names here: https://github.com/NixOS/nixpkgs/blob/release-17.03/pkgs/top-level/python-packages.nix
     (python36.buildEnv.override {
       ignoreCollisions = true;
       extraLibs = with python36Packages; [
         # Add pythonPackages without the prefix
+        dill
         psycopg2
         requests
-        dill
+        Wand
       ];
     })
   ];

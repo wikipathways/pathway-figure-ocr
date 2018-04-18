@@ -39,6 +39,7 @@ CREATE TABLE figures (
 	filepath text UNIQUE NOT NULL CHECK (filepath <> ''),
 	figure_number text NOT NULL CHECK (figure_number <> ''),
 	caption text,
+	resolution integer,
 	hash text
 );
 
