@@ -1,7 +1,6 @@
 #! /bin/bash
 
 function finish {
-  # Your cleanup code here
   echo "Error on line $1"
   exit 1
 }
@@ -26,26 +25,6 @@ trap 'finish $LINENO' SIGINT SIGTERM ERR
 
 ./pfocr.py summarize
 
-results="./results.tsv";
-headless="./headless.tsv";
-sample="./sample.tsv";
-papers="./papers.tsv"
-
-# if papers haven't already been selected
-if [ ! -f "$papers" ]; then
-	tail -n +1 "$results" | cut -f 1 | sort | uniq | shuf -n 32 > "$papers"
-fi
-
-rm -rf "$headless";
-touch "$headless";
-
-rm -rf "$sample";
-touch "$sample";
-
-while read -r paper; do
-	grep -P "^""$paper" "$results" >> "$headless";
-done < "$papers"
-
-head -n 1 "$results" > "$sample"
-sort "$headless" >> "$sample"
-rm "$headless"
+# Generate curated optimization datasets
+#bash ./gen_co_check.sh
+#bash ./gen_co_next.sh

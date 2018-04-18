@@ -1,8 +1,5 @@
-#! /usr/bin/env nix-shell
-#! nix-shell -i python3 -p postgresql -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])'
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-##!/usr/bin/env python3
 
 import hashlib
 import json
@@ -11,7 +8,7 @@ import psycopg2.extras
 import re
 import transforms
 import sys
-from get_conn import get_conn
+from get_pg_conn import get_pg_conn
 
 def attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, symbol_id, transformed_word):
     if transformed_word:
@@ -48,7 +45,7 @@ def attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, ma
         )
 
 def match(args):
-    conn = get_conn()
+    conn = get_pg_conn()
     ocr_processors__figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     symbols_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     matchers_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -195,10 +192,10 @@ def match(args):
 
         conn.commit()
 
-        with open("./successes.txt", "a+") as successesfile:
+        with open("./outputs/successes.txt", "a+") as successesfile:
             successesfile.write('\n'.join(successes))
 
-        with open("./fails.txt", "a+") as failsfile:
+        with open("./outputs/fails.txt", "a+") as failsfile:
             failsfile.write('\n'.join(fails))
 
         print('match: SUCCESS')

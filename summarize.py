@@ -1,5 +1,4 @@
-#! /usr/bin/env nix-shell
-#! nix-shell -i python3 -p 'python36.withPackages(ps: with ps; [ psycopg2 requests dill ])' -p postgresql
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import json
@@ -9,10 +8,10 @@ import psycopg2.extras
 import re
 import sys
 
-from get_conn import get_conn
+from get_pg_conn import get_pg_conn
 
 def summarize(args):
-    conn = get_conn()
+    conn = get_pg_conn()
     summary_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     stats_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     results_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -94,7 +93,7 @@ def summarize(args):
         for result in results:
             output_rows.append("\t".join([result["pmcid"], result["figure"], result["word"], result["symbol"], result["entrez"], result["transforms_applied"]]))
 
-        with open("./results.tsv", "a+") as resultsfile:
+        with open("./outputs/results.tsv", "a+") as resultsfile:
             resultsfile.write('\n'.join(output_rows))
 
     except(psycopg2.DatabaseError) as e:
