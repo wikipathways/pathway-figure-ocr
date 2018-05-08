@@ -1,6 +1,13 @@
 CREATE DATABASE pfocr;
 \c pfocr;
-SET ROLE pfocr;
+/*SET ROLE pfocr;*/
+
+CREATE TABLE organism_names(
+        organism_id integer NOT NULL,
+	name text,
+	name_unique text UNIQUE,
+	name_class text
+);
 
 CREATE TABLE xrefs (
         id serial PRIMARY KEY,
@@ -23,15 +30,60 @@ CREATE TABLE lexicon (
 	source text 
 );
 
+CREATE TABLE gene2pubmed (
+	PRIMARY KEY (gene_id, pmid),
+	organism_id integer NOT NULL,
+	gene_id integer NOT NULL,
+	pmid integer NOT NULL
+);
+
+CREATE TABLE organism2pubmed (
+	PRIMARY KEY (organism_id, pmid),
+	organism_id integer NOT NULL,
+	pmid integer NOT NULL
+);
+
+CREATE TABLE organism2pubtator (
+	PRIMARY KEY (pmid, organism_id),
+	pmid integer NOT NULL,
+	organism_id integer NOT NULL,
+	mentions text,
+	resource text
+);
+
+/* PMID	NCBI_Gene	Mentions	Resource */
+CREATE TABLE gene2pubtator (
+	PRIMARY KEY (pmid, gene_id),
+	pmid integer NOT NULL,
+	gene_id integer NOT NULL,
+	mentions text,
+	resource text
+);
+
+CREATE TABLE pmcs (
+        pmcid text PRIMARY KEY,
+        pmid integer UNIQUE,
+        journal text CHECK (journal <> ''),
+        title text,
+        abstract text,
+        issn text,
+        eissn text,
+        year integer,
+        volume text,
+        issue text,
+        page text,
+        doi text,
+        manuscript_id text,
+        release_date text
+);
+
 CREATE TABLE papers (
         id serial PRIMARY KEY,
-	pmcid text UNIQUE NOT NULL CHECK (pmcid <> ''),
-	title text,
-	url text,
-	abstract text,
+        url text,
 	date date,
-	journal text
-);
+	organism_id integer NOT NULL,
+        pmcid text REFERENCES pmcs
+);      
 
 CREATE TABLE figures (
         id serial PRIMARY KEY,
