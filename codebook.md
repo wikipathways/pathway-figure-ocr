@@ -199,3 +199,51 @@ Do not apply upper() or remove non-alphanumerics during lexicon constuction. The
 5. Copy equation down to bottom of sheet, e.g., at least to =ROWS(matrix)\*COLUMNS(matrix)
 6. Filter out '0', then filter for unique
 7. Export as CSV file. 
+
+### organism names from taxdump
+Taxonomy names file (names.dmp):
+	tax_id					-- the id of node associated with this name
+	name_txt				-- name itself
+	unique name				-- the unique variant of this name if name not unique
+	name class				-- (synonym, common name, ...)
+```
+wget ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz
+tar -xzf taxdump.tar.gz names.dmp
+sed -r 's/\|\t(Microtetraspora parvosata subsp. kistnae)"\t\|/|\t"\1"\t|/g' names.dmp | sed -r 's/\t\|$//g' | sed -r 's/\t\|\t/\t/g' > organism_names.tsv
+rm names.dmp taxdump.tar.gz
+```
+
+### gene2pubmed, pmc2pmid & organism2pubmed
+```
+wget ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene2pubmed.gz
+gunzip gene2pubmed.gz
+mv gene2pubmed gene2pubmed.tsv
+
+head -n 1 gene2pubmed.tsv | cut -f 1,3 > organism2pubmed.tsv
+tail -n +2 gene2pubmed.tsv | cut -f 1,3 | sort -u >> organism2pubmed.tsv
+
+wget ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/PMC-ids.csv.gz
+gunzip PMC-ids.csv.gz
+```
+
+### gene2pubtator & organism2pubtator
+```
+wget ftp://ftp.ncbi.nlm.nih.gov/pub/lu/PubTator/gene2pubtator.gz
+gunzip gene2pubtator.gz
+# There can be multiple genes per row. Reshape wide -> long.
+awk -F '\t' -v OFS='\t' '{split($2,a,/,|;/); for(i in a) print $1,a[i],$3,$4}' gene2pubtator > gene2pubtator.tsv
+head -n 1 gene2pubtator.tsv | cut -f 1,2 > gene2pubtator_uniq.tsv
+tail -n +2 gene2pubtator.tsv | cut -f 1,2 | sort -u >> gene2pubtator_uniq.tsv
+rm gene2pubtator
+
+wget ftp://ftp.ncbi.nlm.nih.gov/pub/lu/PubTator/species2pubtator.gz
+gunzip species2pubtator.gz
+# There can be multiple organisms per row. Reshape wide -> long.
+# Also, there are some incorrect PMIDs. The sed is needed to fix those.
+sed -r 's/^2[0-9]*?(27[0-9]{6}\t)/\1/g' species2pubtator |\
+	awk -F '\t' -v OFS='\t' '{split($2,a,/,|;/); for(i in a) print $1,a[i],$3,$4}' > organism2pubtator.tsv
+head -n 1 organism2pubtator.tsv | cut -f 1,2 > organism2pubtator_uniq.tsv
+tail -n +2 organism2pubtator.tsv | cut -f 1,2 | sort -u >> organism2pubtator_uniq.tsv
+rm species2pubtator organism2pubtator
+```
+
