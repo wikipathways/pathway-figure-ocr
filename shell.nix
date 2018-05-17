@@ -3,10 +3,10 @@
 # https://nixos.org/nixos/nix-pills/developing-with-nix-shell.html
 # https://nixos.org/nix/manual/#sec-nix-shell
 
-with import <nixpkgs> {};
+with import <nixpkgs> { config.allowUnfree = true; };
+with import ./homoglyphs/requirements.nix { inherit pkgs; };
 stdenv.mkDerivation rec {
   name = "env";
-
   # Mandatory boilerplate for buildable env
   env = buildEnv { name = name; paths = buildInputs; };
   builder = builtins.toFile "builder.sh" ''
@@ -27,6 +27,13 @@ stdenv.mkDerivation rec {
       extraLibs = with python36Packages; [
         # Add pythonPackages without the prefix
         dill
+        # TODO get the homoglyphs package working more cleanly.
+        # It doesn't seem to be working out-of-the-box.
+        # I had to install it using pypi2nix
+        # packages."homoglyphs" looks ugly.
+        #homoglyphs
+        packages."homoglyphs"
+        pygpgme
         psycopg2
         requests
         Wand
