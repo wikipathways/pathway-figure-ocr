@@ -7,4 +7,6 @@ from . import noop
 from . import root
 from . import stop
 from . import upper
-__all__ = ["alphanumeric", "deburr", "expand", "swaps", "nfkc", "noop", "root", "stop", "upper"]
+from . import homoglyphs2ascii
+__all__ = ["alphanumeric", "deburr", "expand", "swaps", "nfkc",
+           "noop", "root", "stop", "upper", "homoglyphs2ascii"]
