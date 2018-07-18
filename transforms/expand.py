@@ -8,11 +8,11 @@ import re
 # FUTURE CASES TO HANDLE?
 # TGF-β1-3 
 
-slash_chunks_re = re.compile("\s*[\/|,]+\s*")
-slash_root_1a_re = re.compile("(.+?)\d[\d\w]*\s*[\/|,]+\s*\d+")
-slash_root_1b_re = re.compile("(.+?)\w\s*[\/|,]+\s*\w")
-slash_root_2a_re = re.compile("(.+?)\d\w*\s*[\/|,]+\s*\d\w")
-slash_root_2b_re = re.compile("(.+?)\w\d*\s*[\/|,]+\s*\w\d")
+slash_chunks_re = re.compile("\s*[\/|,&]+\s*")
+slash_root_1a_re = re.compile("(.+?)\d[\d\w]*\s*[\/|,&]+\s*\d+")
+slash_root_1b_re = re.compile("(.+?)\w\s*[\/|,&]+\s*\w")
+slash_root_2a_re = re.compile("(.+?)\d\w*\s*[\/|,&]+\s*\d\w")
+slash_root_2b_re = re.compile("(.+?)\w\d*\s*[\/|,&]+\s*\w\d")
 dash_chunks_re = re.compile("\-")
 dash_from_digit_re = re.compile(".+?\D(\d+)\-\d+") #need non-digit \D check to avoid memory leak cases
 dash_root_re = re.compile("(.+?)\d+\-\d+")
@@ -21,7 +21,7 @@ def expand(word):
     if not word:
         return []
 
-    word = word.strip('/').strip(',').strip(' ')
+    word = word.strip('/').strip(',').strip(' ').strip('&').strip('|')
     slash_split = slash_chunks_re.split(word)
     dash_split = dash_chunks_re.split(word)
     result = set()
