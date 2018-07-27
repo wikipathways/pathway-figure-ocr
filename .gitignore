@@ -1,2 +1,5 @@
 __pycache__/
 outputs/
+.Rproj.user
+.Rdata
+.Rhistory
