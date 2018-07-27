@@ -43,11 +43,16 @@ for (p in names(pfocr.4000.nl)){
     unique.4000.genes.counts <- c(unique.4000.genes.counts,length(unique.4000.genes))
 }
 plot(unique.4000.genes.counts)
+
 ## fit curve
 xx<-seq(1:length(unique.4000.genes.counts))
 fit<-lm(unique.4000.genes.counts~sqrt(xx))
 summary(fit)
-plot(unique.4000.genes.counts)
+par(mar=c(5,5,1,1))
+plot(unique.4000.genes.counts,
+     xlab="Pathway Figures",
+     ylab="Number of Unique Genes Identified",
+     cex.lab=2, cex.axis=1.5)
 lines(xx, predict(fit, data.frame(x=xx)), col="red", lwd=2)
 predict(fit,data.frame(xx=2925))  
 # 12,000 PFOCR images = 8000 unique genes

@@ -110,12 +110,16 @@ for (r in 1:length(counts.df.sk$pathway)){
 ggplot(counts.df.sk, aes(group=type, y=counts, x=reorder(pathway,-sort))) +
     geom_line(aes(color=type)) +
     geom_point(aes(color=type)) +
-    xlab("pathways")+
-    ylab("number of genes")+
+    xlab("Pathways")+
+    ylab("Counts by Type")+
     theme(
         axis.text.x = element_blank(), 
         axis.ticks.x = element_blank(),
-          legend.position = "none")
+        panel.background = element_rect(fill = 'white'),
+        legend.position = "none",
+        axis.text=element_text(size=16),
+        axis.title=element_text(size=16)
+        )
 
 ## plot rates independently sorted
 counts.df.sk.tp<-counts.df.sk[counts.df.sk$type=="TP",2:1]
@@ -135,8 +139,8 @@ counts.df.sk.fn$type<-c(rep("2.FN"))
 ggplot(counts.df.sk.tp, aes(y=counts,x=sort,color="red"))+geom_area(fill="#619CFF") +
     geom_area(data=counts.df.sk.fn, aes(y=counts,x=sort,color="blue"), fill="#F8766D") +
     geom_area(data=counts.df.sk.fp, aes(y=counts,x=sort,color="green"), fill="#00BA38") +
-    xlab("pathways")+
-    ylab("number of genes")+
+    xlab("Independently Ordered Pathways")+
+    ylab("Stacked Counts by Type")+
     scale_x_continuous(breaks=c(1,100,200,300,400), expand = c(0,0))+
     scale_y_continuous(expand = c(0,0))+
     theme(
@@ -149,14 +153,16 @@ counts.df.sk.indi<-rbind(counts.df.sk.fp,counts.df.sk.fn,counts.df.sk.tp)
 p<-ggplot(counts.df.sk.indi, aes(y=counts, x=sort, fill=type))
 p + geom_area() + 
     scale_fill_manual(values=c("#00BA38","#F8766D","#619CFF")) +
-    xlab("pathways")+
-    ylab("number of genes")+
-    scale_x_continuous(breaks=c(1,100,200,300,400), expand = c(0,0))+
+    xlab("Independently Ordered Pathways")+
+    ylab("Stacked Counts by Type")+
+        scale_x_continuous(breaks=c(1,100,200,300,400), expand = c(0,0))+
     scale_y_continuous(expand = c(0,0))+
     theme(
          panel.background = element_rect(fill = 'white'),
-         legend.position = "none"
-    )
+         legend.position = "none",
+         axis.text=element_text(size=22),
+         axis.title=element_text(size=22)
+         )
 
 #median and means
 tp.med <- median(unlist(counts.df.sk.tp$counts))
