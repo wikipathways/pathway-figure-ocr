@@ -41,7 +41,7 @@ These files are exported to a designated folder, e.g., pmc/20150501/images_all
 
 ### Prune Images
 
-Another manual step here to increase accuracy of downstream counts. Make a copy of the images_all dir, renaming to images_pruned. View the extracted images in Finder, for example, and delete pairs of files associated with figures that are not actually pathways. In this first sample run, ~20% of images were pruned away. The most common non-pathway figures wer of gel electrophoresis runs. _Consider automated ways to either exclude gel figures or select only pathway images to scale this step up._
+Another manual step here to increase accuracy of downstream counts. Make a copy of the images*all dir, renaming to images_pruned. View the extracted images in Finder, for example, and delete pairs of files associated with figures that are not actually pathways. In this first sample run, ~20% of images were pruned away. The most common non-pathway figures wer of gel electrophoresis runs. \_Consider automated ways to either exclude gel figures or select only pathway images to scale this step up.*
 
 ### Load into Database
 
@@ -289,19 +289,4 @@ rm species2pubtator organism2pubtator
 
 ### Running Database Queries
 
-Anders found the program [pgManage](https://github.com/pgManage/pgManage) easier to use than psql for interactive queries. You can install it by choosing the appropriate package from [releases](https://github.com/pgManage/pgManage/releases), e.g., `pgManage-10.3.0.dmg` for macOS.
-
-#### Create a tunnel
-
-Set up your ssh connection to rely on your SSH key (use `ssh-copy-id`). Then tunnel local port 3333 to remote port 5432:
-
-```
-ssh -L 3333:wikipathways-workspace.gladstone.internal:5432 ariutta@wikipathways-workspace.gladstone.internal
-```
-
-Next open `pgManage` and create a connection named `pfocr_plus` with:
-
-* Host `127.0.0.1`
-* Port `3333`
-* DB Name `pfocr_plus`
-* SSL Mode: `prefer`
+See database/README.md
