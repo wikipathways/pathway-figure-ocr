@@ -1,8 +1,8 @@
+## Generate Performance Measures for Plots and Table
+
 install.packages(c("ggplot2"))
 install.packages(c("RColorBrewer"))
 library(ggplot2,RColorBrewer)
-
-setwd("~/Dropbox (Gladstone)/Pathway Figure OCR/wp_hs_pfocr")
 
 #read pfocr and gmt
 pfocr <- read.csv('20180418_wp_hs_pfocr_sub.csv',stringsAsFactors = F)
@@ -29,10 +29,10 @@ for(i in 1:nrow(gmt)){
 }
 
 #take intersection with lexicon to exclude entrez ids that we didn't attempt to match, e.g., miRNA
-lex1 <- read.csv('1_symbol.csv',stringsAsFactors = F)
-lex2 <- read.csv('2_bioentities.csv',stringsAsFactors = F)
-lex3 <- read.csv('3_alias_symbol.csv',stringsAsFactors = F)
-lex4 <- read.csv('4_prev_symbol.csv',stringsAsFactors = F)
+lex1 <- read.csv('../lexicon/1_symbol.csv',stringsAsFactors = F)
+lex2 <- read.csv('../lexicon/2_bioentities.csv',stringsAsFactors = F)
+lex3 <- read.csv('../lexicon/3_alias_symbol.csv',stringsAsFactors = F)
+lex4 <- read.csv('../lexicon/4_prev_symbol.csv',stringsAsFactors = F)
 lex<- c(lex1[,1], lex2[,1], lex3[,1], lex4[,1])
 lex <- unique(lex)
 gmt.lex.nl <- c()
@@ -212,3 +212,36 @@ ppvtpr.std.sum <- sqrt(ppv.std^2+tpr.std^2)
 fm.std <-2*(ppv.med * tpr.med / ppvtpr.med.sum *
     sqrt((ppv.std/ppv.med)^2+
              (tpr.std/tpr.med)^2 +(ppvtpr.std.sum/ppvtpr.med.sum)^2))
+
+
+#################
+# Percent coverage of WP human signaling pathways
+install.packages('rWikiPathways')
+library(rWikiPathways)
+
+## take subset of pathways tagged with a child term of 'signaling pathway'
+sigwp<-getPathwayIdsByParentOntologyTerm("PW:0000003")
+gmt.sig.nl <- c()
+for(p in names(gmt.nl)){
+    if(p %in% sigwp)
+        gmt.sig.nl[[p]] <- gmt.nl[[p]]
+}
+length(gmt.sig.nl)
+
+## take intersection with lexicon to exclude entrez ids that we didn't attempt to match, e.g., miRNA
+gmt.sig.lex.nl <- c()
+for(p in names(gmt.sig.nl)){
+    gmt.sig.lex.nl[[p]] <- intersect(gmt.nl[[p]],lex)
+}
+
+## get unique list of WP human signaling pathway genes
+gmt.sig.lex.genes <- unique(unlist(gmt.sig.lex.nl))
+
+## get unique list of PFOCR.4000 genes
+pfocr.4000 <- read.csv('20180413_4000_pfocr_sub.csv',stringsAsFactors = F)
+pfocr.4000.nl <- unstack(pfocr.4000[,2:1])
+pfocr.4000.genes <- unique(unlist(pfocr.4000.nl))
+
+## compare
+overlap<-length(intersect(gmt.sig.lex.genes,pfocr.4000.genes))
+ratio<-overlap/length(gmt.sig.lex.genes)

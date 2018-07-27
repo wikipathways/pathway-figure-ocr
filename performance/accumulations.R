@@ -1,4 +1,4 @@
-setwd("~/Dropbox (Gladstone)/Pathway Figure OCR/wp_hs_pfocr")
+## Generate Plot of Accumulating Unique Genes
 
 #read wp and 4000 pfocr
 pfocr.wp <- read.csv('20180418_wp_hs_pfocr_sub.csv',stringsAsFactors = F)
@@ -21,8 +21,8 @@ pfocr.4000.mean
 #plot accumulation of unique genes in pfocr WP
 unique.genes<-c()
 unique.genes.counts<-c()
-for (p in names(pfocr.nl)){
-    unique.genes <- c(unique.genes, setdiff(pfocr.nl[[p]],unique.genes))
+for (p in names(pfocr.wp.nl)){
+    unique.genes <- c(unique.genes, setdiff(pfocr.wp.nl[[p]],unique.genes))
     unique.genes.counts <- c(unique.genes.counts,length(unique.genes))
 }
 plot(unique.genes.counts)

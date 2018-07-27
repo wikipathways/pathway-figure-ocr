@@ -1,8 +1,8 @@
+## Perform Clustering and Binary Heatmap
+
 install.packages(c("gplots","ggplot2","RColorBrewer"))
 library(ggplot2,RColorBrewer,gplots)
 # Alt color palette to consider: https://cran.r-project.org/web/packages/viridis/index.html
-
-setwd("~/Dropbox (Gladstone)/Pathway Figure OCR/wp_hs_pfocr")
 
 #read pfocr 
 pfocr.4000 <- read.csv('20180413_4000_pfocr_sub.csv',stringsAsFactors = F)
@@ -157,35 +157,3 @@ gplots::heatmap.2(pfocr.4000.nobe.top.matrix.k,
                   Rowv=F
 )
 #dev.off()
-
-# #HEATMAP #2b: subset of #2 for figure
-# ## clusters 8-13
-# ## subset clusters and prep color strip
-# sub.k.num.start=8
-# sub.k.num.end=13
-# sub.k.num=sub.k.num.end-sub.k.num.start+1
-# clusters2b<-clusters2[8:13]
-# selcol2b <- colorRampPalette(RColorBrewer::brewer.pal(sub.k.num,"Set1"))
-# clustcol.height2b = selcol2b(sub.k.num);
-# 
-# ## prep matrix, order and color by clusters
-# pfocr.4000.nobe.top.matrix2b<- as.matrix(pfocr.4000.nobe.top.matrix.df)
-# pfocr.4000.nobe.top.matrix.k2b<-as.matrix(pfocr.4000.nobe.top.matrix2b[unname(unlist(clusters2b)),])
-# hh.k2b<-hh2[unname(unlist(clusters2b))]
-# hh.k2b<-sapply(hh.k2b, function(x) x-(sub.k.num.start-1))
-# #write.csv(hh.k2b,"clusters_nobe_top10x7sub.csv")
-# 
-# ## plot (uncomment to print)
-# #png(filename = "pfocr_4000_nobe_top10x7sub_cluster.png", width = 5000, height=6000,res = 175)
-# gplots::heatmap.2(pfocr.4000.nobe.top.matrix.k2b, 
-#                   key = F,
-#                   dendrogram="none",
-#                   trace="none",
-#                   scale="none", 
-#                   col=c("white","blue"), 
-#                   RowSideColors=clustcol.height2b[hh.k2b],
-#                   xlab="Entrez Gene IDs",
-#                   ylab="PMCIDs",
-#                   Rowv=F
-# )
-# #dev.off()
