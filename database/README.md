@@ -22,6 +22,8 @@ sudo systemctl enable postgresql
 sudo systemctl start postgresql
 ```
 
+Don't use this: `sudo systemctl start postgresql`
+
 ```sh
 sudo su - postgres
 psql
@@ -33,11 +35,11 @@ Exit from psql: `\q`.
 exit
 ```
 
-## Loading Lexicon 
-Load each of your source lexicon files in order of preference (use filename numbering, e.g., ```1_symbol.csv```) to populate unique ```xrefs``` and ```symbols``` tables which are then referenced by the ```lexicon``` table. A temporary ```s``` table holds *previously seen* symbols (i.e., from preferred sources) to exclude redundancy across sources. However, many-to-many mappings are expected *within* a source, e.g., complexes and families.
+## Loading Lexicon
+
+Load each of your source lexicon files in order of preference (use filename numbering, e.g., `1_symbol.csv`) to populate unique `xrefs` and `symbols` tables which are then referenced by the `lexicon` table. A temporary `s` table holds _previously seen_ symbols (i.e., from preferred sources) to exclude redundancy across sources. However, many-to-many mappings are expected _within_ a source, e.g., complexes and families.
 
 ```sh
-
 # clear tables before inserting new content
 delete from lexicon;
 delete from xrefs;
@@ -81,3 +83,21 @@ drop table t;
 drop table s;
 ```
 
+### Running Database Queries
+
+Anders found the program [pgManage](https://github.com/pgManage/pgManage) easier to use than psql for interactive queries. You can install it by choosing the appropriate package from [releases](https://github.com/pgManage/pgManage/releases), e.g., `pgManage-10.3.0.dmg` for macOS.
+
+#### Create a tunnel
+
+Set up your ssh connection to rely on your SSH key (use `ssh-copy-id`). Then tunnel local port 3333 to remote port 5432:
+
+```
+ssh -L 3333:wikipathways-workspace.gladstone.internal:5432 ariutta@wikipathways-workspace.gladstone.internal
+```
+
+Next open `pgManage` and create a connection named `pfocr_plus` with:
+
+* Host `127.0.0.1`
+* Port `3333`
+* DB Name `pfocr_plus`
+* SSL Mode: `prefer`
