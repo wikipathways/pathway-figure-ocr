@@ -6,6 +6,7 @@ import psycopg2
 import psycopg2.extras
 from get_pg_conn import get_pg_conn
 
+
 try:
     conn = get_pg_conn()
     figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
