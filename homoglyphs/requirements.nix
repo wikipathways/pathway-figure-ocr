@@ -1,8 +1,8 @@
-# generated using pypi2nix tool (version: 1.8.0)
+# generated using pypi2nix tool (version: 1.8.1)
 # See more at: https://github.com/garbas/pypi2nix
 #
 # COMMAND:
-#   pypi2nix -V 3 -e homoglyphs
+#   pypi2nix -V 3 -e homoglyphs==1.2.5
 #
 
 { pkgs ? import <nixpkgs> {}
@@ -18,6 +18,15 @@ let
     inherit pkgs;
     inherit (pkgs) stdenv;
     python = pkgs.python3;
+    # patching pip so it does not try to remove files when running nix-shell
+    overrides =
+      self: super: {
+        bootstrapped-pip = super.bootstrapped-pip.overrideDerivation (old: {
+          patchPhase = old.patchPhase + ''
+            sed -i               -e "s|paths_to_remove.remove(auto_confirm)|#paths_to_remove.remove(auto_confirm)|"                -e "s|self.uninstalled = paths_to_remove|#self.uninstalled = paths_to_remove|"                  $out/${pkgs.python35.sitePackages}/pip/req/req_install.py
+          '';
+        });
+      };
   };
 
   commonBuildInputs = [];
@@ -46,6 +55,7 @@ let
           done
           pushd $out/bin
           ln -s ${pythonPackages.python.executable} python
+          ln -s ${pythonPackages.python.executable}               python3
           popd
         '';
         passthru.interpreter = pythonPackages.python;
@@ -56,7 +66,7 @@ let
       mkDerivation = pythonPackages.buildPythonPackage;
       packages = pkgs;
       overrideDerivation = drv: f:
-        pythonPackages.buildPythonPackage (drv.drvAttrs // f drv.drvAttrs);
+        pythonPackages.buildPythonPackage (drv.drvAttrs // f drv.drvAttrs //                                            { meta = drv.meta; });
       withPackages = pkgs'':
         withPackages (pkgs // pkgs'');
     };
@@ -66,28 +76,32 @@ let
   generated = self: {
 
     "homoglyphs" = python.mkDerivation {
-      name = "homoglyphs-1.2.4";
-      src = pkgs.fetchurl { url = "https://files.pythonhosted.org/packages/2e/1c/665bf3b6f013c8c32b3c02b005a3dbc16b4b2d8c0b46a0a0483a23f99ec1/homoglyphs-1.2.4.tar.gz"; sha256 = "4d6eeacd3ceb3f281f115b4cfdcea5d28879200c0948ca8e7ba803fa13ef8e2b"; };
+      name = "homoglyphs-1.2.5";
+      src = pkgs.fetchurl { url = "https://files.pythonhosted.org/packages/74/cd/5e8ab7e91e08f208ed68d22619cdf1540165c2eebd4e449c1547683142b4/homoglyphs-1.2.5.tar.gz"; sha256 = "6fc1664e87bd8a8c89115bea14d6a2e3708837d10e3bcbdfba10f03932bc42dc"; };
       doCheck = commonDoCheck;
       buildInputs = commonBuildInputs;
       propagatedBuildInputs = [ ];
       meta = with pkgs.stdenv.lib; {
-        homepage = "";
+        homepage = "https://github.com/orsinium/homoglyphs";
         license = licenses.lgpl3Plus;
         description = "Get homoglyphs for text, convert text to ASCII.";
       };
     };
 
   };
-  overrides = import ./requirements_override.nix { inherit pkgs python; };
+  localOverridesFile = ./requirements_override.nix;
+  overrides = import localOverridesFile { inherit pkgs python; };
   commonOverrides = [
 
   ];
+  allOverrides =
+    (if (builtins.pathExists localOverridesFile)
+     then [overrides] else [] ) ++ commonOverrides;
 
 in python.withPackages
    (fix' (pkgs.lib.fold
             extends
             generated
-            ([overrides] ++ commonOverrides)
+            allOverrides
          )
    )

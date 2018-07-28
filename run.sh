@@ -1,13 +1,13 @@
 #! /bin/bash
 
-function finish {
-  echo "Error on line $1"
-  exit 1
+function finish() {
+        echo "Error on line $1"
+        exit 1
 }
 
 trap 'finish $LINENO' SIGINT SIGTERM ERR
 
-./pfocr.py clear matches;
+./pfocr.py clear matches
 #./pfocr.py match -n stop -n nfkc -n upper -n swaps -n deburr -n alphanumeric -m root -m one_to_I;
 #./pfocr.py match -n stop -n nfkc -n upper -m root -n swaps -n deburr -n alphanumeric -m one_to_I;
 #./pfocr.py match -n stop -n nfkc -n upper -n swaps -n deburr -n alphanumeric -m one_to_I -m root;
@@ -21,7 +21,7 @@ trap 'finish $LINENO' SIGINT SIGTERM ERR
 #./pfocr.py match -n stop -m expand -n stop -n upper -n swaps -n alphanumeric ;
 #./pfocr.py match -n stop -n nfkc -n deburr -m expand -n stop -m root -n upper -n swaps -n alphanumeric;
 
-./pfocr.py match -n stop -n nfkc -n deburr -m expand -m root -n swaps -n alphanumeric;
+./pfocr.py match -n stop -n nfkc -n deburr -m expand -m root -n swaps -n alphanumeric
 
 ./pfocr.py summarize
 
