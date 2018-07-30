@@ -1,0 +1,87 @@
+[
+{
+	"raw": "WNT9/10",
+	"parsed": ["WNT9", "WNT10"],
+	"cite": ""
+}, {
+	"raw": "WNT10/11",
+	"parsed": ["WNT10", "WNT11"],
+	"cite": ""
+}, {
+	"raw": "WNT10-11",
+	"parsed": ["WNT10", "WNT11"],
+	"cite": ""
+}, {
+	"raw": "WNT9-11",
+	"parsed": ["WNT9", "WNT10", "WNT11"],
+	"cite": ""
+}, {
+	"raw": "KDM6A/B",
+	"parsed": ["KDM6A", "KDM6B"],
+	"cite": ""
+}, {
+	"raw": "CDK25B/C",
+	"parsed": ["CDK25C", "CDK25B"],
+	"cite": ""
+}, {
+	"raw": "5-HT2A/2B",
+	"parsed": ["5-HT2A", "5-HT2B"],
+	"cite": ""
+}, {
+	"raw": "CDKN1A/2A",
+	"parsed": ["CDKN1A", "CDKN2A"],
+	"cite": ""
+}, {
+	"raw": "AdipoR1/R2",
+	"parsed": ["AdipoR1", "AdipoR2"],
+	"cite": ""
+}, {
+	"raw": "Wnt-1/3a",
+	"parsed": ["Wnt-1", "Wnt-3a"],
+	"cite": ""
+}, {
+	"raw": "IL-12/IL-23/IL-27",
+	"parsed": ["IL-12", "IL-23", "IL-27"],
+	"cite": ""
+}, {
+	"raw": "WNT1/HCK1-3/ABC",
+	"parsed": ["WNT1","HCK1","HCK2","HCK3","ABC"],
+	"cite": false
+}, {
+	"raw": "TLR2/1",
+	"parsed": ["TLR2","TLR1"],
+	"cite": ""
+}, {
+	"raw": "TLR2/6",
+	"parsed": ["TLR2","TLR6"],
+	"cite": ""
+}, {
+	"raw": "TLR1,2, 5",
+	"parsed": ["TLR2","TLR1","TLR5"],
+	"cite": ""
+}, {
+	"raw": "TLR1,2, and 5",
+	"parsed": ["TLR2","TLR1","TLR5"],
+	"cite": ""
+}, {
+	"raw": "TLR1,2 and 5",
+	"parsed": ["TLR2","TLR1","TLR5"],
+	"cite": ""
+}, {
+	"raw": "TLR1,2 or 5",
+	"parsed": ["TLR2","TLR1","TLR5"],
+	"cite": ""
+}, {
+	"raw": "TLR1,2or 5",
+	"parsed": ["TLR2","TLR1","TLR5"],
+	"cite": ""
+}, {
+	"raw": "MEKK1-3",
+	"parsed": ["MEKK1","MEKK2","MEKK3"],
+	"cite": ""
+}, {
+	"raw": "4000-3295",
+	"parsed": ["4000-3295"],
+	"cite": ""
+}
+]
