@@ -9,7 +9,6 @@
   }
 }
 
-//*
 GMEntries
 = first:GMs rest:(Newline GMs)* {
   return first.concat(
@@ -22,7 +21,7 @@ Newline
 = "\n"
 
 GMs
-= first:GM rest:(EnumSep? GM)* {
+= first:GM rest:(EnumSep GM)* {
   return first.concat(
     rest.map(gm => gm[1])
     .reduce((acc, g) => acc.concat(g), [])
@@ -69,7 +68,6 @@ GMSimple
 
 Base
 = (Integer "-")? Word "-"? { return text(); }
-//*/
 
 List
 = EnumRangeMix
@@ -92,7 +90,7 @@ Enums
 }
 
 EnumRangeMix
-= start:(EnumSuffix1A_1_A EnumSep)* ranges:Ranges end:(EnumSep EnumSuffix1A_1_A)* {
+= start:(Integer EnumSep)* ranges:Ranges end:(EnumSep Integer)* {
   return start.map(n => n.filter(isEnumSuffixA1A_A1_1A_1_A))
 	  .reduce((acc, g) => acc.concat(g), [])
 	  .concat(ranges)
@@ -113,7 +111,7 @@ Range
   const startInt = parseInt10(start);
   const endInt = parseInt10(end);
   return [...Array(1 + endInt - startInt).keys()]
-  .map(d => (startInt + d));
+  .map(d => String(startInt + d));
 }
 
 RangeSep
@@ -128,7 +126,7 @@ EnumSuffix1A_1_A = EnumSuffix1A_1_A_sep
 
 EnumSuffix1A_1_A_sep = result:(Integer EnumSep
 / EnumSuffixSingleLetter EnumSep
-/ EnumSuffix1A EnumSep?) {
+/ EnumSuffix1A EnumSep?) ! Word {
   return result[0];
 }
 
@@ -142,7 +140,7 @@ EnumSep
 = ","? " "? EnumWord " "?
 / " "? EnumChar " "?
 
-EnumChar = [\/,&]
+EnumChar = [\/,&|]
 
 EnumWord = "or" / "and"
 

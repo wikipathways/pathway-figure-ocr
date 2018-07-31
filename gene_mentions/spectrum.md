@@ -9,6 +9,7 @@ jq -r '.[].raw' spectrum.json
 ```
 
 Should the lexer/parser handle cases like `I` vs. `l` vs. `1`?
+How about this case: `WNT1/2 HCK1-3`?
 
 ## Note on Specific Cases
 
