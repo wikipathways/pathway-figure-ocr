@@ -30,8 +30,22 @@ GMs
 
 GM
 = GMDoubleSuffix
+/ GMDoubleRange
 / GMCompound
 / GMSimple
+
+// Needed to handle this case: ABC1-ABC3 => ABC1, ABC2, ABC3
+GMDoubleRange
+= base1:Base start:Integer RangeSep base2:Base end:Integer {
+  if (base1 !== base2) {
+    return false;
+  }
+
+  const startInt = parseInt10(start);
+  const endInt = parseInt10(end);
+  return [...Array(1 + endInt - startInt).keys()]
+  .map(d => base1 + String(startInt + d));
+}
 
 // Needed to handle this case: AdipoR1/R2 => AdipoR1 & AdipoR2
 GMDoubleSuffix
