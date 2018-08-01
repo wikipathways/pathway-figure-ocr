@@ -45,3 +45,7 @@ echo ';' >> gm.g4
 antlr4 gm.g4; javac gm*.java
 grun gm gmentries -tree ./input.txt
 ```
+
+```
+antlr4 gm.g4; javac gm*.java; grun gm gmentries -tree ./ranges.txt
+```
