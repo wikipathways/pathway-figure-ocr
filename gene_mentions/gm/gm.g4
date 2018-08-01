@@ -3,12 +3,9 @@
 grammar gm;
 
 /*
-gmentries
-         : gms (NEWLINE gms)*
-         ;
-gms      : gm ( ENUMSEP gm )*
-         ;
 */
+gmentries : gms (NEWLINE gms)* NEWLINE? EOF? ;
+gms      : gm ( ENUMSEP gm )* ;
 gm       : gmdoublesuffix
            | gmdoublerange
            | gmcompound
