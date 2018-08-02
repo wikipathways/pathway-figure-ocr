@@ -49,3 +49,7 @@ grun gm gmentries -tree ./input.txt
 ```
 antlr4 gm.g4; javac gm*.java; grun gm gmentries -tree ./ranges.txt
 ```
+
+```
+antlr4 gmLexer.g4 gmParser.g4; javac gm*.java; grun gm gmentries -tree ./input.txt
+```
