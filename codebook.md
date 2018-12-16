@@ -10,10 +10,17 @@ The sections below detail the steps taken to generate files and run scripts for 
 
 _These scripts are capable of populating the database with structured paper and figure information for future OCR runs._
 
-This url returns >77k figures from PMC articles matching "signaling pathways". Approximately 80% of these are actually pathway figures. These make a reasonably efficient source of sample figures to test methods. _Consider other search terms and other sources when scaling up._
+This url returns >90k figures from PMC articles matching "signaling pathways". Approximately 80% of these are actually pathway figures. These make a reasonably efficient source of sample figures to test methods. _Consider other search terms and other sources when scaling up._
 
 ```
-http://www.ncbi.nlm.nih.gov/pmc/?term=signaling+pathway&report=imagesdocsum
+http://www.ncbi.nlm.nih.gov/pmc/?term=signaling+pathway&report=imagesdocsum&dispmax=100
+```
+
+You can add publication dates to the query with additional terms. Note the use of a colon for date ranges.
+
+```
+https://www.ncbi.nlm.nih.gov/pmc/?term=signaling+pathway+AND+2018+[pdat]&report=imagesdocsum&dispmax=100
+https://www.ncbi.nlm.nih.gov/pmc/?term=signaling+pathway+AND+2016+:+2018+[pdat]&report=imagesdocsum&dispmax=100
 ```
 
 ### Scrape HTML
@@ -21,7 +28,6 @@ http://www.ncbi.nlm.nih.gov/pmc/?term=signaling+pathway&report=imagesdocsum
 For sample sets you can simply save dozens of pages of results and quickly get 1000s of pathway figures. _Consider automating this step when scaling up._
 
 ```
-Set Display Settings: to max (100)
 Save raw html to designated folder, e.g., pmc/20150501/raw_html
 ```
 
