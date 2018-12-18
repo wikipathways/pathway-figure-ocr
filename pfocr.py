@@ -3,7 +3,7 @@
 
 import argparse
 import json
-from pathlib import Path
+from pathlib import Path, PurePath
 import psycopg2
 import re
 import os
@@ -140,8 +140,10 @@ def ocr(args):
 def load_figures(args):
     figures_dir = args.dir
 
-    #figure_paths = list(Path(__file__).glob(figures_dir + '/*.{jpeg,jpg,png,JPEG,JPG,PNG}'))
-    figure_paths = list(Path(cwd).glob(figures_dir + '/*.png'))
+    figure_paths = list()
+    for x in os.listdir(PurePath(cwd, figures_dir)):
+        if re.match('.*\.jpg$|.*\.jpeg$|.*\.png$', x, flags=re.IGNORECASE):
+            figure_paths.append(Path(x))
 
     conn = get_pg_conn()
     papers_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)

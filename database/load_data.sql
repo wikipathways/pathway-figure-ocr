@@ -1,4 +1,4 @@
-\c pfocr;
+\c pfocr2018121717;
 
 COPY organism_names(
         organism_id,
@@ -26,4 +26,4 @@ COPY pmcs(
         pmid,
         manuscript_id,
         release_date
-) FROM '/home/pfocr/PMC-ids.csv' DELIMITER ',' CSV HEADER; 
+) FROM '/home/pfocr/PMC-ids.unix.csv' DELIMITER ',' CSV HEADER; 

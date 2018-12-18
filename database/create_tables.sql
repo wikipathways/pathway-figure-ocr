@@ -1,5 +1,5 @@
-CREATE DATABASE pfocr;
-\c pfocr;
+CREATE DATABASE pfocr2018121717;
+\c pfocr2018121717;
 /*SET ROLE pfocr;*/
 
 CREATE TABLE organism_names(

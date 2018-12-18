@@ -1,4 +1,4 @@
 import psycopg2
 
 def get_pg_conn():
-    return psycopg2.connect("dbname=pfocr")
+    return psycopg2.connect("dbname=pfocr2018121717")

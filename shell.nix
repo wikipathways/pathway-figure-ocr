@@ -15,6 +15,7 @@ stdenv.mkDerivation rec {
 
   # Customizable development requirements
   buildInputs = [
+    dos2unix
     # Add packages from nix-env -qaP | grep -i needle queries
     imagemagick
     inkscape
