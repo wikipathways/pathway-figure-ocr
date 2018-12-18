@@ -143,11 +143,12 @@ def load_figures(args):
     figure_paths = list()
     for x in os.listdir(PurePath(cwd, figures_dir)):
         if re.match('.*\.jpg$|.*\.jpeg$|.*\.png$', x, flags=re.IGNORECASE):
-            figure_paths.append(Path(x))
+            figure_paths.append(Path(PurePath(cwd, figures_dir, x)))
 
     conn = get_pg_conn()
     papers_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    organism_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     pmcid_to_paper_id = dict()
 
@@ -189,9 +190,21 @@ def load_figures(args):
                     papers_cur.execute(
                         "INSERT INTO papers (pmcid, organism_id) VALUES (%s, (SELECT organism_id FROM organism_names WHERE name = %s AND name_class = 'scientific name')) RETURNING id;", (pmcid, organism))
                 else:
-                    # TODO
+                    organism_cur.execute("SELECT organism_id FROM organism2pubtator INNER JOIN pmcs ON organism2pubtator.pmid = pmcs.pmid WHERE pmcs.pmcid = %s LIMIT 1;", (pmcid, ))
+                    organism_id = None
+                    organism_ids = organism_cur.fetchone()
+                    if organism_ids:
+                        organism_id=organism_ids[0]
+                    else:
+                        organism_cur.execute("SELECT organism_id FROM organism2pubmed INNER JOIN pmcs ON organism2pubmed.pmid = pmcs.pmid WHERE pmcs.pmcid = %s LIMIT 1;", (pmcid, ))
+                        organism_ids = organism_cur.fetchone()
+                        if organism_ids:
+                            organism_id=organism_ids[0]
+                        else:
+                            print('Failed to identify organism. Setting value of "1" (all) for organism_id.')
+                            organism_id = 1
                     papers_cur.execute(
-                        "INSERT INTO papers (pmcid) VALUES (%s) RETURNING id;", (pmcid, ))
+                        "INSERT INTO papers (pmcid, organism_id) VALUES (%s, %s) RETURNING id;", (pmcid, organism_id))
 
                 paper_id = papers_cur.fetchone()[0]
                 pmcid_to_paper_id[pmcid] = paper_id
