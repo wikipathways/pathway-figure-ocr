@@ -8,12 +8,13 @@ import psycopg2
 import re
 import os
 import sys
+import warnings
 from itertools import zip_longest
 import hashlib
 from wand.image import Image
 
 from match import match
-from ocr_pmc import ocr_pmc
+from ocr_pmc import get_engines, ocr_pmc
 from summarize import summarize
 from get_pg_conn import get_pg_conn
 
@@ -58,7 +59,7 @@ abbr_for_organism = {
 organism_for_abbr = {v: k for k, v in abbr_for_organism.items()}
 
 cwd = os.getcwd()
-
+LOGS_DIR="./outputs"
 
 def clear(args):
     target = args.target
@@ -132,9 +133,8 @@ def ocr(args):
     preprocessor = args.preprocessor
     if not preprocessor:
         preprocessor = "noop"
-    start = args.start
     limit = args.limit
-    ocr_pmc(engine, preprocessor, start, limit)
+    ocr_pmc(engine, preprocessor, limit)
 
 
 def load_figures(args):
@@ -149,6 +149,7 @@ def load_figures(args):
     papers_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     organism_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    pmcs_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     pmcid_to_paper_id = dict()
 
@@ -156,6 +157,15 @@ def load_figures(args):
         papers_cur.execute("SELECT id, pmcid FROM papers;")
         for row in papers_cur:
             pmcid_to_paper_id[row["pmcid"]] = row["id"]
+
+        pmcs_cur.execute("SELECT pmcid FROM pmcs;")
+        # TODO This method doesn't work:
+        #pmcids = set(pmcs_cur.fetchall()[0])
+        # This method does work, but isn't there a better way?
+        pmcs_cur_all = pmcs_cur.fetchall()
+        pmcids = set()
+        for row in pmcs_cur_all:
+            pmcids.add(row[0])
 
         for figure_path in figure_paths:
             filepath = str(figure_path.resolve())
@@ -182,6 +192,13 @@ def load_figures(args):
             print("Processing pmcid: %s figure_number: %s" %
                   (pmcid, figure_number))
 
+            if not pmcid in pmcids:
+                msg='{pmcid} not in table pmcs'.format(pmcid=pmcid)
+                warnings.warn(msg)
+                with open(LOGS_DIR + "/fails.txt", "a+") as failsfile:
+                    failsfile.write(msg)
+                continue
+
             paper_id = None
             if pmcid in pmcid_to_paper_id:
                 paper_id = pmcid_to_paper_id[pmcid]
@@ -190,6 +207,7 @@ def load_figures(args):
                     papers_cur.execute(
                         "INSERT INTO papers (pmcid, organism_id) VALUES (%s, (SELECT organism_id FROM organism_names WHERE name = %s AND name_class = 'scientific name')) RETURNING id;", (pmcid, organism))
                 else:
+                    # TODO: getting the organism in these next few steps could probably all be done in one SQL query
                     organism_cur.execute("SELECT organism_id FROM organism2pubtator INNER JOIN pmcs ON organism2pubtator.pmid = pmcs.pmid WHERE pmcs.pmcid = %s LIMIT 1;", (pmcid, ))
                     organism_id = None
                     organism_ids = organism_cur.fetchone()
@@ -201,8 +219,12 @@ def load_figures(args):
                         if organism_ids:
                             organism_id=organism_ids[0]
                         else:
-                            print('Failed to identify organism. Setting value of "1" (all) for organism_id.')
                             organism_id = 1
+                            msg='Failed to identify organism for {filepath}. Setting organism_id to value of "1" (all).'.format(filepath=filepath)
+                            warnings.warn(msg)
+                            with open(LOGS_DIR + "/fails.txt", "a+") as failsfile:
+                                failsfile.write(msg)
+
                     papers_cur.execute(
                         "INSERT INTO papers (pmcid, organism_id) VALUES (%s, %s) RETURNING id;", (pmcid, organism_id))
 
@@ -259,12 +281,9 @@ parser_clear.set_defaults(func=clear)
 parser_ocr = subparsers.add_parser('ocr',
                                    help='Run OCR on PMC figures and save results to database.')
 parser_ocr.add_argument('engine',
-                        help='OCR engine to use, e.g., gcv.')
+        help='OCR engine to use. Specify one: {}'.format(','.join(get_engines())))
 parser_ocr.add_argument('--preprocessor',
                         help='image preprocessor to use. default: no pre-processing.')
-parser_ocr.add_argument('--start',
-                        type=int,
-                        help='start of figures to process')
 parser_ocr.add_argument('--limit',
                         type=int,
                         help='limit number of figures to process')
