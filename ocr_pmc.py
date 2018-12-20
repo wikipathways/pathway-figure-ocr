@@ -9,14 +9,17 @@ import psycopg2
 import psycopg2.extras
 import re
 import hashlib
+import sys
 from dill.source import getsource
 
 from get_pg_conn import get_pg_conn
 
+def get_engines():
+    return ocr_engines.__all__
+
 def ocr_pmc(
         engine,
         preprocessor="noop",
-        start=1,
         limit=None,
         *args,
         **kwargs):
@@ -35,14 +38,6 @@ def ocr_pmc(
 
 
     print('Running ocr_pmc, using ' + engine)
-    if start:
-        print('starting with figure_id: ' + str(start))
-    else:
-        start = 1
-    limit_plus_one = limit
-    if limit:
-        limit_plus_one = limit + 1
-        print('limit on number of figures to process: ' + str(limit))
 
     try:
         prepare_image_str = getsource(prepare_image)
@@ -71,20 +66,16 @@ def ocr_pmc(
         figures_cur.execute('''
             SELECT figures.id, filepath FROM figures
             LEFT OUTER JOIN ocr_processors__figures ON figures.id = ocr_processors__figures.figure_id
-            WHERE (ocr_processors__figures.figure_id IS NULL
-                    OR ocr_processors__figures.ocr_processor_id <> %s)
-                AND figures.id >= %s;
-            ''', (ocr_processor_id, start))
+            WHERE ((ocr_processors__figures.ocr_processor_id IS NULL OR ocr_processors__figures.ocr_processor_id <> %s)
+                AND figures.id NOT IN (SELECT figure_id FROM ocr_processors__figures WHERE ocr_processor_id = %s));
+            ''', (ocr_processor_id, ocr_processor_id))
         figure_rows = figures_cur.fetchall()
-        print('start')
-        print(start)
 
-        print('limit')
-        print(limit)
+        print('limit: {}'.format(limit))
 
-        print('figure_row count')
-        print(len(figure_rows))
-        for figure_row in figure_rows[0:limit_plus_one]:
+        print('number of figures yet to be processed by ocr_processor {ocr_processor_id}: {remaining_figure_count}'.format(ocr_processor_id=ocr_processor_id, remaining_figure_count=len(figure_rows)))
+
+        for figure_row in figure_rows[0:limit]:
             print('Processing ' + figure_row["filepath"])
             figure_id = figure_row["id"]
             raw_filepath = figure_row["filepath"]
