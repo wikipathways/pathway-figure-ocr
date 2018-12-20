@@ -196,7 +196,7 @@ def load_figures(args):
                 msg='{pmcid} not in table pmcs'.format(pmcid=pmcid)
                 warnings.warn(msg)
                 with open(LOGS_DIR + "/fails.txt", "a+") as failsfile:
-                    failsfile.write(msg)
+                    failsfile.write('\n' + msg)
                 continue
 
             paper_id = None
@@ -223,7 +223,7 @@ def load_figures(args):
                             msg='Failed to identify organism for {filepath}. Setting organism_id to value of "1" (all).'.format(filepath=filepath)
                             warnings.warn(msg)
                             with open(LOGS_DIR + "/fails.txt", "a+") as failsfile:
-                                failsfile.write(msg)
+                                failsfile.write('\n' + msg)
 
                     papers_cur.execute(
                         "INSERT INTO papers (pmcid, organism_id) VALUES (%s, %s) RETURNING id;", (pmcid, organism_id))
