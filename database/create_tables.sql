@@ -156,22 +156,29 @@ CREATE UNIQUE INDEX match_attempts_null_unique_idx
 ON match_attempts (ocr_processor_id, matcher_id, figure_id, transformed_word_id)
 WHERE transformed_word_id IS NULL;
 
-CREATE VIEW figures__xrefs AS SELECT pmcid,
-			figures.filepath AS figure_filepath,
-			match_attempts.word,
-			transformed_words.transformed_word,
-			symbols.symbol,
-			xrefs.xref,
-			lexicon.source,
-			match_attempts.transforms_applied
-		FROM match_attempts
-		INNER JOIN figures ON match_attempts.figure_id = figures.id
-		INNER JOIN papers ON figures.paper_id = papers.id
-		INNER JOIN transformed_words ON match_attempts.transformed_word_id = transformed_words.id
-		INNER JOIN symbols ON match_attempts.symbol_id = symbols.id
-		INNER JOIN lexicon ON symbols.id = lexicon.symbol_id
-		INNER JOIN xrefs ON lexicon.xref_id = xrefs.id
-		GROUP BY pmcid, figure_filepath, transformed_word, symbol, xref, word, source, transforms_applied;
+CREATE VIEW figures__xrefs AS WITH hgnc AS (
+	SELECT xref_id, symbol
+		FROM lexicon
+		INNER JOIN symbols ON lexicon.symbol_id = symbols.id
+		WHERE source = 'hgnc_symbol')
+	SELECT pmcid,
+		figures.filepath AS figure_filepath,
+		match_attempts.word,
+		transformed_words.transformed_word,
+		symbols.symbol,
+		hgnc.symbol as hgnc_symbol,
+		xrefs.xref,
+		lexicon.source,
+		match_attempts.transforms_applied
+                FROM match_attempts
+                INNER JOIN figures ON match_attempts.figure_id = figures.id
+                INNER JOIN papers ON figures.paper_id = papers.id
+                INNER JOIN transformed_words ON match_attempts.transformed_word_id = transformed_words.id
+                INNER JOIN symbols ON match_attempts.symbol_id = symbols.id
+                INNER JOIN lexicon ON symbols.id = lexicon.symbol_id
+                INNER JOIN xrefs ON lexicon.xref_id = xrefs.id
+                INNER JOIN hgnc ON lexicon.xref_id = hgnc.xref_id
+                GROUP BY pmcid, figure_filepath, transformed_word, symbols.symbol, xref, hgnc.symbol, word, source, transforms_applied;
 
 CREATE VIEW stats AS SELECT ocr_processors.engine AS ocr_engine,
 		ocr_processors.prepare_image AS image_preprocessor,

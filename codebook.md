@@ -175,6 +175,12 @@ bash run.sh
 copy (select * from figures__xrefs) to '/tmp/filename.csv' with csv;
 ```
 
+or
+
+```
+copy (\i database/pubtator_gene_matches.sql) to '/tmp/filename.csv' with csv;
+```
+
 #### Exploring results
 
 * Words extracted for a given paper:

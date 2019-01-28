@@ -29,14 +29,12 @@ stdenv.mkDerivation rec {
         # Add pythonPackages without the prefix
         dill
         # TODO clean up how I'm specifying the homoglyphs package.
-        # Right now, I can't just add homoglyphs below like this:
+        # When I first tried it, I couldn't just add homoglyphs below like this:
         #homoglyphs
         # I had to install it using pypi2nix:
-        #   pypi2nix -V 3 -e homoglyphs==1.2.5
+        #   (cd custom_pkgs; pypi2nix -V 3 -e homoglyphs==1.3.1)
         # and then use packages."homoglyphs", which looks ugly.
         packages."homoglyphs"
-        packages."confusable-homoglyphs"
-        #packages."v2d"
         idna
         pygpgme
         psycopg2

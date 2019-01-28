@@ -7,14 +7,36 @@ import psycopg2
 import psycopg2.extras
 import re
 import transforms
+import signal
 import sys
 from get_pg_conn import get_pg_conn
 
+
+# see https://filosophy.org/code/python-function-execution-deadlines---in-simple-examples/
+class TimedOutExc(Exception):
+    pass
+
+def deadline(timeout, *args):
+    def decorate(f):
+        def handler(signum, frame):
+            raise TimedOutExc()
+
+        def new_f(*args):
+            signal.signal(signal.SIGALRM, handler)
+            signal.alarm(timeout)
+            return f(*args)
+            signal.alarm(0)
+
+        new_f.__name__ = f.__name__
+        return new_f
+    return decorate
+
+@deadline(5)
 def attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, symbol_id, transformed_word):
     if transformed_word:
         matches.add(transformed_word)
         if transformed_word not in transformed_word_ids_by_transformed_word: 
-	    # This might not be the best way to insert. TODO: look at the proper way to handle this.
+            # This might not be the best way to insert. TODO: look at the proper way to handle this.
             transformed_words_cur.execute(
                 '''
                 INSERT INTO transformed_words (transformed_word)
@@ -106,7 +128,7 @@ def match(args):
     try:
         ocr_processors__figures_query = '''
         SELECT ocr_processor_id, figure_id, jsonb_extract_path(result, 'textAnnotations', '0', 'description') AS description
-        FROM ocr_processors__figures;
+        FROM ocr_processors__figures ORDER BY ocr_processor_id, figure_id;
         '''
         ocr_processors__figures_cur.execute(ocr_processors__figures_query)
 
@@ -150,7 +172,6 @@ def match(args):
 
         successes = []
         fails = []
-        #print('SUCCESSES: found matches for the following')
         for row in ocr_processors__figures_cur:
             ocr_processor_id = row["ocr_processor_id"]
             figure_id = row["figure_id"]
@@ -171,18 +192,33 @@ def match(args):
                                 transformed_words = []
                                 for transformed_word in transform_to_apply["transform"](transformed_word_prev):
                                     # perform match for original and uppercased words (see elif)
-                                    if transformed_word in symbol_ids_by_symbol: 
-                                        attempt_match(
-                                            args, matcher_id, transformed_word_ids_by_transformed_word, matches,
-                                            transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id,
-                                            figure_id, word, symbol_ids_by_symbol[transformed_word], transformed_word)
-                                    elif transformed_word.upper() in symbol_ids_by_symbol:
-                                        attempt_match(
-                                            args, matcher_id, transformed_word_ids_by_transformed_word, matches,
-                                            transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id,
-                                            figure_id, word, symbol_ids_by_symbol[transformed_word.upper()], transformed_word.upper())
-                                    else:
-                                        transformed_words.append(transformed_word)
+
+                                    try:
+                                        if transformed_word in symbol_ids_by_symbol: 
+                                            attempt_match(
+                                                args, matcher_id, transformed_word_ids_by_transformed_word, matches,
+                                                transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id,
+                                                figure_id, word, symbol_ids_by_symbol[transformed_word], transformed_word)
+                                        elif transformed_word.upper() in symbol_ids_by_symbol:
+                                            attempt_match(
+                                                args, matcher_id, transformed_word_ids_by_transformed_word, matches,
+                                                transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id,
+                                                figure_id, word, symbol_ids_by_symbol[transformed_word.upper()], transformed_word.upper())
+                                        else:
+                                            transformed_words.append(transformed_word)
+
+                                #    except TimedOutExc as e:
+                                #        print "took too long"
+
+                                    except(Exception) as e:
+                                        print('Unexpected Error:', e)
+                                        print('figure_id:', figure_id)
+                                        print('word:', word)
+                                        print('transformed_word:', transformed_word)
+                                        print('transforms_applied:', transforms_applied)
+                                        raise
+
+
                         if len(matches) == 0:
                             attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, None, None)
                     if len(matches) > 0:
@@ -201,10 +237,15 @@ def match(args):
         print('match: SUCCESS')
 
     except(psycopg2.DatabaseError) as e:
-        print('Error %s' % psycopg2.DatabaseError)
-        print('Error %s' % e)
-        sys.exit(1)
-        
+        print('Database Error %s' % psycopg2.DatabaseError)
+        print('Database Error (same one): %s' % e)
+        print('Database Error (same one):', e)
+        raise
+
+    except(Exception) as e:
+        print('Unexpected Error:', e)
+        raise
+
     finally:
         if conn:
             conn.close()
