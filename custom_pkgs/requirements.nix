@@ -2,7 +2,7 @@
 # See more at: https://github.com/garbas/pypi2nix
 #
 # COMMAND:
-#   pypi2nix -V 3 -e homoglyphs==1.2.5
+#   pypi2nix -V 3 -e homoglyphs==1.3.1
 #
 
 { pkgs ? import <nixpkgs> {}
@@ -76,8 +76,8 @@ let
   generated = self: {
 
     "homoglyphs" = python.mkDerivation {
-      name = "homoglyphs-1.2.5";
-      src = pkgs.fetchurl { url = "https://files.pythonhosted.org/packages/74/cd/5e8ab7e91e08f208ed68d22619cdf1540165c2eebd4e449c1547683142b4/homoglyphs-1.2.5.tar.gz"; sha256 = "6fc1664e87bd8a8c89115bea14d6a2e3708837d10e3bcbdfba10f03932bc42dc"; };
+      name = "homoglyphs-1.3.1";
+      src = pkgs.fetchurl { url = "https://files.pythonhosted.org/packages/0c/84/db578ac381fd59126d068d388e6a1c47d350d8f9822a9e58558a43def62f/homoglyphs-1.3.1.tar.gz"; sha256 = "b14a0d98eb2e050b2ad18b07a13ff01ba5773373913978152316a05a52e98277"; };
       doCheck = commonDoCheck;
       buildInputs = commonBuildInputs;
       propagatedBuildInputs = [ ];

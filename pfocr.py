@@ -59,7 +59,9 @@ abbr_for_organism = {
 organism_for_abbr = {v: k for k, v in abbr_for_organism.items()}
 
 cwd = os.getcwd()
+# TODO: should LOGS_DIR use '.', 'cwd' or 'current script path'?
 LOGS_DIR="./outputs"
+FAILS_FILE_PATH=Path(PurePath(LOGS_DIR, "fails.txt"))
 
 def clear(args):
     target = args.target
@@ -71,20 +73,16 @@ def clear(args):
             transformed_words_cur = conn.cursor()
 
             try:
+                open(Path(PurePath(LOGS_DIR, "successes.txt")), 'w').close()
+                open(FAILS_FILE_PATH, 'w').close()
+                open(Path(PurePath(LOGS_DIR, "results.tsv")), 'w').close()
+
                 match_attempts_cur.execute("DELETE FROM match_attempts;")
                 transformed_words_cur.execute("DELETE FROM transformed_words;")
 
-                os.remove("./output/successes.txt")
-                os.remove("./output/fails.txt")
-                os.remove("./output/results.tsv")
-
-            except(OSError, FileNotFoundError) as e:
-                # we don't care if the file we tried to remove didn't exist
-                pass
-
             except(psycopg2.DatabaseError) as e:
-                print('Error %s' % e)
-                sys.exit(1)
+                print('Database Error %s' % e, '\n', 'clear %s: FAIL' % target)
+                raise
 
             finally:
                 if match_attempts_cur:
@@ -101,13 +99,9 @@ def clear(args):
                     "DELETE FROM ocr_processors__figures;")
                 figures_cur.execute("DELETE FROM figures;")
 
-            except(OSError, FileNotFoundError) as e:
-                # we don't care if the file we tried to remove didn't exist
-                pass
-
             except(psycopg2.DatabaseError) as e:
-                print('Error %s' % e)
-                sys.exit(1)
+                print('Database Error %s' % e, '\n', 'clear %s: FAIL' % target)
+                raise
 
             finally:
                 if ocr_processors__figures_cur:
@@ -119,9 +113,12 @@ def clear(args):
         print("clear %s: SUCCESS" % target)
 
     except(psycopg2.DatabaseError) as e:
-        print('clear %s: FAIL' % target)
-        print('Error %s' % e)
-        sys.exit(1)
+        print('Database Error %s' % e, '\n', 'clear %s: FAIL' % target)
+        conn.rollback()
+
+    except(Exception) as e:
+        print('Unexpected Error:', sys.exc_info()[0], '\n', e)
+        conn.rollback()
 
     finally:
         if conn:
@@ -195,7 +192,7 @@ def load_figures(args):
             if not pmcid in pmcids:
                 msg='{pmcid} not in table pmcs'.format(pmcid=pmcid)
                 warnings.warn(msg)
-                with open(LOGS_DIR + "/fails.txt", "a+") as failsfile:
+                with open(FAILS_FILE_PATH, "a+") as failsfile:
                     failsfile.write('\n' + msg)
                 continue
 
@@ -222,7 +219,7 @@ def load_figures(args):
                             organism_id = 1
                             msg='Failed to identify organism for {filepath}. Setting organism_id to value of "1" (all).'.format(filepath=filepath)
                             warnings.warn(msg)
-                            with open(LOGS_DIR + "/fails.txt", "a+") as failsfile:
+                            with open(FAILS_FILE_PATH, "a+") as failsfile:
                                 failsfile.write('\n' + msg)
 
                     papers_cur.execute(
@@ -248,9 +245,7 @@ def load_figures(args):
         print('load_figures: SUCCESS')
 
     except(psycopg2.DatabaseError) as e:
-        print('load_figures: FAIL')
-        print('Error %s' % e)
-        sys.exit(1)
+        print('Database Error:', sys.exc_info()[0], '\n', e, '\n', 'load_figures: FAIL')
 
     finally:
         if papers_cur:
@@ -298,7 +293,7 @@ parser_load_figures.set_defaults(func=load_figures)
 
 # create the parser for the "match" command
 parser_match = subparsers.add_parser('match',
-                                     help='Extract data from OCR result and put into DB tables.')
+                                     help='Extract data from OCR result and put into DB tables. (See also run.sh)')
 parser_match.add_argument('-n', '--normalize',
                           action='append',
                           help='transform OCR result and lexicon')
@@ -327,7 +322,9 @@ def grouper(iterable, n, fillvalue=None):
 raw = sys.argv
 normalization_flags = ["-n", "--normalize"]
 mutation_flags = ["-m", "--mutate"]
-if raw[1] == "match":
+if len(raw) <= 1:
+    parser.print_help()
+elif raw[1] == "match":
     transforms = []
     for arg_pair in grouper(raw[2:], 2, 'x'):
         category_raw = arg_pair[0]
