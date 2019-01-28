@@ -1,7 +1,10 @@
 ## Perform Clustering and Binary Heatmap
 
 install.packages(c("gplots","ggplot2","RColorBrewer"))
-library(ggplot2,RColorBrewer,gplots)
+library(ggplot2)
+library(RColorBrewer)
+library(gplots)
+
 # Alt color palette to consider: https://cran.r-project.org/web/packages/viridis/index.html
 
 #read pfocr 

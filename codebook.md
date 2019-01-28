@@ -10,10 +10,17 @@ The sections below detail the steps taken to generate files and run scripts for 
 
 _These scripts are capable of populating the database with structured paper and figure information for future OCR runs._
 
-This url returns >77k figures from PMC articles matching "signaling pathways". Approximately 80% of these are actually pathway figures. These make a reasonably efficient source of sample figures to test methods. _Consider other search terms and other sources when scaling up._
+This url returns >90k figures from PMC articles matching "signaling pathways". Approximately 80% of these are actually pathway figures. These make a reasonably efficient source of sample figures to test methods. _Consider other search terms and other sources when scaling up._
 
 ```
-http://www.ncbi.nlm.nih.gov/pmc/?term=signaling+pathway&report=imagesdocsum
+http://www.ncbi.nlm.nih.gov/pmc/?term=signaling+pathway&report=imagesdocsum&dispmax=100
+```
+
+You can add publication dates to the query with additional terms. Note the use of a colon for date ranges.
+
+```
+https://www.ncbi.nlm.nih.gov/pmc/?term=signaling+pathway+AND+2018+[pdat]&report=imagesdocsum&dispmax=100
+https://www.ncbi.nlm.nih.gov/pmc/?term=signaling+pathway+AND+2016+:+2018+[pdat]&report=imagesdocsum&dispmax=100
 ```
 
 ### Scrape HTML
@@ -21,8 +28,7 @@ http://www.ncbi.nlm.nih.gov/pmc/?term=signaling+pathway&report=imagesdocsum
 For sample sets you can simply save dozens of pages of results and quickly get 1000s of pathway figures. _Consider automating this step when scaling up._
 
 ```
-Set Display Settings: to max (100)
-Save raw html to designated folder, e.g., pmc/20150501/raw_html
+Save raw html to designated folder, e.g., pmc/20150501/rawhtml
 ```
 
 Next, configure and run this php script to generated annotated sets of image and html files.
@@ -37,11 +43,11 @@ php pmc_image_parse.php
 
 _Consider loading caption information directly into database and skip exporting this html file_
 
-These files are exported to a designated folder, e.g., pmc/20150501/images_all
+These files are exported to a designated folder, e.g., pmc/20150501/images
 
 ### Prune Images
 
-Another manual step here to increase accuracy of downstream counts. Make a copy of the images*all dir, renaming to images_pruned. View the extracted images in Finder, for example, and delete pairs of files associated with figures that are not actually pathways. In this first sample run, ~20% of images were pruned away. The most common non-pathway figures wer of gel electrophoresis runs. \_Consider automated ways to either exclude gel figures or select only pathway images to scale this step up.*
+Another manual step here to increase accuracy of downstream counts. Make a copy of the ```images``` dir, renaming to ```images_pruned```. View the extracted images in Finder, for example, and delete pairs of files associated with figures that are not actually pathways. In this first sample run, ~20% of images were pruned away. The most common non-pathway figures were of gel electrophoresis runs. _Consider automated ways to either exclude gel figures or select only pathway images to scale this step up._
 
 ### Load into Database
 
