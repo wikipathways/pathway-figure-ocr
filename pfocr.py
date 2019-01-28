@@ -7,6 +7,7 @@ from pathlib import Path, PurePath
 import psycopg2
 import re
 import os
+import subprocess
 import sys
 import warnings
 from itertools import zip_longest
@@ -18,6 +19,10 @@ from ocr_pmc import get_engines, ocr_pmc
 from summarize import summarize
 from get_pg_conn import get_pg_conn
 
+
+CURRENT_SCRIPT_PATH = os.path.dirname(sys.argv[0])
+CURRENT_DB_PATH = Path(PurePath(CURRENT_SCRIPT_PATH, "CURRENT_DB"))
+CURRENT_DB = open(CURRENT_DB_PATH, "r").read().splitlines()[0]
 
 pmcid_re = re.compile('^(PMC\d+)__(.+)')
 
@@ -256,6 +261,13 @@ def load_figures(args):
             conn.close()
 
 
+def db_copy(args):
+    name = args.name
+    subprocess.run(["createdb", "-Opfocr", "-T%s" % CURRENT_DB, name])
+    with open(CURRENT_DB_PATH, 'w') as f:
+        f.write(name)
+
+
 # Create parser and subparsers
 parser = argparse.ArgumentParser(
     prog='pfocr',
@@ -271,6 +283,15 @@ parser_clear.add_argument('target',
                           help='What to clear',
                           choices=["figures", "matches"])
 parser_clear.set_defaults(func=clear)
+
+# create the parser for the "db_copy" command
+parser_db_copy = subparsers.add_parser('db_copy',
+                                     help='Create copy of current database and set as current.')
+parser_db_copy.add_argument('name',
+                          type=str,
+                          help='Name of new database')
+parser_db_copy.set_defaults(func=db_copy)
+
 
 # create the parser for the "ocr" command
 parser_ocr = subparsers.add_parser('ocr',
@@ -310,8 +331,6 @@ parser_match.set_defaults(func=match)
 args = parser.parse_args()
 
 # from python docs
-
-
 def grouper(iterable, n, fillvalue=None):
     "Collect data into fixed-length chunks or blocks"
     # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
