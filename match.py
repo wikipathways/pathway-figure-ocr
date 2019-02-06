@@ -12,6 +12,8 @@ import sys
 from get_pg_conn import get_pg_conn
 
 
+alphanumeric_re = re.compile('\w')
+
 # see https://filosophy.org/code/python-function-execution-deadlines---in-simple-examples/
 class TimedOutExc(Exception):
     pass
@@ -31,7 +33,7 @@ def deadline(timeout, *args):
         return new_f
     return decorate
 
-@deadline(5)
+#@deadline(20)
 def attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, symbol_id, transformed_word):
     if transformed_word:
         matches.add(transformed_word)
@@ -126,8 +128,9 @@ def match(args):
             normalizations.append(t)
 
     try:
+        #SELECT ocr_processor_id, figure_id, jsonb_extract_path(result, 'fullTextAnnotation', 'text') AS full_text
         ocr_processors__figures_query = '''
-        SELECT ocr_processor_id, figure_id, jsonb_extract_path(result, 'textAnnotations', '0', 'description') AS description
+        SELECT ocr_processor_id, figure_id, jsonb_extract_path(result, 'textAnnotations', '0', 'description') AS full_text
         FROM ocr_processors__figures ORDER BY ocr_processor_id, figure_id;
         '''
         ocr_processors__figures_cur.execute(ocr_processors__figures_query)
@@ -174,10 +177,14 @@ def match(args):
         fails = []
         for row in ocr_processors__figures_cur:
             ocr_processor_id = row["ocr_processor_id"]
+            #print("ocr_processor_id: %s" % ocr_processor_id)
+            #print("ocr_processor_id:")
+            #print(ocr_processor_id)
             figure_id = row["figure_id"]
-            paragraph = row["description"]
-            if paragraph:
-                for line in paragraph.split("\n"):
+            full_text = row["full_text"]
+            #print(full_text)
+            if full_text:
+                for line in full_text.split("\n"):
                     words = set()
                     words.add(line.replace(" ", ""))
                     matches = set()
@@ -188,36 +195,41 @@ def match(args):
                         transformed_words = [word]
                         for transform_to_apply in transforms_to_apply:
                             transforms_applied.append(transform_to_apply["name"])
-                            for transformed_word_prev in transformed_words:
-                                transformed_words = []
-                                for transformed_word in transform_to_apply["transform"](transformed_word_prev):
-                                    # perform match for original and uppercased words (see elif)
+                            try:
+                                for transformed_word_prev in [x for x in transformed_words if alphanumeric_re.match(x)]:
+                                    transformed_words = []
+                                    for transformed_word in transform_to_apply["transform"](transformed_word_prev):
+                                        # perform match for original and uppercased words (see elif)
 
-                                    try:
-                                        if transformed_word in symbol_ids_by_symbol: 
-                                            attempt_match(
-                                                args, matcher_id, transformed_word_ids_by_transformed_word, matches,
-                                                transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id,
-                                                figure_id, word, symbol_ids_by_symbol[transformed_word], transformed_word)
-                                        elif transformed_word.upper() in symbol_ids_by_symbol:
-                                            attempt_match(
-                                                args, matcher_id, transformed_word_ids_by_transformed_word, matches,
-                                                transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id,
-                                                figure_id, word, symbol_ids_by_symbol[transformed_word.upper()], transformed_word.upper())
-                                        else:
-                                            transformed_words.append(transformed_word)
+                                        try:
+                                            if transformed_word in symbol_ids_by_symbol: 
+                                                attempt_match(
+                                                    args, matcher_id, transformed_word_ids_by_transformed_word, matches,
+                                                    transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id,
+                                                    figure_id, word, symbol_ids_by_symbol[transformed_word], transformed_word)
+                                            elif transformed_word.upper() in symbol_ids_by_symbol:
+                                                attempt_match(
+                                                    args, matcher_id, transformed_word_ids_by_transformed_word, matches,
+                                                    transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id,
+                                                    figure_id, word, symbol_ids_by_symbol[transformed_word.upper()], transformed_word.upper())
+                                            else:
+                                                transformed_words.append(transformed_word)
 
-                                #    except TimedOutExc as e:
-                                #        print "took too long"
+                                    #    except TimedOutExc as e:
+                                    #        print "took too long"
 
-                                    except(Exception) as e:
-                                        print('Unexpected Error:', e)
-                                        print('figure_id:', figure_id)
-                                        print('word:', word)
-                                        print('transformed_word:', transformed_word)
-                                        print('transforms_applied:', transforms_applied)
-                                        raise
+                                        except(Exception) as e:
+                                            print('transformed_word:', transformed_word)
+                                            print('transforms_applied:', transforms_applied)
+                                            raise
 
+                            except(Exception) as e:
+                                print('Unexpected Error:', e)
+                                print('figure_id:', figure_id)
+                                print('word:', word)
+                                print('transformed_words:')
+                                print(transformed_words)
+                                raise
 
                         if len(matches) == 0:
                             attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, None, None)

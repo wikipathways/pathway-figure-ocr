@@ -2,6 +2,7 @@ import os, sys
 # needed to import deadline from parent dir
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
+import json
 import re
 from itertools import product
 from pathlib import Path, PurePath
@@ -9,6 +10,14 @@ from pathlib import Path, PurePath
 from confusable_homoglyphs import confusables
 from deadline import deadline, TimedOutExc
 
+
+# symbol_chars.json is obtained by running ../get_all_symbol_chars.py
+# NOTE: symbol_chars.json is missing things would be in gene mentions but not symbols,
+# such as comma, but that's ok, because those parts should be in the frozen zone(s).
+symbol_chars = set(json.loads(open(Path(PurePath(os.path.dirname(__file__), "symbol_chars.json")), "r").read()))
+#CURRENT_SCRIPT_PATH = os.path.dirname(sys.argv[0])
+#symbol_chars = set(json.loads(open(Path(PurePath(CURRENT_SCRIPT_PATH, "symbol_chars.json")), "r").read()))
+#symbol_chars = set(json.loads(open(Path(PurePath("./symbol_chars.json")), "r").read()))
 
 # Relevant links:
 # https://confusable-homoglyphs.readthedocs.io/en/latest/apidocumentation.html
@@ -30,14 +39,21 @@ from deadline import deadline, TimedOutExc
 #   this isn't focused on homoglyphs but does have a list of latin characters without
 #   a unicode decompositi
 
-# Phosphatidylethanolamine
+TIMEOUT = 1
+
+# note: we probably want to make this larger if we ever do non-genes
+# to handle items like Phosphatidylethanolamine
 WORD_LENGTH_LIMIT = 25
+#select symbol from symbols WHERE length(symbol) = (SELECT max(length(symbol)) FROM symbols);
+#          symbol
+#---------------------------
+# Propionyl_CoA_carboxylase
+# Interferon_gamma_receptor
+# Annexin_II_heterotetramer
 
 #CHUNK_COUNT_LIMIT = 3
 #CHUNK_LENGTH_LIMIT = 25
 #CHUNK_TOTAL_LENGTH_LIMIT = 25
-
-TIMEOUT = 1
 
 # We're using 128 instead of 256 because we want US-ASCII, not extended.
 # TODO: what about greek characters like alpha?
@@ -50,10 +66,13 @@ frozen_zone_re_strings = [
         '\s(?:and|or|&)\s',
         # TODO: should this be 2 or 3?
         '\d{2,}'
+        # TODO should we treat space as a frozen zone?
+        #'\s'
         ]
 frozen_zone_re_string_concatenated = '((?:' + ')|(?:'.join(frozen_zone_re_strings) + '))'
 frozen_zone_re = re.compile(frozen_zone_re_string_concatenated)
 
+FROZEN_CHARS = {' ', '\n'}
 char_to_hg_mappings = {}
 #input_to_variation_mappings = {}
 
@@ -96,8 +115,18 @@ def get_homoglyphs_for_char(char, prev_char=None):
 
     return hgs
 
-def get_ascii_homoglyphs_for_char(char):
-    if char in char_to_hg_mappings:
+def is_in_symbol_chars(chars):
+    is_in = True
+    for char in chars:
+        is_in = is_in and (char in symbol_chars)
+    return is_in
+
+def get_symbol_homoglyphs_for_char(char):
+    # NOTE: We don't want to remove spaces.
+    # TODO: Should we do this with the frozen_zone_re_strings instead?
+    if char in FROZEN_CHARS:
+        return [char]
+    elif char in char_to_hg_mappings:
         return char_to_hg_mappings[char]
     else:
         hgs = get_homoglyphs_for_char(char)
@@ -105,30 +134,18 @@ def get_ascii_homoglyphs_for_char(char):
 
         # We need to use max() below, because we can get multiple character homoglyphs
         # like ['f', 'i'] for an input like the fi ligature.
-        result = [hg for hg in hgs if max(map(ord, hg)) < ASCII_LIMIT]
+        result = [hg for hg in hgs if is_in_symbol_chars(hg)]
         char_to_hg_mappings[char] = result
         return result
 
-#def get_ascii_homoglyphs_for_char(char):
-#    hgs = get_homoglyphs_for_char(char)
-#    # see https://github.com/orsinium/homoglyphs/blob/master/homoglyphs/core.py
-#
-#    # We need to use max() below, because we can get multiple character homoglyphs
-#    # like ['f', 'i'] for an input like the fi ligature.
-#    result = [hg for hg in hgs if max(map(ord, hg)) < ASCII_LIMIT]
-#    return result
-
 # Based on https://github.com/orsinium/homoglyphs/blob/master/homoglyphs/core.py
-def _homoglyphs2ascii_chunk(chunk='', frozen_prefix='', frozen_suffix=''):
+def _homoglyphs2symbol_chars_chunk(chunk='', frozen_prefix='', frozen_suffix=''):
     if chunk == '':
         yield frozen_prefix + chunk + frozen_suffix
-#    elif len(chunk) > CHUNK_LENGTH_LIMIT:
-#        # each c below will only be one character, so we don't need to use max
-#        yield ''.join([c for c in chunk if ord(c) < ASCII_LIMIT])
     else:
         variations = []
         for char in chunk:
-            hgs = get_ascii_homoglyphs_for_char(char)
+            hgs = get_symbol_homoglyphs_for_char(char)
             if hgs:
                 variations.append(hgs)
         if variations:
@@ -137,13 +154,13 @@ def _homoglyphs2ascii_chunk(chunk='', frozen_prefix='', frozen_suffix=''):
 
         return variations
 
-def _homoglyphs2ascii(text):
+def _homoglyphs2symbol_chars(text):
     chunks_and_frozen_zones = frozen_zone_re.split(text)
     char_count = len(text)
     if char_count > WORD_LENGTH_LIMIT:
-        sys.stderr.write("\r\nhomoglyphs2ascii warning: input text below is too long. WORD_LENGTH_LIMIT is %s.\r\n" % WORD_LENGTH_LIMIT)
-        sys.stderr.write(text)
-        sys.stderr.write('\r\nreturning input text unchanged.\r\n')
+        #sys.stderr.write("\r\nhomoglyphs2symbol_chars warning: input text below is too long. WORD_LENGTH_LIMIT is %s.\r\n" % WORD_LENGTH_LIMIT)
+        #sys.stderr.write(text)
+        #sys.stderr.write('\r\nreturning input text unchanged.\r\n')
         return [text]
 #    chunk_count = (len(chunks_and_frozen_zones) - 1)/2 + 1
 #    if chunk_count > CHUNK_COUNT_LIMIT or len(text) > WORD_LENGTH_LIMIT:
@@ -154,42 +171,58 @@ def _homoglyphs2ascii(text):
         frozen_prefixes = next_frozen_prefixes
         next_frozen_prefixes = []
         for frozen_prefix in frozen_prefixes:
-            # TODO: for a case like 'RIG123 and DEF', we are running _homoglyphs2ascii_chunk
+            # TODO: for a case like 'RIG123 and DEF', we are running _homoglyphs2symbol_chars_chunk
             # multiple times for DEF, once for every homoglyph variation of RIG123
             # We might be able to improve this if we created an in-memory lookup table
             # of homoglyph variations for chunks.
-            for next_frozen_prefix in _homoglyphs2ascii_chunk(chunk, frozen_prefix, frozen_suffix):
+            for next_frozen_prefix in _homoglyphs2symbol_chars_chunk(chunk, frozen_prefix, frozen_suffix):
                 next_frozen_prefixes.append(next_frozen_prefix)
 
     final_chunk = chunks_and_frozen_zones[len(chunks_and_frozen_zones) - 1]
     frozen_prefixes = next_frozen_prefixes
     next_frozen_prefixes = []
     for frozen_prefix in frozen_prefixes:
-        for next_frozen_prefix in _homoglyphs2ascii_chunk(final_chunk, frozen_prefix):
+        for next_frozen_prefix in _homoglyphs2symbol_chars_chunk(final_chunk, frozen_prefix):
             next_frozen_prefixes.append(next_frozen_prefix)
 
     return next_frozen_prefixes
 
 
-@deadline(TIMEOUT)
-def homoglyphs2ascii(text):
+#@deadline(TIMEOUT)
+def homoglyphs2symbol_chars(text):
     result = []
     try:
-        result = _homoglyphs2ascii(text)
+        result = _homoglyphs2symbol_chars(text)
+        if not result:
+            result = [text]
+        elif result[0] != text:
+            # we want to keep the value from the OCR as the first in the list
+            result = [r for r in result if r != text]
+            result.insert(0, text)
+        # else is not needed, because it'd just be result = result
+
+#        text_is_ascii = max(map(ord, text)) < ASCII_LIMIT
+#        if not result:
+#            if text_is_ascii:
+#                result = [text]
+#            else:
+#                result = []
+#        else:
+#            if text_is_ascii and result[0] != text:
+#                # we want to keep the value from the OCR as the first in the list
+#                result = [r for r in result if r != text]
+#                result.insert(0, text)
+#            # else is not needed, because it'd just be result = result
     except TimedOutExc as e:
-        sys.stderr.write('\r\nhomoglyphs2ascii warning: timed out for this input text:\r\n')
+        sys.stderr.write('\r\nhomoglyphs2symbol_chars warning: timed out for this input text:\r\n')
         sys.stderr.write(text)
         sys.stderr.write('\r\nreturning input text unchanged.\r\n')
         result = [text]
         pass
     except:
         result = [text]
-        sys.stderr.write('\r\nhomoglyphs2ascii error: could not handle this input text:\r\n')
-        print_limit = 300
-        if len(text) < print_limit:
-            sys.stderr.write(text)
-        else:
-            sys.stderr.write(text[:print_limit], '...')
+        sys.stderr.write('\r\nhomoglyphs2symbol_chars error: could not handle this input text:\r\n')
+        sys.stderr.write(text)
         raise
         #pass
     return result

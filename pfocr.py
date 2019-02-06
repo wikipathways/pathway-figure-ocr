@@ -130,6 +130,15 @@ def clear(args):
             conn.close()
 
 
+# NOTE: the script 'copy_tables.sh' is (basically? exactly?) the same as running
+# db_copy + clear matches
+def db_copy(args):
+    name = args.name
+    subprocess.run(["createdb", "-Opfocr", "-T%s" % CURRENT_DB, name])
+    with open(CURRENT_DB_PATH, 'w') as f:
+        f.write(name)
+
+
 def ocr(args):
     engine = args.engine
     preprocessor = args.preprocessor
@@ -259,13 +268,6 @@ def load_figures(args):
             figures_cur.close()
         if conn:
             conn.close()
-
-
-def db_copy(args):
-    name = args.name
-    subprocess.run(["createdb", "-Opfocr", "-T%s" % CURRENT_DB, name])
-    with open(CURRENT_DB_PATH, 'w') as f:
-        f.write(name)
 
 
 # Create parser and subparsers

@@ -32,9 +32,12 @@ stdenv.mkDerivation rec {
         # When I first tried it, I couldn't just add homoglyphs below like this:
         #homoglyphs
         # I had to install it using pypi2nix:
-        #   (cd custom_pkgs; pypi2nix -V 3 -e homoglyphs==1.3.1)
+        #   (cd custom_pkgs; pypi2nix -V 3 -e homoglyphs==1.3.2)
+        #   (cd custom_pkgs; pypi2nix -V 3 -e homoglyphs==1.3.2 -e confusable_homoglyphs==3.2.0 -e bs4)
         # and then use packages."homoglyphs", which looks ugly.
+        packages."confusable-homoglyphs"
         packages."homoglyphs"
+        packages."bs4"
         idna
         pygpgme
         psycopg2

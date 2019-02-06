@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # use this if you want to re-run post-processing on a batch of figures that has already been OCRed.
+# NOTE: this script is (basically? exactly?) the same as running
+# pfocr.py: db_copy + clear matches
 
 # see https://stackoverflow.com/a/246128/5354298
 get_script_dir() { echo "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"; }
