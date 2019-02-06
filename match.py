@@ -7,31 +7,13 @@ import psycopg2
 import psycopg2.extras
 import re
 import transforms
-import signal
 import sys
+from deadline import deadline
 from get_pg_conn import get_pg_conn
 
 
 alphanumeric_re = re.compile('\w')
 
-# see https://filosophy.org/code/python-function-execution-deadlines---in-simple-examples/
-class TimedOutExc(Exception):
-    pass
-
-def deadline(timeout, *args):
-    def decorate(f):
-        def handler(signum, frame):
-            raise TimedOutExc()
-
-        def new_f(*args):
-            signal.signal(signal.SIGALRM, handler)
-            signal.alarm(timeout)
-            return f(*args)
-            signal.alarm(0)
-
-        new_f.__name__ = f.__name__
-        return new_f
-    return decorate
 
 #@deadline(20)
 def attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, matches, transforms_applied, match_attempts_cur, transformed_words_cur, ocr_processor_id, figure_id, word, symbol_id, transformed_word):
