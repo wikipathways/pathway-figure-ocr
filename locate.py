@@ -9,13 +9,9 @@ import psycopg2.extras
 import re
 import sys
 
-#from get_pg_conn import get_pg_conn
+from get_pg_conn import get_pg_conn
 
 from pathlib import Path, PurePath
-
-
-def get_pg_conn():
-    return psycopg2.connect("dbname=pfocr2018121717")
 
 
 def locate(args):

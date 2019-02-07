@@ -14,12 +14,7 @@ import re
 import sys
 from pathlib import Path, PurePath
 
-#from get_pg_conn import get_pg_conn
-
-# Use this if we need to override how we get a PG connection:
-#from pathlib import Path, PurePath
-def get_pg_conn():
-    return psycopg2.connect("dbname=pfocr2018121717")
+from get_pg_conn import get_pg_conn
 
 # If we see more figures in a paper than this,
 # we should double-check whether we have a
@@ -140,4 +135,4 @@ def europepmc(args):
             conn.close()
 
 if __name__ == '__main__':
-    europepmc(1)
+    europepmc(None)

@@ -14,10 +14,12 @@ from itertools import zip_longest
 import hashlib
 from wand.image import Image
 
+from get_pg_conn import get_pg_conn
+
+from mappbuilder import mappbuilder
 from match import match
 from ocr_pmc import get_engines, ocr_pmc
 from summarize import summarize
-from get_pg_conn import get_pg_conn
 
 
 CURRENT_SCRIPT_PATH = os.path.dirname(sys.argv[0])
@@ -325,8 +327,19 @@ parser_match.add_argument('-m', '--mutate',
                           help='transform only OCR result')
 
 # create the parser for the "summarize" command
-parser_summarize = subparsers.add_parser('summarize')
+parser_summarize = subparsers.add_parser('summarize',
+                                     help='Generate summary statistics for the results from the match step')
 parser_summarize.set_defaults(func=summarize)
+
+# create the parser for the "europepmc" command
+parser_europepmc = subparsers.add_parser('europepmc',
+                                     help='Generate EuropePMC submission file, replacing anything in europepmc.json')
+parser_europepmc.set_defaults(func=europepmc)
+
+# create the parser for the "mappbuilder" command
+parser_mappbuilder = subparsers.add_parser('mappbuilder',
+                                     help='Generate 4-column MAPPBuilder files, replacing anything in ./mappbuilder/')
+parser_mappbuilder.set_defaults(func=mappbuilder)
 
 parser_match.set_defaults(func=match)
 

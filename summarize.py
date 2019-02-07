@@ -55,22 +55,23 @@ def summarize(args):
         '''
         stats_cur.execute(stats_query)
             
-        # TODO are there any cases when the max ocr_processor_id value from match_attempts wouldn't be the ocr_processor we want to summarize?
-        summary_cur.execute("SELECT max(ocr_processor_id) FROM match_attempts;")
-        #summary_cur.execute("SELECT id FROM ocr_processors;")
-        ocr_processor_id = summary_cur.fetchone()[0]
-        summary_cur.execute("SELECT max(id) FROM ocr_processors;")
-        ocr_processor_id_alt = summary_cur.fetchone()[0]
-        if ocr_processor_id != ocr_processor_id_alt:
-            raise Exception("Error! ocr_processor_id mismatch in summarize.py: %s != %s" % (ocr_processor_id, ocr_processor_id_alt))
+        # TODO: should we allow multiple ocr_processor_ids in match_attempts?
+        summary_cur.execute("SELECT COUNT(DISTINCT ocr_processor_id) FROM match_attempts;")
+        ocr_processor_id_count = summary_cur.fetchone()[0]
+        if ocr_processor_id_count != 1:
+            raise Exception("Error in summarize.py: one ocr_processor_id expected in match_attempts, but there are %s" % (ocr_processor_id_count))
 
-        # TODO are there any cases when the max matcher_id value from match_attempts wouldn't be the matcher we want to summarize?
-        summary_cur.execute("SELECT max(matcher_id) FROM match_attempts;")
+        summary_cur.execute("SELECT ocr_processor_id FROM match_attempts LIMIT 1;")
+        ocr_processor_id = summary_cur.fetchone()[0]
+
+        # TODO: should we allow multiple matcher_ids in match_attempts?
+        summary_cur.execute("SELECT COUNT(DISTINCT matcher_id) FROM match_attempts;")
+        matcher_id_count = summary_cur.fetchone()[0]
+        if matcher_id_count != 1:
+            raise Exception("Error in summarize.py: one matcher_id expected in match_attempts, but there are %s" % (matcher_id_count))
+
+        summary_cur.execute("SELECT matcher_id FROM match_attempts LIMIT 1;")
         matcher_id = summary_cur.fetchone()[0]
-        summary_cur.execute("SELECT max(id) FROM matchers;")
-        matcher_id_alt = summary_cur.fetchone()[0]
-        if matcher_id != matcher_id_alt:
-            raise Exception("Error! matcher_id mismatch in summarize.py: %s != %s" % (matcher_id, matcher_id_alt))
 
         for row in stats_cur:
             paper_count = row["paper_count"]
