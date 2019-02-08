@@ -7,12 +7,16 @@ import os
 import psycopg2
 import psycopg2.extras
 import re
+from pathlib import Path, PurePath
 import sys
 
 from get_pg_conn import get_pg_conn
 
 def summarize(args):
-    conn = get_pg_conn()
+    db = args.db
+    output_dir = args.output_dir
+
+    conn = get_pg_conn(db)
     summary_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     stats_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     results_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -95,7 +99,7 @@ def summarize(args):
 
         conn.commit()
 
-        with open('./outputs/results.tsv', 'w', newline='') as resultsfile:
+        with open(Path(PurePath(output_dir, 'results.tsv')), 'w', newline='') as resultsfile:
             fieldnames = ["pmcid", "figure", "word", "symbol", "source", "hgnc_symbol", "entrez", "transforms_applied"]
             writer = csv.DictWriter(resultsfile, fieldnames=fieldnames, dialect='excel-tab')
             writer.writeheader()
@@ -112,7 +116,7 @@ def summarize(args):
 #                raise Exception("Error! row length %s doesn't match header length %s" % (row_length, header_length), '\n', ",".join(row_entries))
 #            output_rows.append(",".join(row_entries))
 #
-#        with open("./outputs/results.csv", "a+") as resultsfile:
+#        with open(Path(PurePath(output_dir, 'results.csv')), "a+") as resultsfile:
 #            resultsfile.write('\n'.join(output_rows))
 
     except(psycopg2.DatabaseError) as e:

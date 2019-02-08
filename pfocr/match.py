@@ -51,7 +51,9 @@ def attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, ma
         )
 
 def match(args):
-    conn = get_pg_conn()
+    db = args.db
+
+    conn = get_pg_conn(db)
     ocr_processors__figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     symbols_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     matchers_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -222,10 +224,10 @@ def match(args):
 
         conn.commit()
 
-        with open("./outputs/successes.txt", "a+") as successesfile:
+        with open("../outputs/successes.txt", "a+") as successesfile:
             successesfile.write('\n'.join(successes))
 
-        with open("./outputs/fails.txt", "a+") as failsfile:
+        with open("../outputs/fails.txt", "a+") as failsfile:
             failsfile.write('\n'.join(fails))
 
         print('match: SUCCESS')

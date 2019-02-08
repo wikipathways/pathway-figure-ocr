@@ -17,10 +17,11 @@ fig_id_re = re.compile(r".*(?:figure|fig|f)\.?\s?(S?\d+).*", flags=re.IGNORECASE
 pmcid_re = re.compile(r".*(PMC\d+).*")
 
 
-def parse_pmc_html(args):
-    rawhtml_dir = args["dir"]
+def load_pmc_html(args):
+    db = args.db
+    rawhtml_dir = args.input_dir
 
-    conn = get_pg_conn()
+    conn = get_pg_conn(db)
     figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     pmc_figure_hashlike_to_figure_id = {}
@@ -112,6 +113,3 @@ def parse_pmc_html(args):
     #print(pmc_figure_hashlike_to_figure_id)
     print(json.dumps(pmc_figure_hashlike_to_figure_id))
     return pmc_figure_hashlike_to_figure_id
-
-if __name__ == '__main__':
-    parse_pmc_html({"dir": "../pmc/20181216/rawhtml/"})

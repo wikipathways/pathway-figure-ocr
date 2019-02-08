@@ -69,12 +69,12 @@ psql
 \q
 ```
 
-Change dbname in `get_pg_conn.py`, if desired, then load figure data:
+Load figure data:
 
 First time (update with your image dir):
 
 ```sh
-./pfocr.py load_figures ../pmc/20181216/images/
+./pfocr/pfocr.py load_figures ../pmc/20181216/images/
 ```
 
 After first time, use this to copy everything:
@@ -124,7 +124,7 @@ nix-shell
 Caution: if you don't specify a `limit` value, it'll run until the last figure. Default `start` value is 0.
 
 ```sh
-./pfocr.py ocr gcv --preprocessor noop --start 1 --limit 20
+./pfocr/pfocr.py ocr gcv --preprocessor noop --start 1 --limit 20
 ```
 
 Note: This command calls `ocr_pmc.py` at the end, passing along args and functions. The `ocr_pmc.py` script then:

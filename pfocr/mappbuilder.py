@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 # Create four column MAPPBuilder files for the matches in the database
-# bash command to compress these: tar -zcf mappbuilder.tar.gz mappbuilder
+# Example: (export PFOCR_DB='pfocr20190128b'; ./pfocr/pfocr.py mappbuilder mappbuilder/inputs/ mappbuilder/outputs)
+#
+# a bash command to compress these: tar -zcf mappbuilder-results.tar.gz mappbuilder/outputs
 
 import csv
 from os import path, makedirs
@@ -15,12 +17,10 @@ from pathlib import Path, PurePath
 from get_pg_conn import get_pg_conn
 
 
-CURRENT_SCRIPT_DIR = path.dirname(path.abspath(__file__))
-OUTPUT_DIR = PurePath(CURRENT_SCRIPT_DIR, "mappbuilder")
 BRIDGEDB_SYSTEM_CODE_ENTREZ = 'L'
 
 
-def write_mappbuilder_file(sub_dir, figure_file_stem, matches):
+def write_mappbuilder_file(OUTPUT_DIR, sub_dir, figure_file_stem, matches):
     tsv_name = str(PurePath(OUTPUT_DIR, sub_dir, figure_file_stem + '.tsv'))
     with open(tsv_name, 'w', newline='') as tsvfile:
         for match in matches:
@@ -29,22 +29,32 @@ def write_mappbuilder_file(sub_dir, figure_file_stem, matches):
 
 
 def mappbuilder(args):
-    conn = get_pg_conn()
+    db = args.db
+    INPUT_DIR = PurePath(args.input_dir)
+    OUTPUT_DIR = PurePath(args.output_dir)
+
+    conn = get_pg_conn(db)
     annotations_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     try:
-        top100novel_figure_basenames = set(open(Path(PurePath(
-            CURRENT_SCRIPT_DIR, "top100novel.txt")), "r").read().split('\n'))
-        top100disease_figure_basenames = set(open(Path(PurePath(
-            CURRENT_SCRIPT_DIR, "top100disease.txt")), "r").read().split('\n'))
-        top100novel_disease_figure_basenames = set(open(Path(PurePath(
-            CURRENT_SCRIPT_DIR, "top100novel_disease.txt")), "r").read().split('\n'))
+        if not path.exists(OUTPUT_DIR):
+            makedirs(OUTPUT_DIR)
+        else:
+            # TODO: error or just delete?
+            raise Exception("Error: output directory %s already exists" % OUTPUT_DIR)
+            #shutil.rmtree(OUTPUT_DIR)
+            #makedirs(OUTPUT_DIR)
 
-        shutil.rmtree(OUTPUT_DIR)
-        makedirs(PurePath(OUTPUT_DIR, 'top100novel'))
-        makedirs(PurePath(OUTPUT_DIR, 'top100disease'))
-        makedirs(PurePath(OUTPUT_DIR, 'top100novel_disease'))
-        makedirs(PurePath(OUTPUT_DIR, 'all'))
+        expected_inputs = ['top100novel', 'top100disease', 'top100novel_disease']
+        for expected_input in (expected_inputs + ['all']):
+            dir_name = PurePath(OUTPUT_DIR, expected_input)
+            if not path.exists(dir_name):
+                makedirs(dir_name)
+
+        figure_basenames_by_category = dict()
+        for expected_input in expected_inputs:
+            figure_basenames_by_category[expected_input] = set(open(Path(PurePath(
+                INPUT_DIR, expected_input + ".txt")), "r").read().split('\n'))
 
         annotations_query = '''
         SELECT DISTINCT pmcid, figure_filepath, word, hgnc_symbol, xref as entrez
@@ -76,14 +86,11 @@ def mappbuilder(args):
         for figure_file_basename,matches in annotations_by_basename.items():
             figure_file_stem = PurePath(figure_file_basename).stem
 
-            write_mappbuilder_file('all', figure_file_stem, matches)
+            write_mappbuilder_file(OUTPUT_DIR, 'all', figure_file_stem, matches)
 
-            if figure_file_basename in top100novel_figure_basenames:
-                write_mappbuilder_file('top100novel', figure_file_stem, matches)
-            if figure_file_basename in top100disease_figure_basenames:
-                write_mappbuilder_file('top100disease', figure_file_stem, matches)
-            if figure_file_basename in top100novel_disease_figure_basenames:
-                write_mappbuilder_file('top100novel_disease', figure_file_stem, matches)
+            for category,figure_basenames in figure_basenames_by_category.items():
+                if figure_file_basename in figure_basenames:
+                    write_mappbuilder_file(OUTPUT_DIR, category, figure_file_stem, matches)
 
     except(psycopg2.DatabaseError) as e:
         print('Database Error %s' % psycopg2.DatabaseError)

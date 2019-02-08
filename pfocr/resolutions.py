@@ -8,7 +8,9 @@ from get_pg_conn import get_pg_conn
 
 
 try:
-    conn = get_pg_conn()
+    db = args.db
+
+    conn = get_pg_conn(db)
     figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     figures_cur.execute("SELECT * FROM figures;")
     for figure_row in figures_cur.fetchall():

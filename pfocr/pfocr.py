@@ -18,13 +18,12 @@ from get_pg_conn import get_pg_conn
 
 from mappbuilder import mappbuilder
 from match import match
+from load_pmc_html import load_pmc_html
 from ocr_pmc import get_engines, ocr_pmc
 from summarize import summarize
-
+from europepmc import europepmc
 
 CURRENT_SCRIPT_PATH = os.path.dirname(sys.argv[0])
-CURRENT_DB_PATH = Path(PurePath(CURRENT_SCRIPT_PATH, "CURRENT_DB"))
-CURRENT_DB = open(CURRENT_DB_PATH, "r").read().splitlines()[0]
 
 pmcid_re = re.compile('^(PMC\d+)__(.+)')
 
@@ -67,12 +66,13 @@ organism_for_abbr = {v: k for k, v in abbr_for_organism.items()}
 
 cwd = os.getcwd()
 # TODO: should LOGS_DIR use '.', 'cwd' or 'current script path'?
-LOGS_DIR="./outputs"
+LOGS_DIR="../outputs"
 FAILS_FILE_PATH=Path(PurePath(LOGS_DIR, "fails.txt"))
 
 def clear(args):
+    db = args.db
     target = args.target
-    conn = get_pg_conn()
+    conn = get_pg_conn(db)
 
     try:
         if target == "matches" or target == "figures":
@@ -135,30 +135,31 @@ def clear(args):
 # NOTE: the script 'copy_tables.sh' is (basically? exactly?) the same as running
 # db_copy + clear matches
 def db_copy(args):
-    name = args.name
-    subprocess.run(["createdb", "-Opfocr", "-T%s" % CURRENT_DB, name])
-    with open(CURRENT_DB_PATH, 'w') as f:
-        f.write(name)
+    template = args.template
+    db = args.db
+    subprocess.run(["createdb", "-Opfocr", "-T%s" % template, db])
 
 
 def ocr(args):
+    db = args.db
     engine = args.engine
     preprocessor = args.preprocessor
     if not preprocessor:
         preprocessor = "noop"
     limit = args.limit
-    ocr_pmc(engine, preprocessor, limit)
+    ocr_pmc(db, engine, preprocessor, limit)
 
 
 def load_figures(args):
-    figures_dir = args.dir
+    db = args.db
+    figures_dir = args.input_dir
 
     figure_paths = list()
     for x in os.listdir(PurePath(cwd, figures_dir)):
         if re.match('.*\.jpg$|.*\.jpeg$|.*\.png$', x, flags=re.IGNORECASE):
             figure_paths.append(Path(PurePath(cwd, figures_dir, x)))
 
-    conn = get_pg_conn()
+    conn = get_pg_conn(db)
     papers_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     organism_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -283,6 +284,9 @@ subparsers = parser.add_subparsers(title='subcommands',
 # create the parser for the "clear" command
 parser_clear = subparsers.add_parser('clear',
                                      help='Clear specified data from database.')
+parser_clear.add_argument('db',
+                        type=str,
+                        help='database name')
 parser_clear.add_argument('target',
                           help='What to clear',
                           choices=["figures", "matches"])
@@ -290,16 +294,22 @@ parser_clear.set_defaults(func=clear)
 
 # create the parser for the "db_copy" command
 parser_db_copy = subparsers.add_parser('db_copy',
-                                     help='Create copy of current database and set as current.')
-parser_db_copy.add_argument('name',
+                                     help='Create copy of a template database.')
+parser_db_copy.add_argument('template',
+                        type=str,
+                        help='template database to copy')
+parser_db_copy.add_argument('db',
                           type=str,
-                          help='Name of new database')
+                          help='name of new database')
 parser_db_copy.set_defaults(func=db_copy)
 
 
 # create the parser for the "ocr" command
 parser_ocr = subparsers.add_parser('ocr',
                                    help='Run OCR on PMC figures and save results to database.')
+parser_ocr.add_argument('db',
+                        type=str,
+                        help='database name')
 parser_ocr.add_argument('engine',
         help='OCR engine to use. Specify one: {}'.format(','.join(get_engines())))
 parser_ocr.add_argument('--preprocessor',
@@ -309,12 +319,54 @@ parser_ocr.add_argument('--limit',
                         help='limit number of figures to process')
 parser_ocr.set_defaults(func=ocr)
 
+# create the parser for the "europepmc" command
+parser_europepmc = subparsers.add_parser('europepmc',
+                                     help='Format data for EuropePMC submission')
+parser_europepmc.add_argument('db',
+                        type=str,
+                        help='database name')
+parser_europepmc.set_defaults(func=europepmc)
+
 # create the parser for the "load_figures" command
 parser_load_figures = subparsers.add_parser('load_figures',
                                             help='Load figures and optionally papers from specified dir')
-parser_load_figures.add_argument('dir',
+parser_load_figures.add_argument('db',
+                        type=str,
+                        help='database name')
+parser_load_figures.add_argument('input_dir',
                                  help='Directory containing figures and optionally papers')
 parser_load_figures.set_defaults(func=load_figures)
+
+# create the parser for the "load_pmc_html" command
+parser_load_pmc_html = subparsers.add_parser('load_pmc_html',
+                                     help='''
+Load captions and other data from PMC HTML (as used to display lists of figures).
+''')
+parser_load_pmc_html.add_argument('db',
+                        type=str,
+                        help='database name')
+parser_load_pmc_html.add_argument('input_dir',
+                        type=str,
+                        help='input directory path')
+parser_load_pmc_html.set_defaults(func=load_pmc_html)
+
+# create the parser for the "mappbuilder" command
+parser_mappbuilder = subparsers.add_parser('mappbuilder',
+                                     help='''
+Generate 4-column MAPPBuilder files for each figure_basename list.
+Example:
+(export PFOCR_DB='pfocr20190128b'; ./pfocr/pfocr.py mappbuilder mappbuilder/inputs/ mappbuilder/outputs)
+''')
+parser_mappbuilder.add_argument('db',
+                        type=str,
+                        help='database name')
+parser_mappbuilder.add_argument('input_dir',
+                        type=str,
+                        help='input directory path (contains figure_basename lists like top100novel.txt)')
+parser_mappbuilder.add_argument('output_dir',
+                        type=str,
+                        help='output directory path')
+parser_mappbuilder.set_defaults(func=mappbuilder)
 
 # create the parser for the "match" command
 parser_match = subparsers.add_parser('match',
@@ -325,23 +377,24 @@ parser_match.add_argument('-n', '--normalize',
 parser_match.add_argument('-m', '--mutate',
                           action='append',
                           help='transform only OCR result')
+parser_match.add_argument('[db]',
+                        type=str,
+                        help='database name')
+parser_match.set_defaults(func=match)
 
 # create the parser for the "summarize" command
 parser_summarize = subparsers.add_parser('summarize',
-                                     help='Generate summary statistics for the results from the match step')
+                                     help='''
+Generate summary statistics for the results from the match step.
+Example: (export PFOCR_DB='pfocr20190128b'; ./pfocr/pfocr.py summarize ./outputs/)
+''')
+parser_summarize.add_argument('db',
+                        type=str,
+                        help='database name')
+parser_summarize.add_argument('output_dir',
+                        type=str,
+                        help='output directory path')
 parser_summarize.set_defaults(func=summarize)
-
-# create the parser for the "europepmc" command
-parser_europepmc = subparsers.add_parser('europepmc',
-                                     help='Generate EuropePMC submission file, replacing anything in europepmc.json')
-parser_europepmc.set_defaults(func=europepmc)
-
-# create the parser for the "mappbuilder" command
-parser_mappbuilder = subparsers.add_parser('mappbuilder',
-                                     help='Generate 4-column MAPPBuilder files, replacing anything in ./mappbuilder/')
-parser_mappbuilder.set_defaults(func=mappbuilder)
-
-parser_match.set_defaults(func=match)
 
 args = parser.parse_args()
 

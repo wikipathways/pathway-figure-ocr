@@ -10,14 +10,6 @@ from pathlib import Path, PurePath
 from deadline import deadline, TimedOutExc
 
 
-# symbol_chars.json is obtained by running ../get_all_symbol_chars.py
-# NOTE: symbol_chars.json is missing things would be in gene mentions but not symbols,
-# such as comma, but that's ok, because those parts should be in the frozen zone(s).
-symbol_chars = set(json.loads(open(Path(PurePath(os.path.dirname(__file__), "symbol_chars.json")), "r").read()))
-#CURRENT_SCRIPT_PATH = os.path.dirname(sys.argv[0])
-#symbol_chars = set(json.loads(open(Path(PurePath(CURRENT_SCRIPT_PATH, "symbol_chars.json")), "r").read()))
-#symbol_chars = set(json.loads(open(Path(PurePath("./symbol_chars.json")), "r").read()))
-
 TIMEOUT = 1
 
 WORD_BOUNDARY = 'PFOCRSPACE'

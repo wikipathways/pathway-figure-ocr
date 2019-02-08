@@ -18,12 +18,13 @@ def get_engines():
     return ocr_engines.__all__
 
 def ocr_pmc(
+        db,
         engine,
         preprocessor="noop",
         limit=None,
         *args,
         **kwargs):
-    conn = get_pg_conn()
+    conn = get_pg_conn(db)
     figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     ocr_processors_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     ocr_processors__figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)

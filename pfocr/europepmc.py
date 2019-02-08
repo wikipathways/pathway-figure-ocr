@@ -26,11 +26,15 @@ fig_id_re = re.compile(r".*(?:figure|fig|f)\.?\s?(\d+).*", flags=re.IGNORECASE)
 
 
 def europepmc(args):
-    conn = get_pg_conn()
+    db = args.db
+
+    conn = get_pg_conn(db)
     annotations_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     try:
-        parsedhtml = json.loads(open(Path(PurePath(CURRENT_SCRIPT_PATH, "parsedhtml.json")), "r").read())
+        # TODO: should we try using data from the HTML in here?
+        # If so, where should we store it? How do we build and distribute it?
+        #parsedhtml = json.loads(open(Path(PurePath(CURRENT_SCRIPT_PATH, "parsedhtml.json")), "r").read())
 
         annotations_query = '''
         SELECT pmcid, figure_filepath, word, symbol, source, hgnc_symbol, xref as entrez

@@ -13,7 +13,9 @@ alphanumeric_re = re.compile('\w')
 
 
 def get_all_symbol_chars(args):
-    conn = get_pg_conn()
+    db = args.db
+
+    conn = get_pg_conn(db)
     symbols_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     try:
