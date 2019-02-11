@@ -371,15 +371,18 @@ parser_mappbuilder.set_defaults(func=mappbuilder)
 # create the parser for the "match" command
 parser_match = subparsers.add_parser('match',
                                      help='Extract data from OCR result and put into DB tables. (See also run.sh)')
+parser_match.add_argument('db',
+                        type=str,
+                        help='database name')
+parser_match.add_argument('output_dir',
+                        type=str,
+                        help='output directory path')
 parser_match.add_argument('-n', '--normalize',
                           action='append',
                           help='transform OCR result and lexicon')
 parser_match.add_argument('-m', '--mutate',
                           action='append',
                           help='transform only OCR result')
-parser_match.add_argument('[db]',
-                        type=str,
-                        help='database name')
 parser_match.set_defaults(func=match)
 
 # create the parser for the "summarize" command
