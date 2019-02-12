@@ -1,6 +1,9 @@
 import os, sys
+# TODO: fix this package so we can import from ../ and ../utils
 # needed to import deadline from parent dir
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..'))
+# needed to import from utils dir.
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'utils'))
 
 import json
 import re
@@ -8,6 +11,7 @@ from itertools import product
 from pathlib import Path, PurePath
 
 from deadline import deadline, TimedOutExc
+from regexes import always_split_re, frozen_zone_re
 
 
 TIMEOUT = 10
@@ -18,18 +22,6 @@ WORD_BOUNDARY = 'PFOCRSPACE'
 
 word_boundary_re = re.compile(WORD_BOUNDARY)
 frozen_sub_chunk_re = re.compile('(\w)+')
-
-frozen_zone_re_strings = [
-        '\d+(?:\s?\D\s?\d+)+',
-        '\d(?:\,\s?\d)*\,?\s(?:and|or|&)\s\d',
-        '\s(?:and|or|&)\s',
-        # TODO: should this be 2 or 3?
-        '\d{2,}',
-        '(?:' + WORD_BOUNDARY + ')'
-        ]
-frozen_zone_re_string_concatenated = '((?:' + ')|(?:'.join(frozen_zone_re_strings) + '))'
-frozen_zone_re = re.compile(frozen_zone_re_string_concatenated)
-
 
 #\f	ASCII Formfeed (FF)
 #\n	ASCII Linefeed (LF)
@@ -43,9 +35,6 @@ frozen_zone_re = re.compile(frozen_zone_re_string_concatenated)
 #\u27F0-\u27FF  Unicode Supplemental Arrows-A
 #\u2900-\u297F  Unicode Supplemental Arrows-B
 #\u2B00-\u2BFF  Unicode Miscellaneous Symbols and Arrows
-
-always_split_pattern = '\n\r\f\v\u2190-\u2199'
-always_split_re = re.compile('[' + always_split_pattern + ']+')
 
 tail_re = re.compile('(?:' + WORD_BOUNDARY + ')(.{2,40})(?:' + WORD_BOUNDARY + ')$')
 

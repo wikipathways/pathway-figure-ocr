@@ -10,7 +10,7 @@ sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'utils'))
 from hg import get_ascii_homoglyphs_for_char
 # needed to import hg from utils dir
 sys.path.insert(1, os.path.dirname(__file__))
-from split import always_split_pattern
+from regexes import always_split_pattern, basic_latin_pattern, frozen_zone_re
 ## TODO: why don't these work (w/out sys.path.insert):
 #from ..utils.hg import get_ascii_homoglyphs_for_char
 #from split import always_split_pattern
@@ -18,7 +18,6 @@ from split import always_split_pattern
 
 # Limiting to Basic Latin character set
 # TODO: what about greek characters?
-basic_latin_pattern = '\u0020-\u007F'
 frozen_zone_re = re.compile('([' + basic_latin_pattern + always_split_pattern + ']+)')
 
 

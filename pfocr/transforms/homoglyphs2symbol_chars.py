@@ -1,6 +1,9 @@
 import os, sys
+# TODO: fix this package so we can import from ../ and ../utils
 # needed to import deadline from parent dir
-sys.path.insert(1, os.path.join(sys.path[0], '..'))
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..'))
+# needed to import from utils dir.
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'utils'))
 
 import json
 import re
@@ -9,12 +12,15 @@ from pathlib import Path, PurePath
 
 from confusable_homoglyphs import confusables
 from deadline import deadline, TimedOutExc
+from regexes import frozen_zone_re
 
 
 # symbol_chars.json is obtained by running ../get_all_symbol_chars.py
 # NOTE: symbol_chars.json is missing things would be in gene mentions but not symbols,
 # such as comma, but that's ok, because those parts should be in the frozen zone(s).
-symbol_chars = set(json.loads(open(Path(PurePath(os.path.dirname(__file__), "..", "..", "symbol_chars.json")), "r").read()))
+symbol_chars_raw = json.loads(open(Path(PurePath(os.path.dirname(__file__), "..", "..", "symbol_chars.json")), "r").read())
+# TODO: pre-process this.
+symbol_chars = set([char.upper() for char in symbol_chars_raw])
 #CURRENT_SCRIPT_PATH = os.path.dirname(sys.argv[0])
 #symbol_chars = set(json.loads(open(Path(PurePath(CURRENT_SCRIPT_PATH, "symbol_chars.json")), "r").read()))
 #symbol_chars = set(json.loads(open(Path(PurePath("./symbol_chars.json")), "r").read()))
@@ -39,7 +45,7 @@ symbol_chars = set(json.loads(open(Path(PurePath(os.path.dirname(__file__), ".."
 #   this isn't focused on homoglyphs but does have a list of latin characters without
 #   a unicode decompositi
 
-TIMEOUT = 1
+TIMEOUT = 2
 
 # note: we probably want to make this larger if we ever do non-genes
 # to handle items like Phosphatidylethanolamine
@@ -59,18 +65,6 @@ WORD_LENGTH_LIMIT = 25
 # TODO: what about greek characters like alpha?
 # the range for lowercase alpha to omega is 945-969
 ASCII_LIMIT = 128
-
-frozen_zone_re_strings = [
-        '\d+(?:\s?\D\s?\d+)+',
-        '\d(?:\,\s?\d)*\,?\s(?:and|or|&)\s\d',
-        '\s(?:and|or|&)\s',
-        # TODO: should this be 2 or 3?
-        '\d{2,}'
-        # TODO should we treat space as a frozen zone?
-        #'\s'
-        ]
-frozen_zone_re_string_concatenated = '((?:' + ')|(?:'.join(frozen_zone_re_strings) + '))'
-frozen_zone_re = re.compile(frozen_zone_re_string_concatenated)
 
 FROZEN_CHARS = {' ', '\n'}
 char_to_hg_mappings = {}
@@ -118,7 +112,7 @@ def get_homoglyphs_for_char(char, prev_char=None):
 def is_in_symbol_chars(chars):
     is_in = True
     for char in chars:
-        is_in = is_in and (char in symbol_chars)
+        is_in = is_in and (char.upper() in symbol_chars)
     return is_in
 
 def get_symbol_homoglyphs_for_char(char):
@@ -157,11 +151,13 @@ def _homoglyphs2symbol_chars_chunk(chunk='', frozen_prefix='', frozen_suffix='')
 def _homoglyphs2symbol_chars(text):
     chunks_and_frozen_zones = frozen_zone_re.split(text)
     char_count = len(text)
-    if char_count > WORD_LENGTH_LIMIT:
-        #sys.stderr.write("\r\nhomoglyphs2symbol_chars warning: input text below is too long. WORD_LENGTH_LIMIT is %s.\r\n" % WORD_LENGTH_LIMIT)
-        #sys.stderr.write(text)
-        #sys.stderr.write('\r\nreturning input text unchanged.\r\n')
-        return [text]
+    # TODO: how should we handle inputs that are too long and hang the process?
+#    if char_count > WORD_LENGTH_LIMIT:
+#        sys.stderr.write("\r\nhomoglyphs2symbol_chars warning: input text below is too long. WORD_LENGTH_LIMIT is %s.\r\n" % WORD_LENGTH_LIMIT)
+#        sys.stderr.write(text)
+#        #sys.stderr.write('\r\nreturning input text unchanged.\r\n')
+#        return []
+
 #    chunk_count = (len(chunks_and_frozen_zones) - 1)/2 + 1
 #    if chunk_count > CHUNK_COUNT_LIMIT or len(text) > WORD_LENGTH_LIMIT:
 #        return [text]
@@ -188,15 +184,25 @@ def _homoglyphs2symbol_chars(text):
     return next_frozen_prefixes
 
 
-#@deadline(TIMEOUT)
+@deadline(TIMEOUT)
+# Note: case insensitive
 def homoglyphs2symbol_chars(text):
     result = []
     try:
         result = _homoglyphs2symbol_chars(text)
+
+#        # TODO: if the original text is in the result, we want it to be first.
+#        # But if it's not, do we want to add it to the list?
+#        if not result:
+#            result = [text]
+#        elif result[0] != text:
+#            ...
+
         if not result:
-            result = [text]
-        elif result[0] != text:
-            # we want to keep the value from the OCR as the first in the list
+            result = []
+        #elif result[0] != text:
+        # TODO: we could also sort by something like Levenshtein distance.
+        elif text in result and result[0] != text:
             result = [r for r in result if r != text]
             result.insert(0, text)
         # else is not needed, because it'd just be result = result
@@ -217,8 +223,9 @@ def homoglyphs2symbol_chars(text):
         sys.stderr.write('\r\nhomoglyphs2symbol_chars warning: timed out for this input text:\r\n')
         sys.stderr.write(text)
         sys.stderr.write('\r\nreturning input text unchanged.\r\n')
-        result = [text]
-        pass
+        raise
+        #result = [text]
+        #pass
     except:
         result = [text]
         sys.stderr.write('\r\nhomoglyphs2symbol_chars error: could not handle this input text:\r\n')

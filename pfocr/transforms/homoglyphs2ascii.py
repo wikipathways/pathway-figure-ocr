@@ -1,6 +1,11 @@
 import os, sys
 # needed to import deadline from parent dir
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
+# TODO: fix this package so we can import from ../ and ../utils
+# needed to import deadline from parent dir
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..'))
+# needed to import from utils dir.
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'utils'))
 
 import re
 from itertools import product
@@ -8,6 +13,7 @@ from pathlib import Path, PurePath
 
 from confusable_homoglyphs import confusables
 from deadline import deadline, TimedOutExc
+from regexes import frozen_zone_re
 
 
 # Relevant links:
@@ -43,16 +49,6 @@ TIMEOUT = 1
 # TODO: what about greek characters like alpha?
 # the range for lowercase alpha to omega is 945-969
 ASCII_LIMIT = 128
-
-frozen_zone_re_strings = [
-        '\d+(?:\s?\D\s?\d+)+',
-        '\d(?:\,\s?\d)*\,?\s(?:and|or|&)\s\d',
-        '\s(?:and|or|&)\s',
-        # TODO: should this be 2 or 3?
-        '\d{2,}'
-        ]
-frozen_zone_re_string_concatenated = '((?:' + ')|(?:'.join(frozen_zone_re_strings) + '))'
-frozen_zone_re = re.compile(frozen_zone_re_string_concatenated)
 
 char_to_hg_mappings = {}
 #input_to_variation_mappings = {}
