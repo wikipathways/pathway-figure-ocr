@@ -236,10 +236,10 @@ class TestHomoglyphs(unittest.TestCase):
         hgs = homoglyphs2ascii('NSICSIl4ICSII8ICSII')
         self.assertEqual(len(hgs), 262144)
 
-# TODO: Gives a warning about being too long.
-    def test_NSICSII16NSICSIl4ICSII8ICSII16(self):
-        hgs = homoglyphs2ascii('NSICSII16NSICSIl4ICSII8ICSII16')
-        self.assertEqual(len(hgs), 1)
+## TODO: Gives a warning about being too long.
+#    def test_NSICSII16NSICSIl4ICSII8ICSII16(self):
+#        hgs = homoglyphs2ascii('NSICSII16NSICSIl4ICSII8ICSII16')
+#        self.assertEqual(len(hgs), 1)
         
 if __name__ == '__main__':
     unittest.main()
