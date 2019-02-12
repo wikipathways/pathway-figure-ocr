@@ -10,7 +10,7 @@ from pathlib import Path, PurePath
 from deadline import deadline, TimedOutExc
 
 
-TIMEOUT = 1
+TIMEOUT = 10
 
 MAX_PREFIX_LENGTH = 40
 
@@ -45,7 +45,9 @@ frozen_zone_re = re.compile(frozen_zone_re_string_concatenated)
 #\u2B00-\u2BFF  Unicode Miscellaneous Symbols and Arrows
 
 always_split_pattern = '\n\r\f\v\u2190-\u2199'
-always_split_re = re.compile('[' + always_split_pattern + ']')
+always_split_re = re.compile('[' + always_split_pattern + ']+')
+
+tail_re = re.compile('(?:' + WORD_BOUNDARY + ')(.{2,40})(?:' + WORD_BOUNDARY + ')$')
 
 
 # Based on https://github.com/orsinium/homoglyphs/blob/master/homoglyphs/core.py
@@ -68,31 +70,36 @@ def get_variations(chunk='', frozen_prefix='', frozen_suffix=''):
 
 def get_next_frozen_prefixes(chunk, frozen_prefixes, frozen_suffix=''):
     next_frozen_prefixes = set()
-    for frozen_prefix in [f for f in frozen_prefixes if len(f) <= MAX_PREFIX_LENGTH]:
+    for frozen_prefix_raw in frozen_prefixes:
+        frozen_prefix = ''
+        # TODO: verify the following
+        # It is supposed to handle very long inputs
+        if len(frozen_prefix_raw) > MAX_PREFIX_LENGTH:
+            shortened = tail_re.search(frozen_prefix)
+            if shortened:
+                frozen_prefix = shortened.group(1)
+        else:
+            frozen_prefix = frozen_prefix_raw
         for next_frozen_prefix in get_variations(chunk, frozen_prefix, frozen_suffix):
             next_frozen_prefixes.add(next_frozen_prefix)
     return next_frozen_prefixes
-
-# the symbols column never has spaces, but it does have underscores
-# ABL_family
 
 @deadline(TIMEOUT)
 def split(text):
     result = []
     try:
-        chunks_and_frozen_zones = frozen_zone_re.split(
-                always_split_re.sub(WORD_BOUNDARY, text))
-
         candidates = set()
-        frozen_prefixes = ['']
-        for chunk,frozen_suffix in zip(chunks_and_frozen_zones[0::2], chunks_and_frozen_zones[1::2]):
-            frozen_prefixes = get_next_frozen_prefixes(chunk, frozen_prefixes, frozen_suffix)
-            for frozen_prefix in [f for f in frozen_prefixes if len(f) > MAX_PREFIX_LENGTH]:
-                candidates.add(frozen_prefix)
+        for line in always_split_re.split(text):
+            chunks_and_frozen_zones = frozen_zone_re.split(line)
+            frozen_prefixes = {''}
+            for chunk,frozen_suffix in zip(chunks_and_frozen_zones[0::2], chunks_and_frozen_zones[1::2]):
+                frozen_prefixes = get_next_frozen_prefixes(chunk, frozen_prefixes, frozen_suffix)
+                for frozen_prefix in [f for f in frozen_prefixes if len(f) > MAX_PREFIX_LENGTH]:
+                    candidates.add(frozen_prefix)
 
-        final_chunk = chunks_and_frozen_zones[len(chunks_and_frozen_zones) - 1]
-        for frozen_prefix in get_next_frozen_prefixes(final_chunk, frozen_prefixes):
-            candidates.add(frozen_prefix)
+            final_chunk = chunks_and_frozen_zones[len(chunks_and_frozen_zones) - 1]
+            for frozen_prefix in get_next_frozen_prefixes(final_chunk, frozen_prefixes):
+                candidates.add(frozen_prefix)
 
         if not candidates:
             result.append(text)

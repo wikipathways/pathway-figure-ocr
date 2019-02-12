@@ -5,10 +5,16 @@ from match_testable import match_testable
 class TestMatch(unittest.TestCase):
 
     def test_digit_chunks(self):
-        self.assertEqual(set(match_testable(
+        actual = set(match_testable(
             [{
                 'name': 'nfkc',
                 'category': 'normalize'
+            }, {
+                'name': 'asciify',
+                'category': 'mutate'
+            }, {
+                'name': 'split',
+                'category': 'mutate'
             }, {
                 'name': 'expand',
                 'category': 'mutate'
@@ -21,7 +27,8 @@ class TestMatch(unittest.TestCase):
                 'id': 2,
                 'symbol': 'WNT10'
             }]
-        )),
+        ))
+        self.assertEqual(actual,
         {'WNT9', 'WNT10'})
 
     def test_newline(self):
@@ -51,12 +58,10 @@ class TestMatch(unittest.TestCase):
         {'WNT9', 'WNT10'})
 
     def test_long_input(self):
-        long_input1 = '''
+        long_input = '''
 CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\nNormal 1\nCancer 2\nNormal 2\nCancer 3\n·Query gene\nOther gene\nNormal\nCancerous\nRelationship confidenceTranscription factor\nQuery Gene Gene Description\n1. GRO-a4. C\n2. IL-8\n3. CXCL7\nnuclear factor of kappa light polypeptide\ngene enhancer in B-cells 1\nNFKB1\n5. IL-16\nnuclear factor of kappa light polypeptide\ngene enhancer in B-cells 2 (p49/p100)\nnuclear factor of kappa light polypeptide\ngene enhancer in B-cells 1\nCXCL1\nnuclear factor of kappa light polypeptide27\ngene enhancer in B-cells 2 (p49/p100)\nCXCL1\nNFkB2\n0.9279 .\nD\nNormalization of GRO-a & IL-8 by dry mass of omental tissue\nconcentration of GRO-α\nand IL-8 in OCM\nP= 0.56\n*P = 0.04\n2 0.0\nO Normal Cancerous\nNormal Cancerous\nGRO-a & IL-8 expression in\nES-2 cells with IL-8 treatment\n*P <0.05\nH&E\nGRO-a\nDIL-8\nIL-8 (ng/ml)\nGRO-a& IL-8expression in\nES-2 cells with GRO-a treatment\nOIL-8\n*P <0.01\nGRO-a (ng/mL)\n
 '''
-        long_input = '''
-CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\n
-'''
+
         symbols_and_ids = [{
                 'id': 3164,
                 'symbol': 'NFKBIE'
@@ -98,6 +103,7 @@ CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\n
                 'symbol': 'ES2'
             }]
 
+        expected = set([s['symbol'].upper() for s in symbols_and_ids])
         actual_raw = match_testable(
             [{
                 'name': 'nfkc',
@@ -121,10 +127,8 @@ CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\n
             [long_input],
             symbols_and_ids
         )
-        print('actual_raw')
-        print(actual_raw)
         actual = set([a.upper() for a in actual_raw])
-        expected = set([s['symbol'].upper() for s in symbols_and_ids])
+
         self.assertEqual(actual, expected)
 
         
