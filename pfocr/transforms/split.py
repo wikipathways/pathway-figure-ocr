@@ -67,21 +67,19 @@ def get_variations(chunk='', frozen_prefix='', frozen_suffix=''):
         return variations
 
 def get_next_frozen_prefixes(chunk, frozen_prefixes, frozen_suffix=''):
-    next_frozen_prefixes = []
+    next_frozen_prefixes = set()
     for frozen_prefix in [f for f in frozen_prefixes if len(f) <= MAX_PREFIX_LENGTH]:
         for next_frozen_prefix in get_variations(chunk, frozen_prefix, frozen_suffix):
-            next_frozen_prefixes.append(next_frozen_prefix)
+            next_frozen_prefixes.add(next_frozen_prefix)
     return next_frozen_prefixes
 
 # the symbols column never has spaces, but it does have underscores
 # ABL_family
 
-#@deadline(TIMEOUT)
+@deadline(TIMEOUT)
 def split(text):
     result = []
     try:
-#        chunks_and_frozen_zones = frozen_zone_re.split(
-#                text)
         chunks_and_frozen_zones = frozen_zone_re.split(
                 always_split_re.sub(WORD_BOUNDARY, text))
 
