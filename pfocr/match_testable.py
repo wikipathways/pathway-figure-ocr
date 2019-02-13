@@ -31,10 +31,10 @@ def normalize_always(word):
 # Find match(es) from the OCR full text from a single figure
 def attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, acc, text, history, transform_index=0):
 
-    # Does the most recent history item indicate we got a match?
-    last_history = history[len(history) - 1]
-    if ("matched" in last_history) and last_history["matched"]:
-        return acc
+#    # Does the most recent history item indicate we got a match?
+#    last_history = history[len(history) - 1]
+#    if ("matched" in last_history) and last_history["matched"]:
+#        return acc
 
     if not has_alphanumeric_re.match(text):
         acc.append({
@@ -68,13 +68,44 @@ def attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, ac
     transform_category = transform_name_category_function["category"]
     transform_function = transform_name_category_function["function"]
     transform_index += 1
-    for transformed_word in transform_function(text):
+    for transformed_text in transform_function(text):
         history_copy = history.copy()
         history_copy.append({
             "transform": transform_name,
-            "text": transformed_word,
+            "text": transformed_text,
             })
-        attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, acc, transformed_word, history_copy, transform_index)
+
+        if not has_alphanumeric_re.match(transformed_text):
+            acc.append({
+                "history": history,
+                "transform_index": transform_index,
+                "matched": False
+                })
+            continue
+
+        normalized_transformed_text = normalize_always(transformed_text)
+        if normalized_transformed_text in symbol_ids_by_symbol: 
+            acc.append({
+                "history": history,
+                "transform_index": transform_index,
+                "matched": True,
+                "matched_text": normalized_transformed_text,
+                "symbol_id": symbol_ids_by_symbol[normalized_transformed_text]
+                })
+            continue
+#        else:
+#            attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, acc, transformed_text, history_copy, transform_index)
+
+        if transform_index >= len(transform_names_categories_functions):
+            acc.append({
+                "history": history,
+                "transform_index": transform_index,
+                "matched": False
+                })
+            continue
+
+        attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, acc, transformed_text, history_copy, transform_index)
+
 
 # texts is a list of full text strings from the OCR, one per figure.
 def match_multiple(transform_names_and_categories, texts, symbols_and_ids):
@@ -109,13 +140,22 @@ def match_multiple(transform_names_and_categories, texts, symbols_and_ids):
                             symbol_ids_by_symbol[n_always] = symbol_id
 
         all_matches = set()
+        #all_accs = list()
         for text in texts:
             acc = list()
+            #genes = list()
             attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, acc, text, [{"transform": None, "text": text}])
             for x in acc:
                 if x["matched"]:
                     all_matches.add(x["matched_text"])
-            #print(json.dumps(acc, indent=2))
+                    #genes.append(x["matched_text"])
+            #all_accs.append(acc)
+            #print(genes)
+            #print(len(genes))
+
+#        #print(json.dumps(acc, indent=2))
+#        with open("./match_results.json", "a+") as f:
+#            f.write(json.dumps(all_accs, indent=2))
 
         return all_matches
 
