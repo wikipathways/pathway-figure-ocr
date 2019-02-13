@@ -63,18 +63,18 @@ def attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, ac
             })
         return acc
 
-    for transform_name_category_function in transform_names_categories_functions[transform_index:]:
-        transform_name = transform_name_category_function["name"]
-        transform_category = transform_name_category_function["category"]
-        transform_function = transform_name_category_function["function"]
-        transform_index += 1
-        for transformed_word in transform_function(text):
-            history_copy = history.copy()
-            history_copy.append({
-                "transform": transform_name,
-                "text": transformed_word,
-                })
-            attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, acc, transformed_word, history_copy, transform_index)
+    transform_name_category_function = transform_names_categories_functions[transform_index]
+    transform_name = transform_name_category_function["name"]
+    transform_category = transform_name_category_function["category"]
+    transform_function = transform_name_category_function["function"]
+    transform_index += 1
+    for transformed_word in transform_function(text):
+        history_copy = history.copy()
+        history_copy.append({
+            "transform": transform_name,
+            "text": transformed_word,
+            })
+        attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, acc, transformed_word, history_copy, transform_index)
 
 # texts is a list of full text strings from the OCR, one per figure.
 def match_multiple(transform_names_and_categories, texts, symbols_and_ids):
@@ -123,5 +123,5 @@ def match_multiple(transform_names_and_categories, texts, symbols_and_ids):
         print('Unexpected Error in match_multiple:', e)
         raise
 
-def match_testable(transform_names_and_categories, texts, symbols_and_ids):
+def match(transform_names_and_categories, texts, symbols_and_ids):
     return match_multiple(transform_names_and_categories, texts, symbols_and_ids)

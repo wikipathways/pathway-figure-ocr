@@ -92,8 +92,8 @@ def match_multiple(transform_names_and_categories, texts, symbols_and_ids):
 
         all_matches = set()
         for text in texts:
-            for match in match_one(transform_names_categories_functions, symbol_ids_by_symbol, text):
-                all_matches.add(match)
+            for m in match_one(transform_names_categories_functions, symbol_ids_by_symbol, text):
+                all_matches.add(m)
 
         return all_matches
 
@@ -101,5 +101,5 @@ def match_multiple(transform_names_and_categories, texts, symbols_and_ids):
         print('Unexpected Error in match_multiple:', e)
         raise
 
-def match_testable(transform_names_and_categories, texts, symbols_and_ids):
+def match(transform_names_and_categories, texts, symbols_and_ids):
     return match_multiple(transform_names_and_categories, texts, symbols_and_ids)

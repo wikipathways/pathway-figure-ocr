@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-#from match_testable import match_testable
-from fast_match_testable import match_testable
+from match_testable import match
+#from fast_match_testable import match
 
 
 class TestMatch(unittest.TestCase):
 
     def test_digit_chunks(self):
-        actual = set(match_testable(
+        actual = set(match(
             [{
                 'name': 'nfkc',
                 'category': 'normalize'
@@ -36,7 +36,7 @@ class TestMatch(unittest.TestCase):
         {'WNT9', 'WNT10'})
 
     def test_newline(self):
-        self.assertEqual(set(match_testable(
+        self.assertEqual(set(match(
             [{
                 'name': 'nfkc',
                 'category': 'normalize'
@@ -75,7 +75,7 @@ CC NFKBIE\nTNFAIP6\n
             }]
 
         expected = set([s['symbol'].upper() for s in symbols_and_ids])
-        actual_raw = match_testable(
+        actual_raw = match(
             [{
                 'name': 'nfkc',
                 'category': 'normalize'
@@ -119,7 +119,7 @@ CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\n
             }]
 
         expected = set([s['symbol'].upper() for s in symbols_and_ids])
-        actual_raw = match_testable(
+        actual_raw = match(
             [{
                 'name': 'nfkc',
                 'category': 'normalize'
@@ -193,7 +193,7 @@ CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\nNormal 1\nCancer 2
             }]
 
         expected = set([s['symbol'].upper() for s in symbols_and_ids])
-        actual_raw = match_testable(
+        actual_raw = match(
             [{
                 'name': 'nfkc',
                 'category': 'normalize'
