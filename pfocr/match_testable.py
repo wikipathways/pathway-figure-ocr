@@ -57,8 +57,32 @@ def attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, su
 def sort_match_log_subgroups(match_log_subgroup):
     return ''.join(match_log_subgroup)
 
+def create_symbol_ids_by_symbol(symbols_and_ids, transform_names_categories_functions):
+    normalizations = []
+    for t in transform_names_categories_functions:
+        t_category = t["category"]
+        if t_category == "normalize":
+            normalizations.append(t)
+
+    # original symbol incl/
+    symbol_ids_by_symbol = {}
+    for s in symbols_and_ids:
+        symbol_id = s["id"]
+        symbol = s["symbol"]
+        normalized_results = [symbol]
+        for normalization in normalizations:
+            for normalized in normalized_results:
+                normalized_results = []
+                for n in normalization["function"](normalized):
+                    normalized_results.append(n)
+                    n_always = normalize_always(n)
+                    if (n_always not in symbol_ids_by_symbol) and (n_always not in stop_words):
+                        symbol_ids_by_symbol[n_always] = symbol_id
+
+    return symbol_ids_by_symbol
+
 # texts is a list of full text strings from the OCR, one per figure.
-def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
+def match_logged(symbols_and_ids, transform_names_and_categories, texts):
     # transform_names_categories_functions includes both mutations and normalizations
     transform_names_categories_functions = []
     for transform_name_and_category in transform_names_and_categories:
@@ -67,34 +91,15 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
         transform_function = getattr(getattr(transforms, name), name)
         transform_names_categories_functions.append({"function": transform_function, "name": name, "category": category})
 
-    normalizations = []
-    for t in transform_names_categories_functions:
-        t_category = t["category"]
-        if t_category == "normalize":
-            normalizations.append(t)
-
     try:
-        # original symbol incl/
-        symbol_ids_by_symbol = {}
-        for s in symbols_and_ids:
-            symbol_id = s["id"]
-            symbol = s["symbol"]
-            normalized_results = [symbol]
-            for normalization in normalizations:
-                for normalized in normalized_results:
-                    normalized_results = []
-                    for n in normalization["function"](normalized):
-                        normalized_results.append(n)
-                        n_always = normalize_always(n)
-                        if (n_always not in symbol_ids_by_symbol) and (n_always not in stop_words):
-                            symbol_ids_by_symbol[n_always] = symbol_id
+        symbol_ids_by_symbol = create_symbol_ids_by_symbol(symbols_and_ids, transform_names_categories_functions)
 
         successes_groups = list()
         fails_groups = list()
         for text in texts:
             successes_subgroups = list()
             fails_subgroups = list()
-            attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, successes_subgroups, fails_subgroups, [{"transform": None, "text": text}], text)
+            attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, successes_subgroups, fails_subgroups, [text], text)
             # NOTE: w/out applying sorted, we get non-deterministic sort order
             successes_groups.append(sorted(successes_subgroups, key=sort_match_log_subgroups))
             fails_groups.append(sorted(fails_subgroups, key=sort_match_log_subgroups))
@@ -106,7 +111,67 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
 #            f.write(json.dumps(all_fails, indent=2))
 
     except(Exception) as e:
-        print('Unexpected Error in match_multiple:', e)
+        print('Unexpected Error in match_verbose:', e)
+        raise
+
+# texts is a list of full text strings from the OCR, one per figure.
+def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
+    # transform_names_categories_functions includes both mutations and normalizations
+    transform_names_categories_functions = []
+    for transform_name_and_category in transform_names_and_categories:
+        category = transform_name_and_category["category"]
+        name = transform_name_and_category["name"]
+        transform_function = getattr(getattr(transforms, name), name)
+        transform_names_categories_functions.append({"function": transform_function, "name": name, "category": category})
+
+    try:
+        symbol_ids_by_symbol = create_symbol_ids_by_symbol(symbols_and_ids, transform_names_categories_functions)
+
+        result = list()
+        for text in texts:
+            successes_subgroups = list()
+            fails_subgroups = list()
+            attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, successes_subgroups, fails_subgroups, [text], text)
+            # NOTE: w/out applying sorted, we get non-deterministic sort order
+            successes = list()
+            fails = list()
+            for successes_subgroup in sorted(successes_subgroups, key=sort_match_log_subgroups):
+                success = list()
+                for transform_name_category_function,item in zip(transform_names_categories_functions, successes_subgroup):
+                    success.append({
+                        "transform": transform_name_category_function["name"],
+                        "text": item})
+
+                text_normalized = successes_subgroup[-1]
+                success.append({
+                    "transform": "always",
+                    "symbol_id": symbol_ids_by_symbol[text_normalized],
+                    "text": text_normalized})
+
+                successes.append(success)
+
+            for fails_subgroup in sorted(fails_subgroups, key=sort_match_log_subgroups):
+                fail = list()
+                for transform_name_category_function,item in zip(transform_names_categories_functions, fails_subgroup):
+                    fail.append({
+                        "transform": transform_name_category_function["name"],
+                        "text": item})
+                fails.append(fail)
+
+            result.append({
+                "text": text,
+                "successes": successes,
+                "fails": fails})
+
+        return result
+
+#        with open("./all_successes.json", "w") as f:
+#            f.write(json.dumps(all_successes, indent=2))
+#        with open("./all_fails.json", "w") as f:
+#            f.write(json.dumps(all_fails, indent=2))
+
+    except(Exception) as e:
+        print('Unexpected Error in match_verbose:', e)
         raise
 
 def match(symbols_and_ids, transform_names_and_categories, texts):
@@ -114,7 +179,7 @@ def match(symbols_and_ids, transform_names_and_categories, texts):
     # match_log_subgroups: one per "word"
     # match_log_entries: one per transformation
 
-    successes_groups = match_verbose(symbols_and_ids, transform_names_and_categories, texts)[0]
+    successes_groups = match_logged(symbols_and_ids, transform_names_and_categories, texts)[0]
     matches = set()
     for successes_subgroups in successes_groups:
         for entries in successes_subgroups:

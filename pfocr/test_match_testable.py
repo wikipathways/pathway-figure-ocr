@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-from match_testable import match, match_verbose
+from match_testable import match, match_logged, match_verbose
 #from fast_match_testable import match
 
 
@@ -33,27 +33,67 @@ class TestMatch(unittest.TestCase):
             ['WNT9/10\nWNT9'],
         )
 
-        expected = [[
-            [{'transform': None, 'text': 'WNT9/10\nWNT9'},
-                {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
-                {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
-                {'transform': 'split', 'text': 'WNT9', 'symbol_id': 1}],
-            [{'transform': None, 'text': 'WNT9/10\nWNT9'},
-                {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
-                {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
-                {'transform': 'split', 'text': 'WNT9/10'},
-                {'transform': 'expand', 'text': 'WNT10', 'symbol_id': 2}],
-            [{'transform': None, 'text': 'WNT9/10\nWNT9'},
-                {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
-                {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
-                {'transform': 'split', 'text': 'WNT9/10'},
-                {'transform': 'expand', 'text': 'WNT9', 'symbol_id': 1}],
-            ]]
+        expected = [{
+            'text': 'WNT9/10\nWNT9',
+            'successes': [
+                [{'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'split', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'expand', 'text': 'WNT9/10'},
+                    {'transform': 'always', 'symbol_id': 2, 'text': 'WNT10'}],
+                [{'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'split', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'expand', 'text': 'WNT9/10'},
+                    {'transform': 'always', 'symbol_id': 1, 'text': 'WNT9'}],
+                [{'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'split', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'expand', 'text': 'WNT9'},
+                    {'transform': 'always', 'symbol_id': 1, 'text': 'WNT9'}]],
+            'fails': []
+            }]
+
+        self.assertEqual(actual, expected)
+
+    def test_match_logged(self):
+        actual = match_logged(
+            [{
+                'id': 1,
+                'symbol': 'WNT9'
+            }, {
+                'id': 2,
+                'symbol': 'WNT10'
+            }],
+            [{
+                'name': 'nfkc',
+                'category': 'normalize'
+            }, {
+                'name': 'asciify',
+                'category': 'mutate'
+            }, {
+                'name': 'split',
+                'category': 'mutate'
+            }, {
+                'name': 'expand',
+                'category': 'mutate'
+            }],
+            ['WNT9/10\nWNT9'],
+        )
+
+        expected = [
+                [[
+                    ['WNT9/10\nWNT9', 'WNT9/10\nWNT9', 'WNT9/10\nWNT9', 'WNT9/10', 'WNT10', 'WNT10'],
+                    ['WNT9/10\nWNT9', 'WNT9/10\nWNT9', 'WNT9/10\nWNT9', 'WNT9/10', 'WNT9', 'WNT9'],
+                    ['WNT9/10\nWNT9', 'WNT9/10\nWNT9', 'WNT9/10\nWNT9', 'WNT9', 'WNT9']
+                    ]],
+                [[]]
+                ]
 
         self.assertEqual(actual, expected)
 
     def test_digit_chunks(self):
-        actual = set(match(
+        actual = match(
             [{
                 'id': 1,
                 'symbol': 'WNT9'
@@ -75,7 +115,7 @@ class TestMatch(unittest.TestCase):
                 'category': 'mutate'
             }],
             ['WNT9/10'],
-        ))
+        )
         self.assertEqual(actual,
         {'WNT9', 'WNT10'})
 
