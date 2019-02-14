@@ -2,14 +2,65 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-from match_testable import match
+from match_testable import match, match_verbose
 #from fast_match_testable import match
 
 
 class TestMatch(unittest.TestCase):
 
+    def test_match_verbose(self):
+        actual = match_verbose(
+            [{
+                'id': 1,
+                'symbol': 'WNT9'
+            }, {
+                'id': 2,
+                'symbol': 'WNT10'
+            }],
+            [{
+                'name': 'nfkc',
+                'category': 'normalize'
+            }, {
+                'name': 'asciify',
+                'category': 'mutate'
+            }, {
+                'name': 'split',
+                'category': 'mutate'
+            }, {
+                'name': 'expand',
+                'category': 'mutate'
+            }],
+            ['WNT9/10\nWNT9'],
+        )
+
+        expected = [[
+            [{'transform': None, 'text': 'WNT9/10\nWNT9'},
+                {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
+                {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
+                {'transform': 'split', 'text': 'WNT9', 'symbol_id': 1}],
+            [{'transform': None, 'text': 'WNT9/10\nWNT9'},
+                {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
+                {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
+                {'transform': 'split', 'text': 'WNT9/10'},
+                {'transform': 'expand', 'text': 'WNT10', 'symbol_id': 2}],
+            [{'transform': None, 'text': 'WNT9/10\nWNT9'},
+                {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
+                {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
+                {'transform': 'split', 'text': 'WNT9/10'},
+                {'transform': 'expand', 'text': 'WNT9', 'symbol_id': 1}],
+            ]]
+
+        self.assertEqual(actual, expected)
+
     def test_digit_chunks(self):
         actual = set(match(
+            [{
+                'id': 1,
+                'symbol': 'WNT9'
+            }, {
+                'id': 2,
+                'symbol': 'WNT10'
+            }],
             [{
                 'name': 'nfkc',
                 'category': 'normalize'
@@ -24,19 +75,19 @@ class TestMatch(unittest.TestCase):
                 'category': 'mutate'
             }],
             ['WNT9/10'],
-            [{
-                'id': 1,
-                'symbol': 'WNT9'
-            }, {
-                'id': 2,
-                'symbol': 'WNT10'
-            }]
         ))
         self.assertEqual(actual,
         {'WNT9', 'WNT10'})
 
     def test_newline(self):
         self.assertEqual(set(match(
+            [{
+                'id': 1,
+                'symbol': 'WNT9'
+            }, {
+                'id': 2,
+                'symbol': 'WNT10'
+            }],
             [{
                 'name': 'nfkc',
                 'category': 'normalize'
@@ -51,13 +102,6 @@ class TestMatch(unittest.TestCase):
                 'category': 'mutate'
             }],
             ['WNT9\nWNT10'],
-            [{
-                'id': 1,
-                'symbol': 'WNT9'
-            }, {
-                'id': 2,
-                'symbol': 'WNT10'
-            }]
         )),
         {'WNT9', 'WNT10'})
 
@@ -76,6 +120,7 @@ CC NFKBIE\nTNFAIP6\n
 
         expected = set([s['symbol'].upper() for s in symbols_and_ids])
         actual_raw = match(
+            symbols_and_ids,
             [{
                 'name': 'nfkc',
                 'category': 'normalize'
@@ -93,7 +138,6 @@ CC NFKBIE\nTNFAIP6\n
                 'category': 'normalize'
             }],
             [text],
-            symbols_and_ids
         )
         actual = set([a.upper() for a in actual_raw])
 
@@ -120,6 +164,7 @@ CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\n
 
         expected = set([s['symbol'].upper() for s in symbols_and_ids])
         actual_raw = match(
+            symbols_and_ids,
             [{
                 'name': 'nfkc',
                 'category': 'normalize'
@@ -140,7 +185,6 @@ CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\n
                 'category': 'normalize'
             }],
             [text],
-            symbols_and_ids
         )
         actual = set([a.upper() for a in actual_raw])
 
@@ -194,6 +238,7 @@ CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\nNormal 1\nCancer 2
 
         expected = set([s['symbol'].upper() for s in symbols_and_ids])
         actual_raw = match(
+            symbols_and_ids,
             [{
                 'name': 'nfkc',
                 'category': 'normalize'
@@ -214,7 +259,6 @@ CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\nNormal 1\nCancer 2
                 'category': 'normalize'
             }],
             [text],
-            symbols_and_ids
         )
         actual = set([a.upper() for a in actual_raw])
 

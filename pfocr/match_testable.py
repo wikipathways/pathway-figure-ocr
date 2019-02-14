@@ -29,86 +29,42 @@ def normalize_always(word):
     return to_underscore_re.sub('_', word.upper())
 
 # Find match(es) from the OCR full text from a single figure
-def attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, acc, text, history, transform_index=0):
-
-#    # Does the most recent history item indicate we got a match?
-#    last_history = history[len(history) - 1]
-#    if ("matched" in last_history) and last_history["matched"]:
-#        return acc
-
+def attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, match_log_subgroups, current_match_log_entries, text, transform_index=0):
     if not has_alphanumeric_re.match(text):
-        acc.append({
-            "history": history,
-            "transform_index": transform_index,
-            "matched": False
-            })
-        return acc
+        match_log_subgroups.append(current_match_log_entries)
+        return None
 
     normalized_transformed_word = normalize_always(text)
     if normalized_transformed_word in symbol_ids_by_symbol: 
-        acc.append({
-            "history": history,
-            "transform_index": transform_index,
-            "matched": True,
-            "matched_text": normalized_transformed_word,
-            "symbol_id": symbol_ids_by_symbol[normalized_transformed_word]
-            })
-        return acc
+        last_log_element = current_match_log_entries[-1]
+        last_log_element["symbol_id"] = symbol_ids_by_symbol[normalized_transformed_word]
+        match_log_subgroups.append(current_match_log_entries)
+        return None
 
     if transform_index >= len(transform_names_categories_functions):
-        acc.append({
-            "history": history,
-            "transform_index": transform_index,
-            "matched": False
-            })
-        return acc
+        match_log_subgroups.append(current_match_log_entries)
+        return None
 
     transform_name_category_function = transform_names_categories_functions[transform_index]
     transform_name = transform_name_category_function["name"]
-    transform_category = transform_name_category_function["category"]
     transform_function = transform_name_category_function["function"]
     transform_index += 1
     for transformed_text in transform_function(text):
-        history_copy = history.copy()
-        history_copy.append({
+        current_match_log_entries_copy = current_match_log_entries.copy()
+        current_match_log_entries_copy.append({
             "transform": transform_name,
             "text": transformed_text,
             })
+        attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, match_log_subgroups, current_match_log_entries_copy, transformed_text, transform_index)
 
-        if not has_alphanumeric_re.match(transformed_text):
-            acc.append({
-                "history": history,
-                "transform_index": transform_index,
-                "matched": False
-                })
-            continue
-
-        normalized_transformed_text = normalize_always(transformed_text)
-        if normalized_transformed_text in symbol_ids_by_symbol: 
-            acc.append({
-                "history": history,
-                "transform_index": transform_index,
-                "matched": True,
-                "matched_text": normalized_transformed_text,
-                "symbol_id": symbol_ids_by_symbol[normalized_transformed_text]
-                })
-            continue
-#        else:
-#            attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, acc, transformed_text, history_copy, transform_index)
-
-        if transform_index >= len(transform_names_categories_functions):
-            acc.append({
-                "history": history,
-                "transform_index": transform_index,
-                "matched": False
-                })
-            continue
-
-        attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, acc, transformed_text, history_copy, transform_index)
-
+def sort_match_log_subgroups(match_log_subgroup):
+    key = ''
+    for match_log_entry in match_log_subgroup:
+        key += match_log_entry["text"]
+    return key
 
 # texts is a list of full text strings from the OCR, one per figure.
-def match_multiple(transform_names_and_categories, texts, symbols_and_ids):
+def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
     # transform_names_categories_functions includes both mutations and normalizations
     transform_names_categories_functions = []
     for transform_name_and_category in transform_names_and_categories:
@@ -139,29 +95,33 @@ def match_multiple(transform_names_and_categories, texts, symbols_and_ids):
                         if (n_always not in symbol_ids_by_symbol) and (n_always not in stop_words):
                             symbol_ids_by_symbol[n_always] = symbol_id
 
-        all_matches = set()
-        #all_accs = list()
+        match_log_groups = list()
         for text in texts:
-            acc = list()
-            #genes = list()
-            attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, acc, text, [{"transform": None, "text": text}])
-            for x in acc:
-                if x["matched"]:
-                    all_matches.add(x["matched_text"])
-                    #genes.append(x["matched_text"])
-            #all_accs.append(acc)
-            #print(genes)
-            #print(len(genes))
+            match_log_subgroups = list()
+            attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, match_log_subgroups, [{"transform": None, "text": text}], text)
+            # NOTE: w/out applying sorted, we get non-deterministic sort order
+            match_log_groups.append(sorted(match_log_subgroups, key=sort_match_log_subgroups))
+        return match_log_groups
 
-#        #print(json.dumps(acc, indent=2))
-#        with open("./match_results.json", "a+") as f:
-#            f.write(json.dumps(all_accs, indent=2))
-
-        return all_matches
+#        with open("./all_successes.json", "w") as f:
+#            f.write(json.dumps(all_successes, indent=2))
+#        with open("./all_fails.json", "w") as f:
+#            f.write(json.dumps(all_fails, indent=2))
 
     except(Exception) as e:
         print('Unexpected Error in match_multiple:', e)
         raise
 
-def match(transform_names_and_categories, texts, symbols_and_ids):
-    return match_multiple(transform_names_and_categories, texts, symbols_and_ids)
+def match(symbols_and_ids, transform_names_and_categories, texts):
+    # match_log_groups: one per input text ("line")
+    # match_log_subgroups: one per "word"
+    # match_log_entries: one per transformation
+
+    match_log_groups = match_verbose(symbols_and_ids, transform_names_and_categories, texts)
+    matches = set()
+    for match_log_subgroups in match_log_groups:
+        for match_log_entries in match_log_subgroups:
+            final_log_entry = match_log_entries[-1]
+            if "symbol_id" in final_log_entry:
+                matches.add(final_log_entry["text"])
+    return matches
