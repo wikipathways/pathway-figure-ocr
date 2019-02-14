@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import json
 import re
 import transforms
 import sys
@@ -105,11 +104,6 @@ def match_logged(symbols_and_ids, transform_names_and_categories, texts):
             fails_groups.append(sorted(fails_subgroups, key=sort_match_log_subgroups))
         return [successes_groups, fails_groups]
 
-#        with open("./all_successes.json", "w") as f:
-#            f.write(json.dumps(all_successes, indent=2))
-#        with open("./all_fails.json", "w") as f:
-#            f.write(json.dumps(all_fails, indent=2))
-
     except(Exception) as e:
         print('Unexpected Error in match_verbose:', e)
         raise
@@ -137,10 +131,10 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
             fails = list()
             for successes_subgroup in sorted(successes_subgroups, key=sort_match_log_subgroups):
                 success = list()
-                for transform_name_category_function,item in zip(transform_names_categories_functions, successes_subgroup):
+                for transform_name_category_function,transformed_text in zip(transform_names_categories_functions, successes_subgroup):
                     success.append({
                         "transform": transform_name_category_function["name"],
-                        "text": item})
+                        "text": transformed_text})
 
                 text_normalized = successes_subgroup[-1]
                 success.append({
@@ -152,10 +146,10 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
 
             for fails_subgroup in sorted(fails_subgroups, key=sort_match_log_subgroups):
                 fail = list()
-                for transform_name_category_function,item in zip(transform_names_categories_functions, fails_subgroup):
+                for transform_name_category_function,transformed_text in zip(transform_names_categories_functions, fails_subgroup):
                     fail.append({
                         "transform": transform_name_category_function["name"],
-                        "text": item})
+                        "text": transformed_text})
                 fails.append(fail)
 
             result.append({
@@ -165,6 +159,7 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
 
         return result
 
+#import json
 #        with open("./all_successes.json", "w") as f:
 #            f.write(json.dumps(all_successes, indent=2))
 #        with open("./all_fails.json", "w") as f:
