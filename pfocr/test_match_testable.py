@@ -36,23 +36,89 @@ class TestMatch(unittest.TestCase):
         expected = [{
             'text': 'WNT9/10\nWNT9',
             'successes': [
-                [{'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
+                [{'transform': 'noop', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
                     {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
-                    {'transform': 'split', 'text': 'WNT9/10\nWNT9'},
-                    {'transform': 'expand', 'text': 'WNT9/10'},
-                    {'transform': 'always', 'symbol_id': 2, 'text': 'WNT10'}],
-                [{'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'split', 'text': 'WNT9/10'},
+                    {'transform': 'expand', 'text': 'WNT10'},
+                    {'transform': 'always', 'text': 'WNT10', 'symbol_id': 2}],
+                [{'transform': 'noop', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
                     {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
-                    {'transform': 'split', 'text': 'WNT9/10\nWNT9'},
-                    {'transform': 'expand', 'text': 'WNT9/10'},
-                    {'transform': 'always', 'symbol_id': 1, 'text': 'WNT9'}],
-                [{'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
-                    {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
-                    {'transform': 'split', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'split', 'text': 'WNT9/10'},
                     {'transform': 'expand', 'text': 'WNT9'},
-                    {'transform': 'always', 'symbol_id': 1, 'text': 'WNT9'}]],
-            'fails': []
-            }]
+                    {'transform': 'always', 'text': 'WNT9', 'symbol_id': 1}],
+                [{'transform': 'noop', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
+                    {'transform': 'split', 'text': 'WNT9'},
+                    {'transform': 'always', 'text': 'WNT9', 'symbol_id': 1}]],
+            'fails': []}]
+
+        self.assertEqual(actual, expected)
+
+    def test_match_verbose_with_fail(self):
+        actual = match_verbose(
+            [{
+                'id': 1,
+                'symbol': 'WNT9'
+            }, {
+                'id': 2,
+                'symbol': 'WNT10'
+            }],
+            [{
+                'name': 'nfkc',
+                'category': 'normalize'
+            }, {
+                'name': 'asciify',
+                'category': 'mutate'
+            }, {
+                'name': 'split',
+                'category': 'mutate'
+            }, {
+                'name': 'expand',
+                'category': 'mutate'
+            }],
+            ['WNT9/10\nWNT9\nPFOCR_FAILED'],
+        )
+
+        expected = [{
+            'text': 'WNT9/10\nWNT9\nPFOCR_FAILED',
+            'successes': [
+                [
+                    {'transform': 'noop', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
+                    {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
+                    {'transform': 'asciify', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
+                    {'transform': 'split', 'text': 'WNT9/10'},
+                    {'transform': 'expand', 'text': 'WNT10'},
+                    {'transform': 'always', 'text': 'WNT10', 'symbol_id': 2}
+                    ],
+                [
+                    {'transform': 'noop', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
+                    {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
+                    {'transform': 'asciify', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
+                    {'transform': 'split', 'text': 'WNT9/10'},
+                    {'transform': 'expand', 'text': 'WNT9'},
+                    {'transform': 'always', 'text': 'WNT9', 'symbol_id': 1}
+                    ],
+                [
+                    {'transform': 'noop', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
+                    {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
+                    {'transform': 'asciify', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
+                    {'transform': 'split', 'text': 'WNT9'},
+                    {'transform': 'always', 'text': 'WNT9', 'symbol_id': 1}
+                    ]
+                ],
+            'fails': [
+                [
+                    {'transform': 'noop', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
+                    {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
+                    {'transform': 'asciify', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
+                    {'transform': 'split', 'text': 'PFOCR_FAILED'},
+                    {'transform': 'always', 'text': 'PFOCR_FAILED'}
+                    ]
+                ]
+                }]
 
         self.assertEqual(actual, expected)
 

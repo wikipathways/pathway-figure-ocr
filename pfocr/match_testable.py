@@ -122,6 +122,9 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
         symbol_ids_by_symbol = create_symbol_ids_by_symbol(symbols_and_ids, transform_names_categories_functions)
 
         result = list()
+        # we add noop to transform names to represent [text], which we used as the initial input,
+        # where text was not yet transformed at all
+        transform_names = ['noop'] + [t["name"] for t in transform_names_categories_functions]
         for text in texts:
             successes_subgroups = list()
             fails_subgroups = list()
@@ -131,25 +134,35 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
             fails = list()
             for successes_subgroup in sorted(successes_subgroups, key=sort_match_log_subgroups):
                 success = list()
-                for transform_name_category_function,transformed_text in zip(transform_names_categories_functions, successes_subgroup):
+                # we don't include the final entry in the zip, because that's from the always transform
+                for transform_name,transformed_text in zip(transform_names, successes_subgroup[:-1]):
                     success.append({
-                        "transform": transform_name_category_function["name"],
+                        "transform": transform_name,
                         "text": transformed_text})
-
+                # need to add final entry, including the symbol_id for the match
                 text_normalized = successes_subgroup[-1]
                 success.append({
                     "transform": "always",
+                    "text": text_normalized,
                     "symbol_id": symbol_ids_by_symbol[text_normalized],
-                    "text": text_normalized})
+                    })
 
                 successes.append(success)
 
             for fails_subgroup in sorted(fails_subgroups, key=sort_match_log_subgroups):
                 fail = list()
-                for transform_name_category_function,transformed_text in zip(transform_names_categories_functions, fails_subgroup):
+                # we don't include the final entry in the zip, because that's from the always transform
+                for transform_name,transformed_text in zip(transform_names, fails_subgroup[:-1]):
                     fail.append({
-                        "transform": transform_name_category_function["name"],
+                        "transform": transform_name,
                         "text": transformed_text})
+                # need to add final entry (no symbol_id because no match)
+                text_normalized = fails_subgroup[-1]
+                fail.append({
+                    "transform": "always",
+                    "text": text_normalized,
+                    })
+
                 fails.append(fail)
 
             result.append({
@@ -158,12 +171,6 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
                 "fails": fails})
 
         return result
-
-#import json
-#        with open("./all_successes.json", "w") as f:
-#            f.write(json.dumps(all_successes, indent=2))
-#        with open("./all_fails.json", "w") as f:
-#            f.write(json.dumps(all_fails, indent=2))
 
     except(Exception) as e:
         print('Unexpected Error in match_verbose:', e)
