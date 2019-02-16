@@ -158,11 +158,16 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
                             current_index = index_prev + index
                             candidate_claim = set(range(current_index, current_index + length))
                             #print('candidate_claim', candidate_claim)
-                            if not candidate_claim.issubset(indices_claimed):
-                                if current_distance / length < 0.2:
-                                    indices.append(current_index)
-                                    indices_claimed.update(candidate_claim)
                             if not candidate_claim.issubset(claimed):
+                                if not candidate_claim.intersection(indices_claimed):
+                                    if current_distance == 0:
+                                        indices.append(current_index)
+                                        indices_claimed.update(candidate_claim)
+                                elif not candidate_claim.issubset(indices_claimed):
+                                    if current_distance / length < 0.2:
+                                        indices.append(current_index)
+                                        indices_claimed.update(candidate_claim)
+
                                 # NOTE: we want to get the furthest right option,
                                 # but if there are two humps, we want the peak of
                                 # the right hump, not the furthest right foothill.
@@ -189,7 +194,7 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
                     success.append({
                         "transform": transform_name,
                         "index": best_index,
-                        "indices": indices,
+                        "indices": indices if len(indices) > 0 else [0],
                         "text": transformed_text})
                 claimed.update(best_claim)
                 #print('best_claim', best_claim)
@@ -204,8 +209,8 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
                     "text": text_normalized,
                     "symbol_id": symbol_id,
                     })
-                print('success')
-                print(success)
+                #print('success')
+                #print(success)
 
                 successes.append(success)
 
