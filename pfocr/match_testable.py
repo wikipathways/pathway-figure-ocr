@@ -207,10 +207,10 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
                 "successes": successes,
                 "fails": fails})
 
-        for r in result:
-            for success in r["successes"]:
-                for s in success:
-                    s.pop("indices", None)
+#        for r in result:
+#            for success in r["successes"]:
+#                for s in success:
+#                    s.pop("indices", None)
         return result
 
     except(Exception) as e:
