@@ -28,6 +28,13 @@ stdenv.mkDerivation rec {
       extraLibs = with python36Packages; [
         # Add pythonPackages without the prefix
         dill
+	#python-Levenshtein==0.12.0
+	python-Levenshtein
+        idna
+        pygpgme
+        psycopg2
+        requests
+        Wand
         # TODO clean up how I'm specifying the homoglyphs package.
         # When I first tried it, I couldn't just add homoglyphs below like this:
         #homoglyphs
@@ -38,11 +45,6 @@ stdenv.mkDerivation rec {
         packages."confusable-homoglyphs"
         packages."homoglyphs"
         packages."bs4"
-        idna
-        pygpgme
-        psycopg2
-        requests
-        Wand
       ];
     })
   ];

@@ -14,7 +14,7 @@ from deadline import deadline, TimedOutExc
 from regexes import always_split_re, frozen_zone_re
 from toolbox import truncate
 
-# try splitting on and knocking out non-word characters
+# try splitting on, and knocking out, non-word characters
 
 
 TIMEOUT = 10

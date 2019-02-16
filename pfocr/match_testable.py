@@ -4,6 +4,7 @@
 import re
 import transforms
 import sys
+from Levenshtein import distance
 
 from deadline import deadline
 
@@ -132,26 +133,137 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
             # NOTE: w/out applying sorted, we get non-deterministic sort order
             successes = list()
             fails = list()
+            successes_by_symbol_id = dict()
+            claimed = set()
+            #print('successes_subgroups', successes_subgroups)
             for successes_subgroup in sorted(successes_subgroups, key=sort_match_log_subgroups):
                 success = list()
-                # we don't include the final entry in the zip, because that's from the always transform
+                transformed_text_prev = ''
+                # we don't include the final entry in the zip, because that's from the 'always' transform
                 for transform_name,transformed_text in zip(transform_names, successes_subgroup[:-1]):
+                    length = len(transformed_text)
+                    length_prev = len(transformed_text_prev)
+                    indices_claimed = set()
+                    indices = list()
+                    indices_prev = indices
+                    best_index = 0
+                    best_distance = float('inf')
+                    best_claim = set()
+                    if length_prev >= length:
+                        success_element_prev = success[-1]
+                        index_prev = success_element_prev["index"]
+                        for index in range(0, length_prev - length + 1):
+                            new_candidate = transformed_text_prev[index:index + length]
+                            current_distance = distance(new_candidate, transformed_text)
+                            current_index = index_prev + index
+                            candidate_claim = set(range(current_index, current_index + length))
+                            #print('candidate_claim', candidate_claim)
+                            if not candidate_claim.issubset(indices_claimed):
+                                if current_distance / length < 0.2:
+                                    indices.append(current_index)
+                                    indices_claimed.update(candidate_claim)
+                            if not candidate_claim.issubset(claimed):
+                                # NOTE: we want to get the furthest right option,
+                                # but if there are two humps, we want the peak of
+                                # the right hump, not the furthest right foothill.
+                                if current_distance <= best_distance:
+                                    #print('claimed', claimed)
+                                    #if not candidate_claim.intersection(claimed):
+                                    #print('new_candidate:', new_candidate, 'transformed_text:', transformed_text)
+                                    #print('current_distance:', current_distance, 'best_distance:', best_distance, 'new_candidate:', new_candidate.replace('\n', '_n'), 'transformed_text:', transformed_text.replace('\n', '_n'), 'candidate_claim:', candidate_claim)
+                                    best_claim = candidate_claim
+                                    best_index = index_prev + index
+                                    best_distance = current_distance
+                                # We take the right peak even if it's a little worse than the best,
+                                # as long as it doesn't overlap the left peak.
+                                # TODO: 0.75 is a magic number right now and not verified much.
+                                #elif 0.5 * current_distance <= best_distance and index_prev + index > best_index + length:
+#                                elif 0.5 * current_distance <= best_distance and index_prev + index > best_index + 1:
+#                                    best_claim = candidate_claim
+#                                    best_index = index_prev + index
+#                                else:
+#                                    print('new_candidate not good enough:', new_candidate.replace('\n', ''), 'transformed_text:', transformed_text.replace('\n', ''))
+#                            else:
+#                                print('new_candidate blocked:', new_candidate.replace('\n', ''), 'transformed_text:', transformed_text.replace('\n', ''))
+                    transformed_text_prev = transformed_text
                     success.append({
                         "transform": transform_name,
+                        "index": best_index,
+                        "indices": indices,
                         "text": transformed_text})
+                claimed.update(best_claim)
+                #print('best_claim', best_claim)
+                #print('claimed', claimed)
                 # need to add final entry, including the symbol_id for the match
                 text_normalized = successes_subgroup[-1]
+                symbol_id = symbol_ids_by_symbol[text_normalized]
                 success.append({
                     "transform": "always",
+                    "index": success[-1]["index"],
+                    "indices": success[-1]["indices"],
                     "text": text_normalized,
-                    "symbol_id": symbol_ids_by_symbol[text_normalized],
+                    "symbol_id": symbol_id,
                     })
+                print('success')
+                print(success)
 
                 successes.append(success)
 
+#                if symbol_id not in successes_by_symbol_id:
+#                    successes_by_symbol_id[symbol_id] = [success]
+#                    successes.append(success)
+#                else:
+#                    #lineage = ''.join([s["text"] for s in success[:-2]]).replace('\n', '')
+#                    existing_successes = successes_by_symbol_id[symbol_id]
+#                    overlaps = False
+#                    for existing_success in existing_successes:
+#                        existing_final = existing_success[-1]
+#                        existing_index_set = set()
+#                        existing_text = existing_final["text"]
+#                        existing_length = len(existing_text)
+#                        existing_index = existing_final["index"]
+#                        for i in range(existing_index, existing_index + existing_length):
+#                            existing_index_set.add(i)
+#
+#                        current_final = success[-1]
+#                        current_index_set = set()
+#                        current_text = current_final["text"]
+#                        current_length = len(current_text)
+#                        current_index = current_final["index"]
+#                        for i in range(current_index, current_index + current_length):
+#                            current_index_set.add(i)
+#
+#                        if current_index_set.intersection(existing_index_set):
+##                            print("conflict between", existing_text, "and", current_text)
+##                            print(existing_success)
+##                            print(success)
+#                            overlaps = True
+#                    if not overlaps:
+#                        existing_successes.append(success)
+#                        successes.append(success)
+#
+#
+##                        existing_lineage = ''.join([s["text"] for s in existing_success[:-2]]).replace('\n', '')
+##                        if lineage == existing_lineage:
+##                            success_match = success[-1]["text"]
+##                            existing_success_match = existing_success[-1]["text"]
+##                            reference = success[-3]["text"]
+##                            current_distance = distance(reference, success_match)
+##                            existing_distance = distance(reference, existing_success_match)
+##                            print(success_match, current_distance)
+##                            print(existing_success_match, existing_distance)
+##                            print("Found another hit for symbol_id %s" % symbol_id)
+##                            print("existing:")
+##                            print(success_by_symbol_id[symbol_id])
+##                            print("new:")
+##                            print(success)
+##                            if current_distance < existing_distance:
+##                                success_by_symbol_id[symbol_id] = success
+##                                successes = success_by_symbol_id.values()
+
             for fails_subgroup in sorted(fails_subgroups, key=sort_match_log_subgroups):
                 fail = list()
-                # we don't include the final entry in the zip, because that's from the always transform
+                # we don't include the final entry in the zip, because that's from the 'always' transform
                 for transform_name,transformed_text in zip(transform_names, fails_subgroup[:-1]):
                     fail.append({
                         "transform": transform_name,
@@ -170,6 +282,11 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
                 "successes": successes,
                 "fails": fails})
 
+        for r in result:
+            for success in r["successes"]:
+                for s in success:
+                    s.pop("index", None)
+                    s.pop("indices", None)
         return result
 
     except(Exception) as e:
