@@ -66,8 +66,8 @@ organism_for_abbr = {v: k for k, v in abbr_for_organism.items()}
 
 cwd = os.getcwd()
 # TODO: should LOGS_DIR use '.', 'cwd' or 'current script path'?
-LOGS_DIR="../outputs"
-FAILS_FILE_PATH=Path(PurePath(LOGS_DIR, "fails.txt"))
+#LOGS_DIR="../outputs"
+#FAILS_FILE_PATH=Path(PurePath(LOGS_DIR, "fails.txt"))
 
 def clear(args):
     db = args.db
@@ -80,9 +80,9 @@ def clear(args):
             transformed_words_cur = conn.cursor()
 
             try:
-                open(Path(PurePath(LOGS_DIR, "successes.txt")), 'w').close()
-                open(FAILS_FILE_PATH, 'w').close()
-                open(Path(PurePath(LOGS_DIR, "results.tsv")), 'w').close()
+                #open(Path(PurePath(LOGS_DIR, "successes.txt")), 'w').close()
+                #open(FAILS_FILE_PATH, 'w').close()
+                #open(Path(PurePath(LOGS_DIR, "results.tsv")), 'w').close()
 
                 match_attempts_cur.execute("DELETE FROM match_attempts;")
                 transformed_words_cur.execute("DELETE FROM transformed_words;")
@@ -416,7 +416,7 @@ if len(raw) <= 1:
     parser.print_help()
 elif raw[1] == "match":
     transforms = []
-    for arg_pair in grouper(raw[2:], 2, 'x'):
+    for arg_pair in grouper(raw[4:], 2, 'x'):
         category_raw = arg_pair[0]
         category_parsed = ""
         if category_raw in normalization_flags:
@@ -428,6 +428,7 @@ elif raw[1] == "match":
             transforms.append(
                 {"name": arg_pair[1], "category": category_parsed})
 
-    args.func(transforms)
+    #args_to_ignore = ['db', 'output_dir']
+    args.func(raw[2], raw[3], transforms)
 else:
     args.func(args)

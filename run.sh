@@ -7,7 +7,8 @@ function finish() {
 
 trap 'finish $LINENO' SIGINT SIGTERM ERR
 
-./pfocr.py clear matches
+#./pfocr/pfocr.py db_copy pfocr20190128b pfocr20190215
+./pfocr/pfocr.py clear pfocr20190215 matches
 #./pfocr.py match -n stop -n nfkc -n upper -n swaps -n deburr -n alphanumeric -m root -m one_to_I;
 #./pfocr.py match -n stop -n nfkc -n upper -m root -n swaps -n deburr -n alphanumeric -m one_to_I;
 #./pfocr.py match -n stop -n nfkc -n upper -n swaps -n deburr -n alphanumeric -m one_to_I -m root;
@@ -21,9 +22,9 @@ trap 'finish $LINENO' SIGINT SIGTERM ERR
 #./pfocr.py match -n stop -m expand -n stop -n upper -n swaps -n alphanumeric ;
 #./pfocr.py match -n stop -n nfkc -n deburr -m expand -n stop -m root -n upper -n swaps -n alphanumeric;
 
-./pfocr.py match -n stop -n nfkc -n deburr -m expand -m root -n swaps -n alphanumeric
+./pfocr/pfocr.py match pfocr20190215 ./output20190215 -n stop -n nfkc -n deburr -m expand -m root -n swaps -n alphanumeric
 
-./pfocr.py summarize
+./pfocr/pfocr.py summarize pfocr20190215
 
 # Generate curated optimization datasets
 #bash ./gen_co_check.sh

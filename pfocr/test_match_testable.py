@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import unittest
-from match_testable import match, match_logged, match_verbose
+from match_testable import match, match_logged, match_verbose, normalize_always
 #from fast_match_testable import match
 
 
@@ -24,7 +24,7 @@ class TestMatch(unittest.TestCase):
                 'name': 'asciify',
                 'category': 'mutate'
             }, {
-                'name': 'split',
+                'name': 'shake',
                 'category': 'mutate'
             }, {
                 'name': 'expand',
@@ -39,19 +39,19 @@ class TestMatch(unittest.TestCase):
                 [{'transform': 'noop', 'text': 'WNT9/10\nWNT9'},
                     {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
                     {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
-                    {'transform': 'split', 'text': 'WNT9/10'},
+                    {'transform': 'shake', 'text': 'WNT9/10'},
                     {'transform': 'expand', 'text': 'WNT10'},
                     {'transform': 'always', 'text': 'WNT10', 'symbol_id': 2}],
                 [{'transform': 'noop', 'text': 'WNT9/10\nWNT9'},
                     {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
                     {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
-                    {'transform': 'split', 'text': 'WNT9/10'},
+                    {'transform': 'shake', 'text': 'WNT9/10'},
                     {'transform': 'expand', 'text': 'WNT9'},
                     {'transform': 'always', 'text': 'WNT9', 'symbol_id': 1}],
                 [{'transform': 'noop', 'text': 'WNT9/10\nWNT9'},
                     {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9'},
                     {'transform': 'asciify', 'text': 'WNT9/10\nWNT9'},
-                    {'transform': 'split', 'text': 'WNT9'},
+                    {'transform': 'shake', 'text': 'WNT9'},
                     {'transform': 'always', 'text': 'WNT9', 'symbol_id': 1}]],
             'fails': []}]
 
@@ -73,7 +73,7 @@ class TestMatch(unittest.TestCase):
                 'name': 'asciify',
                 'category': 'mutate'
             }, {
-                'name': 'split',
+                'name': 'shake',
                 'category': 'mutate'
             }, {
                 'name': 'expand',
@@ -89,7 +89,7 @@ class TestMatch(unittest.TestCase):
                     {'transform': 'noop', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
                     {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
                     {'transform': 'asciify', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
-                    {'transform': 'split', 'text': 'WNT9/10'},
+                    {'transform': 'shake', 'text': 'WNT9/10'},
                     {'transform': 'expand', 'text': 'WNT10'},
                     {'transform': 'always', 'text': 'WNT10', 'symbol_id': 2}
                     ],
@@ -97,7 +97,7 @@ class TestMatch(unittest.TestCase):
                     {'transform': 'noop', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
                     {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
                     {'transform': 'asciify', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
-                    {'transform': 'split', 'text': 'WNT9/10'},
+                    {'transform': 'shake', 'text': 'WNT9/10'},
                     {'transform': 'expand', 'text': 'WNT9'},
                     {'transform': 'always', 'text': 'WNT9', 'symbol_id': 1}
                     ],
@@ -105,7 +105,7 @@ class TestMatch(unittest.TestCase):
                     {'transform': 'noop', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
                     {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
                     {'transform': 'asciify', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
-                    {'transform': 'split', 'text': 'WNT9'},
+                    {'transform': 'shake', 'text': 'WNT9'},
                     {'transform': 'always', 'text': 'WNT9', 'symbol_id': 1}
                     ]
                 ],
@@ -114,7 +114,7 @@ class TestMatch(unittest.TestCase):
                     {'transform': 'noop', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
                     {'transform': 'nfkc', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
                     {'transform': 'asciify', 'text': 'WNT9/10\nWNT9\nPFOCR_FAILED'},
-                    {'transform': 'split', 'text': 'PFOCR_FAILED'},
+                    {'transform': 'shake', 'text': 'PFOCR_FAILED'},
                     {'transform': 'always', 'text': 'PFOCR_FAILED'}
                     ]
                 ]
@@ -138,7 +138,7 @@ class TestMatch(unittest.TestCase):
                 'name': 'asciify',
                 'category': 'mutate'
             }, {
-                'name': 'split',
+                'name': 'shake',
                 'category': 'mutate'
             }, {
                 'name': 'expand',
@@ -174,7 +174,7 @@ class TestMatch(unittest.TestCase):
                 'name': 'asciify',
                 'category': 'mutate'
             }, {
-                'name': 'split',
+                'name': 'shake',
                 'category': 'mutate'
             }, {
                 'name': 'expand',
@@ -201,7 +201,7 @@ class TestMatch(unittest.TestCase):
                 'name': 'asciify',
                 'category': 'mutate'
             }, {
-                'name': 'split',
+                'name': 'shake',
                 'category': 'mutate'
             }, {
                 'name': 'expand',
@@ -224,7 +224,7 @@ CC NFKBIE\nTNFAIP6\n
                 'symbol': 'TNFAIP6'
             }]
 
-        expected = set([s['symbol'].upper() for s in symbols_and_ids])
+        expected = set([normalize_always(s['symbol']) for s in symbols_and_ids])
         actual_raw = match(
             symbols_and_ids,
             [{
@@ -234,7 +234,7 @@ CC NFKBIE\nTNFAIP6\n
                 'name': 'asciify',
                 'category': 'mutate'
             }, {
-                'name': 'split',
+                'name': 'shake',
                 'category': 'mutate'
             }, {
                 'name': 'expand',
@@ -245,7 +245,7 @@ CC NFKBIE\nTNFAIP6\n
             }],
             [text],
         )
-        actual = set([a.upper() for a in actual_raw])
+        actual = set([normalize_always(a) for a in actual_raw])
 
         self.assertEqual(actual, expected)
 
@@ -268,7 +268,7 @@ CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\n
                 'symbol': 'CXCL3'
             }]
 
-        expected = set([s['symbol'].upper() for s in symbols_and_ids])
+        expected = set([normalize_always(s['symbol']) for s in symbols_and_ids])
         actual_raw = match(
             symbols_and_ids,
             [{
@@ -278,7 +278,7 @@ CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\n
                 'name': 'asciify',
                 'category': 'mutate'
             }, {
-                'name': 'split',
+                'name': 'shake',
                 'category': 'mutate'
             }, {
                 'name': 'expand',
@@ -292,7 +292,7 @@ CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\n
             }],
             [text],
         )
-        actual = set([a.upper() for a in actual_raw])
+        actual = set([normalize_always(a) for a in actual_raw])
 
         self.assertEqual(actual, expected)
 
@@ -342,7 +342,7 @@ CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\nNormal 1\nCancer 2
                 'symbol': 'ES2'
             }]
 
-        expected = set([s['symbol'].upper() for s in symbols_and_ids])
+        expected = set([normalize_always(s['symbol']) for s in symbols_and_ids])
         actual_raw = match(
             symbols_and_ids,
             [{
@@ -352,7 +352,7 @@ CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\nNormal 1\nCancer 2
                 'name': 'asciify',
                 'category': 'mutate'
             }, {
-                'name': 'split',
+                'name': 'shake',
                 'category': 'mutate'
             }, {
                 'name': 'expand',
@@ -366,8 +366,187 @@ CC LA1 NFKBIE\nTNFAIP6\n白\nControl\nCancer1\nNFKBIA\nCXCL3\nNormal 1\nCancer 2
             }],
             [text],
         )
-        actual = set([a.upper() for a in actual_raw])
+        actual = set([normalize_always(a) for a in actual_raw])
 
+        self.assertEqual(actual, expected)
+
+    def test_Relative_mRNA_etc(self):
+        text = '''
+Relative mRNA expression Q\nRelative to p-actin D\n3\nAhR\nGPR35\nGRIN1\nGRIN2A\nGRIN2B\nGRIN3A\nα7nAChR\nRelative mRNA expression\nAMPAR2\nAMPAR3\nAMPAR4\nKainateR1\nKainateR2\nKainateR3\nKainateR4\nKainateR5\nRelative mRNA expression O\nAhR binding\n2\npg/ml\n
+'''
+
+        symbols_and_ids = [{'symbol': 'ACTIN', 'id': 21591}, {'symbol': 'GRIN2B', 'id': 1950}, {'symbol': 'GPR35', 'id': 1910}, {'symbol': 'GRIN2A', 'id': 1949}, {'symbol': 'GRIN1', 'id': 1948}, {'symbol': 'AHR', 'id': 136}, {'symbol': 'GRIN3A', 'id': 14478}]
+
+        expected = set([normalize_always(s['symbol']) for s in symbols_and_ids])
+        actual_raw = match(
+            symbols_and_ids,
+            [{
+                'name': 'stop',
+                'category': 'normalize'
+            }, {
+                'name': 'nfkc',
+                'category': 'normalize'
+            }, {
+                'name': 'deburr',
+                'category': 'normalize'
+            }, {
+                'name': 'shake',
+                'category': 'mutate'
+            }, {
+                'name': 'expand',
+                'category': 'mutate'
+            }, {
+                'name': 'root',
+                'category': 'mutate'
+            }, {
+                'name': 'swaps',
+                'category': 'normalize'
+            }, {
+                'name': 'alphanumeric',
+                'category': 'normalize'
+            }],
+            [text],
+        )
+        actual = set([normalize_always(a) for a in actual_raw])
+
+        self.assertEqual(actual, expected)
+
+    def test_PTEN_CdashFLIP1_etc(self):
+        texts = [
+                'PTEN',
+                '"으',
+                'C-FLIP',
+                'Caspase3 4',
+                'Caspase7',
+                '■P53',
+                'LKB1',
+                'TSC2']
+
+        symbols_and_ids = [{'symbol': 'PTEN', 'id': 3854}, {'symbol': 'P53', 'id': 45201}, {'symbol': 'LKB1', 'id': 39986}, {'symbol': 'C-FLIP', 'id': 24252}, {'symbol': 'TSC2', 'id': 4940}]
+
+        expected = set([normalize_always(s['symbol']) for s in symbols_and_ids])
+        actual_raw = match(
+            symbols_and_ids,
+            [{
+                'name': 'nfkc',
+                'category': 'normalize'
+            }, {
+                'name': 'deburr',
+                'category': 'normalize'
+            }, {
+                'name': 'expand',
+                'category': 'mutate'
+            }, {
+                'name': 'root',
+                'category': 'mutate'
+            }, {
+                'name': 'swaps',
+                'category': 'normalize'
+            }, {
+                'name': 'alphanumeric',
+                'category': 'normalize'
+            }],
+            texts,
+        )
+        actual = set([normalize_always(a) for a in actual_raw])
+
+        self.assertEqual(actual, expected)
+
+    def test_PTEN_CdashFLIP_etc_match_verbose(self):
+        text = '''
+PTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2
+'''
+
+        symbols_and_ids = [{'symbol': 'PTEN', 'id': 3854}, {'symbol': 'P53', 'id': 45201}, {'symbol': 'LKB1', 'id': 39986}, {'symbol': 'C-FLIP', 'id': 24252}, {'symbol': 'TSC2', 'id': 4940}]
+
+        expected = [{
+            'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n',
+            'successes': [
+                # TODO: how should we handle the case where we get both C-FLIP and CFLIP?
+                [{'transform': 'noop', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'nfkc', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'deburr', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'shake', 'text': 'C-FLIP'},
+                    {'transform': 'always', 'text': 'C-FLIP', 'symbol_id': 24252}],
+                [{'transform': 'noop', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'nfkc', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'deburr', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'shake', 'text': 'CFLIP'},
+                    {'transform': 'always', 'text': 'CFLIP', 'symbol_id': 24252}],
+                [{'transform': 'noop', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'nfkc', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'deburr', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'shake', 'text': 'LKB1'},
+                    {'transform': 'always', 'text': 'LKB1', 'symbol_id': 39986}],
+                [{'transform': 'noop', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'nfkc', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'deburr', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'shake', 'text': 'P53'},
+                    {'transform': 'always', 'text': 'P53', 'symbol_id': 45201}],
+                [{'transform': 'noop', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'nfkc', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'deburr', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'shake', 'text': 'PTEN'},
+                    {'transform': 'always', 'text': 'PTEN', 'symbol_id': 3854}],
+                [{'transform': 'noop', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'nfkc', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'deburr', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'shake', 'text': 'TSC2'},
+                    {'transform': 'always', 'text': 'TSC2', 'symbol_id': 4940}]
+                ],
+            'fails': [
+                [{'transform': 'noop', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'nfkc', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'deburr', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'shake', 'text': 'Caspase3 4'},
+                    {'transform': 'expand', 'text': 'Caspase3 4'},
+                    {'transform': 'root', 'text': 'Caspase3 4'},
+                    {'transform': 'swaps', 'text': 'CASPASE3 4'},
+                    {'transform': 'always', 'text': 'CASPASE34'}],
+                [{'transform': 'noop', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'nfkc', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'deburr', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'shake', 'text': 'Caspase7'},
+                    {'transform': 'expand', 'text': 'Caspase7'},
+                    {'transform': 'root', 'text': 'Caspase7'},
+                    {'transform': 'swaps', 'text': 'CASPASE7'},
+                    {'transform': 'always', 'text': 'CASPASE7'}],
+                [{'transform': 'noop', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'nfkc', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'deburr', 'text': '\nPTEN\n"으\nC-FLIP\nCaspase3 4\nCaspase7\n■P53\nLKB1\nTSC2\n'},
+                    {'transform': 'shake', 'text': '으'},
+                    {'transform': 'expand', 'text': '으'},
+                    {'transform': 'root', 'text': '으'},
+                    {'transform': 'swaps', 'text': '으'},
+                    {'transform': 'always', 'text': ''}]
+                ]}]
+
+        actual = match_verbose(
+            symbols_and_ids,
+            [{
+                'name': 'nfkc',
+                'category': 'normalize'
+            }, {
+                'name': 'deburr',
+                'category': 'normalize'
+            }, {
+                'name': 'shake',
+                'category': 'mutate'
+            }, {
+                'name': 'expand',
+                'category': 'mutate'
+            }, {
+                'name': 'root',
+                'category': 'mutate'
+            }, {
+                'name': 'swaps',
+                'category': 'normalize'
+            }, {
+                'name': 'alphanumeric',
+                'category': 'normalize'
+            }],
+            [text],
+        )
         self.assertEqual(actual, expected)
 
         

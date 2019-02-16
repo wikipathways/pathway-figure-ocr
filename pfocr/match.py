@@ -7,10 +7,17 @@ import psycopg2
 import psycopg2.extras
 import re
 import transforms
+import os
 import sys
+from pathlib import Path
+
 from deadline import deadline
 from get_pg_conn import get_pg_conn
+#from match_testable import match, match_logged, match_verbose
+import match_testable
+#from fast_match_testable import match
 
+FILE_DIR = os.path.dirname(__file__)
 
 alphanumeric_re = re.compile('\w')
 
@@ -50,10 +57,7 @@ def attempt_match(args, matcher_id, transformed_word_ids_by_transformed_word, ma
             (ocr_processor_id, matcher_id, figure_id, word, transformed_word_id, symbol_id, " ".join(transform_args))
         )
 
-def match(args):
-    db = args.db
-    output_dir = args.output_dir
-
+def match(db, output_dir, args):
     conn = get_pg_conn(db)
     ocr_processors__figures_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     symbols_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -61,16 +65,19 @@ def match(args):
     transformed_words_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     match_attempts_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
+    transforms_for_testable = args.copy()
+    transforms_for_testable.insert(0, {
+        "name": "split",
+        "category": "mutate",
+        })
+
     # transforms_to_apply includes both mutations and normalizations
     transforms_to_apply = []
-    args_to_ignore = ['db', 'output_dir']
-    #for arg in [a in args if (not a["name"] in args_to_ignore)]:
     for arg in args:
-        if not arg["name"] in args_to_ignore:
-            category = arg["category"]
-            name = arg["name"]
-            t = getattr(getattr(transforms, name), name)
-            transforms_to_apply.append({"transform": t, "name": name, "category": category})
+        category = arg["category"]
+        name = arg["name"]
+        t = getattr(getattr(transforms, name), name)
+        transforms_to_apply.append({"transform": t, "name": name, "category": category})
 
     transforms_json = []
     for t in transforms_to_apply:
@@ -78,7 +85,7 @@ def match(args):
         transform_json["category"] = t["category"]
         name = t["name"]
         transform_json["name"] = name
-        with open("./transforms/" + name + ".py", "r") as f:
+        with open(Path(FILE_DIR, "transforms", name + ".py"), "r") as f:
             code = f.read().encode()
             transform_json["code_hash"] = hashlib.sha224(code).hexdigest()
         transforms_json.append(transform_json)
@@ -131,7 +138,9 @@ def match(args):
 
         # original symbol incl/
         symbol_ids_by_symbol = {}
+        symbols_and_ids = list()
         for s in symbols_cur:
+            symbols_and_ids.append(s)
             symbol_id = s["id"]
             symbol = s["symbol"]
             normalized_results = [symbol]
@@ -163,6 +172,7 @@ def match(args):
 
         successes = []
         fails = []
+
         for row in ocr_processors__figures_cur:
             ocr_processor_id = row["ocr_processor_id"]
             #print("ocr_processor_id: %s" % ocr_processor_id)
@@ -170,8 +180,8 @@ def match(args):
             #print(ocr_processor_id)
             figure_id = row["figure_id"]
             full_text = row["full_text"]
-            #print(full_text)
             if full_text:
+                fig_matches = set()
                 for line in full_text.split("\n"):
                     words = set()
                     words.add(line.replace(" ", ""))
@@ -225,6 +235,33 @@ def match(args):
                         successes.append(line + ' => ' + ' & '.join(matches))
                     else:
                         fails.append(line)
+                    fig_matches.update(matches)
+
+                testable_words = set()
+                for line in full_text.split("\n"):
+                    testable_words.add(line.replace(" ", ""))
+                    for w in line.split(" "):
+                        testable_words.add(w)
+                #match_testable_matches = match_testable.match(symbols_and_ids, transforms_for_testable, [full_text])
+                match_testable_matches = match_testable.match(symbols_and_ids, args, testable_words)
+                figure_matches_upper = set()
+                for f in fig_matches:
+                    figure_matches_upper.add(f.upper())
+                if figure_matches_upper != match_testable_matches:
+                    print(full_text)
+                    fig_matches_expected = list()
+                    for f in (fig_matches|match_testable_matches):
+                        fig_matches_expected.append({
+                            "symbol": f,
+                            "id": symbol_ids_by_symbol[f],
+                            })
+                    print(fig_matches_expected)
+
+                    print('figure_matches_upper')
+                    print(figure_matches_upper)
+                    print('match_testable_matches')
+                    print(match_testable_matches)
+                    raise Exception('figure_matches_upper != match_testable_matches')
 
         conn.commit()
 

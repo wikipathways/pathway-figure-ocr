@@ -25,7 +25,7 @@ stop_words = {"2", "CO2", "HR", "GA", "CA2", "TYPE",
 
 # We run this normalization regardless of the -n and -m items specified
 def normalize_always(word):
-    return to_underscore_re.sub('_', word.upper())
+    return to_underscore_re.sub('_', word.strip().upper())
 
 # Find match(es) from the OCR full text from a single figure
 def attempt_match(symbol_ids_by_symbol, transform_names_categories_functions, successes, fails, current_match_log_entries, text, transform_index=0):

@@ -12,6 +12,9 @@ from pathlib import Path, PurePath
 
 from deadline import deadline, TimedOutExc
 from regexes import always_split_re, frozen_zone_re
+from toolbox import truncate
+
+# try splitting on and knocking out non-word characters
 
 
 TIMEOUT = 10
@@ -23,18 +26,10 @@ WORD_BOUNDARY = 'PFOCRSPACE'
 word_boundary_re = re.compile(WORD_BOUNDARY)
 frozen_sub_chunk_re = re.compile('(\w)+')
 
-#\f	ASCII Formfeed (FF)
-#\n	ASCII Linefeed (LF)
-#\r	ASCII Carriage Return (CR)
-#\v	ASCII Vertical Tab (VT)
-#\u2190-\u2199  Unicode arrows (basic)
-
-# TODO: what about the following characters?
-#\t	ASCII Horizontal Tab (TAB)
-#\u2190-\u21FF  Unicode arrows
-#\u27F0-\u27FF  Unicode Supplemental Arrows-A
-#\u2900-\u297F  Unicode Supplemental Arrows-B
-#\u2B00-\u2BFF  Unicode Miscellaneous Symbols and Arrows
+# We don't want to use these characters as word boundaries:
+# How about parens?
+#not_split_chars = {'-', '(', ')'}
+not_split_chars = {'-'}
 
 tail_re = re.compile('(?:' + WORD_BOUNDARY + ')(.{2,40})(?:' + WORD_BOUNDARY + ')$')
 
@@ -46,11 +41,12 @@ def get_variations(chunk='', frozen_prefix='', frozen_suffix=''):
     else:
         variations = []
         for sub_chunk in chunk:
-            hgs = [sub_chunk]
+            entries = [sub_chunk]
             if not frozen_sub_chunk_re.match(sub_chunk):
-                hgs.append(WORD_BOUNDARY)
-                hgs.append('')
-            variations.append(hgs)
+                entries.append('')
+                if sub_chunk not in not_split_chars:
+                    entries.append(WORD_BOUNDARY)
+            variations.append(entries)
         if variations:
             for variant in product(*variations):
                 yield frozen_prefix + ''.join(variant) + frozen_suffix
@@ -74,7 +70,7 @@ def get_next_frozen_prefixes(chunk, frozen_prefixes, frozen_suffix=''):
     return next_frozen_prefixes
 
 @deadline(TIMEOUT)
-def split(text):
+def shake(text):
     result = []
     try:
         candidates = set()
@@ -101,15 +97,13 @@ def split(text):
             result = list(result_unique)
 
     except TimedOutExc as e:
-        sys.stderr.write('\r\split warning: timed out for this input text:\r\n')
-        sys.stderr.write(text)
+        sys.stderr.write('\r\shake warning: timed out for this input text:\r\n')
+        sys.stderr.write(truncate(text))
         sys.stderr.write('\r\nreturning input text unchanged.\r\n')
         result = [text]
         pass
     except:
-        result = [text]
-        sys.stderr.write('\r\nsplit error: could not handle this input text:\r\n')
-        sys.stderr.write(text)
+        sys.stderr.write('\r\nshake error: could not handle this input text:\r\n')
+        sys.stderr.write(truncate(text))
         raise
-        #pass
     return result

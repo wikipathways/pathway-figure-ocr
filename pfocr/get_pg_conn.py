@@ -7,8 +7,7 @@ import sys
 # Set current database like this: (export PFOCR_DB='pfocr20190128b'; ./pfocr/pfocr.py europepmc)
 
 
-def get_pg_conn(args):
-    db = args.db
+def get_pg_conn(db):
     if not db:
         db = os.environ['PFOCR_DB']
         if not db:
