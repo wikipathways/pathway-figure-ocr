@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# Submission instructions:
+# https://europepmc.org/AnnotationsSubmission
 
-# Here's a useful jq query to get figure_filepath and position
-#  python europepmc.py | jq -s '.[] | .anns[] | {figure_filepath, position}'
+# We are currently using the "sentence-based annotations" format
+
+# Here's a useful jq query to get all the annotation exact values:
+# python europepmc.py | jq -s '.[] | .anns[] | .exact'
+# And one to get figure_filepath and position (but you must first uncomment figure_filepath in the code):
+# python europepmc.py | jq -s '.[] | .anns[] | {exact, figure_filepath}'
+
+# TODO: run the output through this
+# https://github.com/EuropePMC/EuropePMC-Annotation-Validator
 
 import json
 import csv
@@ -108,9 +117,6 @@ def europepmc(args):
                     {
                         # figure_filepath is just for our internal dev use.
                         #"figure_filepath": figure_filepath,
-                        # TODO: should we use figure_id for position?
-                        # We can't get all figure numbers from the filepath.
-                        "position": None,
                         "exact": symbol,
                         "section": "Figure",
                         "tags": [
@@ -122,7 +128,16 @@ def europepmc(args):
                         })
 
         for row in annotations_by_pmcid.values():
+            # TODO should we allow the user to specify an output file location?
             print(json.dumps(row))
+
+    # TODO: check whether we're getting more than 10k rows. From the docs:
+    # Every file must have less than 10000 rows, where each row represents an
+    # individual article with all associated annotations. If your dataset
+    # contains more than 10000 articles, and thus you have more than 10000 rows
+    # to upload, you can generate multiple files and then submit either a zip or
+    # a gzipped tar file containing all the data.
+    # unix command: tar -czvf submission_file.tar.gz ./*
 
     except(psycopg2.DatabaseError) as e:
         print('Database Error %s' % psycopg2.DatabaseError)

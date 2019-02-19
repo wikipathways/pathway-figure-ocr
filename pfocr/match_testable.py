@@ -82,6 +82,8 @@ def create_symbol_ids_by_symbol(symbols_and_ids, transform_names_categories_func
     return symbol_ids_by_symbol
 
 # texts is a list of full text strings from the OCR, one per figure.
+# TODO: should we get rid of this method? It's supposed to be a little faster than match_Verbose,
+# but it might be just confusing.
 def match_logged(symbols_and_ids, transform_names_and_categories, texts):
     # transform_names_categories_functions includes both mutations and normalizations
     transform_names_categories_functions = []
@@ -207,10 +209,6 @@ def match_verbose(symbols_and_ids, transform_names_and_categories, texts):
                 "successes": successes,
                 "fails": fails})
 
-#        for r in result:
-#            for success in r["successes"]:
-#                for s in success:
-#                    s.pop("indices", None)
         return result
 
     except(Exception) as e:
