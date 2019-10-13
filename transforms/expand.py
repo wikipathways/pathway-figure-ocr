@@ -85,7 +85,9 @@ def check_dash_case(word):
             to_digit = int(last_chunk.rstrip(','))
             if not dash_from_digit_re.match(word) is None:
                 from_digit = int(dash_from_digit_re.match(word).group(1))
-                if from_digit < to_digit:
+                # The to_digit - from_digit check is needed to avoid hanging on cases like this:
+                # 3VIT19-001490329014
+                if from_digit < to_digit and to_digit - from_digit < 30:
                     root = dash_root_re.match(word).group(1)
                     for d in range(from_digit, to_digit + 1):
                         dash_set.add(root + str(d))

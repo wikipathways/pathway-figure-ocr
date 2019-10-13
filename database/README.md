@@ -35,6 +35,16 @@ Exit from psql: `\q`.
 exit
 ```
 
+## Changing Target Database
+
+* ../copy_all_except_figures.sh
+* ../copy_tables.sh
+* ../get_pg_conn.py
+* load_data.sql
+* create_tables.sql
+
+Related: `createdb -O pfocr -T pfocr2018121717 pfocr20190128`
+
 ## Loading Lexicon
 
 Load each of your source lexicon files in order of preference (use filename numbering, e.g., `1_symbol.csv`) to populate unique `xrefs` and `symbols` tables which are then referenced by the `lexicon` table. A temporary `s` table holds _previously seen_ symbols (i.e., from preferred sources) to exclude redundancy across sources. However, many-to-many mappings are expected _within_ a source, e.g., complexes and families.

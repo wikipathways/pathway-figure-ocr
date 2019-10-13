@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import csv
 import os
 import psycopg2
 import psycopg2.extras
@@ -19,7 +20,7 @@ def summarize(args):
 
     try:
         results_query = '''
-        SELECT pmcid, figure_filepath, word, symbol, xref as entrez, source, transforms_applied
+        SELECT pmcid, figure_filepath, word, symbol, source, hgnc_symbol, xref as entrez, transforms_applied
         FROM figures__xrefs
         ORDER BY pmcid, figure_filepath, word;
         '''
@@ -31,15 +32,19 @@ def summarize(args):
             figure_filepath = row["figure_filepath"]
             word = row["word"]
             symbol = row["symbol"]
+            source = row["source"]
+            hgnc_symbol = row["hgnc_symbol"]
             entrez = row["entrez"]
             transforms_applied = row["transforms_applied"]
 
             if figure_filepath != "":
                 results.append({
                     "pmcid": pmcid,
-                    "figure": "https://dev.wikipathways.org/pfocr/" + os.path.basename(figure_filepath),
+                    "figure": os.path.basename(figure_filepath),
                     "word": word,
                     "symbol": symbol,
+                    "source": source,
+                    "hgnc_symbol": hgnc_symbol,
                     "entrez": entrez,
                     "transforms_applied": transforms_applied
                 })
@@ -89,12 +94,25 @@ def summarize(args):
 
         conn.commit()
 
-        output_rows = ["\t".join(["pmcid", "figure", "word", "symbol", "entrez", "transforms_applied"])]
-        for result in results:
-            output_rows.append("\t".join([result["pmcid"], result["figure"], result["word"], result["symbol"], result["entrez"], result["transforms_applied"]]))
+        with open('./outputs/results.tsv', 'w', newline='') as resultsfile:
+            fieldnames = ["pmcid", "figure", "word", "symbol", "source", "hgnc_symbol", "entrez", "transforms_applied"]
+            writer = csv.DictWriter(resultsfile, fieldnames=fieldnames, dialect='excel-tab')
+            writer.writeheader()
+            for result in results:
+                writer.writerow(result)
 
-        with open("./outputs/results.tsv", "a+") as resultsfile:
-            resultsfile.write('\n'.join(output_rows))
+#        header_entries = ["pmcid", "figure", "word", "symbol", "source", "hgnc_symbol", "entrez", "transforms_applied"]
+#        header_length = len(header_entries)
+#        output_rows = [",".join(header_entries)]
+#        for result in results:
+#            row_entries = [result["pmcid"], result["figure"], result["word"], result["symbol"], result["source"], result["hgnc_symbol"], result["entrez"], result["transforms_applied"]]
+#            row_length = len(row_entries)
+#            if row_length != header_length: 
+#                raise Exception("Error! row length %s doesn't match header length %s" % (row_length, header_length), '\n', ",".join(row_entries))
+#            output_rows.append(",".join(row_entries))
+#
+#        with open("./outputs/results.csv", "a+") as resultsfile:
+#            resultsfile.write('\n'.join(output_rows))
 
     except(psycopg2.DatabaseError) as e:
         print('Error %s' % psycopg2.DatabaseError)
