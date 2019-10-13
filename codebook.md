@@ -51,41 +51,42 @@ Another manual step here to increase accuracy of downstream counts. Make a copy 
 
 ### Load into Database
 
-Create database:
-
-Enter nix-shell:
+Before any of these steps, be sure you've entered the nix-shell:
 
 ```
 nix-shell
 ```
+
+Create database and load pmc and organism data. To get the data, see sections
+`gene2pubmed, pmc2pmid & organism2pubmed` and
+`gene2pubtator & organism2pubtator` below. Change database name, if desired, in
+the sql files. Then run:
 
 ```
 psql
 \i database/create_tables.sql
+\i database/load_data.sql
 \q
 ```
 
-Load filenames (or paths) and extracted content into database
+Change dbname in `get_pg_conn.py`, if desired, then load figure data:
 
-* papers (id, pmcid, title, url)
-* figures (id, paperid, filepath, fignumber, caption)
-
-Enter nix-shell:
-
-```
-nix-shell
-```
-
-First time:
+First time (update with your image dir):
 
 ```sh
-./pfocr.py load_figures
+./pfocr.py load_figures ../pmc/20181216/images/
 ```
 
-After first time:
+After first time, use this to copy everything:
 
 ```sh
 sh ./copy_tables.sh
+```
+
+Or this to copy everything except the previously loaded figures:
+
+```sh
+sh copy_all_except_figures.sh 
 ```
 
 ## Optical Character Recognition
@@ -180,6 +181,12 @@ bash run.sh
 copy (select * from figures__xrefs) to '/tmp/filename.csv' with csv;
 ```
 
+or
+
+```
+copy (\i database/pubtator_gene_matches.sql) to '/tmp/filename.csv' with csv;
+```
+
 #### Exploring results
 
 * Words extracted for a given paper:
@@ -269,6 +276,14 @@ tail -n +2 gene2pubmed.tsv | cut -f 1,3 | sort -u >> organism2pubmed.tsv
 
 wget ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/PMC-ids.csv.gz
 gunzip PMC-ids.csv.gz
+# There is a weird section that has a newline in the middle of what should be
+# one row (lines 5286267 and 5286268):
+# Transbound Emerg Dis,1865-1674,1865-1682,2017,65,Suppl.
+# 1,199,10.1111/tbed.12682,PMC6190748,28984428,,live^M
+# It appears to be that most rows are delimited by Windows \r\n,
+# but that one line ends with just \n.
+# Here's a fix:
+tr -d '\n' < PMC-ids.csv | sed -e "s/\r/\n/g" > PMC-ids.unix.csv
 ```
 
 ### gene2pubtator & organism2pubtator
@@ -284,13 +299,15 @@ rm gene2pubtator
 
 wget ftp://ftp.ncbi.nlm.nih.gov/pub/lu/PubTator/species2pubtator.gz
 gunzip species2pubtator.gz
-# There can be multiple organisms per row. Reshape wide -> long.
-# Also, there are some incorrect PMIDs. The sed is needed to fix those.
-sed -r 's/^2[0-9]*?(27[0-9]{6}\t)/\1/g' species2pubtator |\
+# There are some incorrect PMIDs. The first sed is needed to fix those.
+# The second sed removes leading zeros from pmids.
+# There can be multiple organisms per row. Reshape wide -> long with awk.
+sed -E 's/^2[0-9]*?(27[0-9]{6}\t)/\1/g' species2pubtator |\
+	sed -E 's/^0*//g' |\
 	awk -F '\t' -v OFS='\t' '{split($2,a,/,|;/); for(i in a) print $1,a[i],$3,$4}' > organism2pubtator.tsv
 head -n 1 organism2pubtator.tsv | cut -f 1,2 > organism2pubtator_uniq.tsv
 tail -n +2 organism2pubtator.tsv | cut -f 1,2 | sort -u >> organism2pubtator_uniq.tsv
-rm species2pubtator organism2pubtator
+rm species2pubtator
 ```
 
 ### Running Database Queries
