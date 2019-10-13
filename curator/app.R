@@ -17,6 +17,8 @@ ui <- fluidPage(
         p(textOutput("fig.count")),
         h5("Current figure file:"),
         p(textOutput("fig.title")),
+        h5("Link to paper:"),
+        p(uiOutput("url")),
         h5("Figure number:"),
         p(textInput("fig.num", NULL,"NA")),
         
@@ -76,8 +78,12 @@ server <- function(input, output, session) {
     if (fig.cnt > 0){
       # Attempt extract figure number from filename
       f$fn <- gsub("PMC\\d+__.*[0]{0,3}([S]{0,1}[1-9]{0,1}[0-9][a-z]{0,1})[_HTML]{0,5}\\.jpg", "\\1", next.fig)
-      #$output$fig.num <- renderText({f$fn})
       updateTextInput(session, "fig.num", value=f$fn) 
+      # Construct paper url
+      f$pmc <- gsub("(PMC\\d+)__.*\\.jpg", "\\1", next.fig)
+      f$url <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",f$pmc)
+      display.url <- a(f$pmc, href=f$url)
+      output$url <- renderUI({display.url})
     }
     f$cf <- next.fig
     return(f)
