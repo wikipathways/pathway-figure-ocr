@@ -81,6 +81,13 @@ server <- function(input, output) {
     rv$value <- "kept"
     f.path.from<-paste(image.dir,rv$cf, sep = '/')
     f.path.to<-paste(image.dir,keep.dir, sep = '/')
+    write.table(data.frame(rv$cf,"fig number","fig title","fig caption"), 
+              paste(f.path.to,"pfocr_curated.tsv",sep = '/'), 
+              append = TRUE,
+              sep = '\t',
+              quote = FALSE,
+              col.names = FALSE, 
+              row.names = FALSE)
     filesstrings::file.move(f.path.from,f.path.to)
     rv$cf <- nextFigure()
   })
