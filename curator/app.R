@@ -15,8 +15,10 @@ ui <- fluidPage(
         # Figure information
         h5("Figures remaing:"),
         p(textOutput("fig.count")),
-        h5("Current figure:"),
+        h5("Current figure file:"),
         p(textOutput("fig.title")),
+        h5("Figure number:"),
+        p(textOutput("fig.num")),
         ## TODO: figure number extracted (allow override)
         ## TODO: link to paper
         ## TODO: figure caption retrieval (allow override)
@@ -53,6 +55,7 @@ server <- function(input, output) {
   
   ## FUNCTION: retrieve next figure
   nextFigure <- function(){
+    f <- list()
     fig.list <- list.files(image.dir, pattern = "\\.jpg$")
     
     # Display remaining count and select next figure to process
@@ -69,19 +72,25 @@ server <- function(input, output) {
       list(src = paste(image.dir,next.fig, sep = '/'),
            alt = "No image available")
     }, deleteFile = FALSE)
-    return(next.fig)
+    if (fig.cnt > 0){
+      # Attempt extract figure number from filename
+      f$fn <- gsub("PMC\\d+__.*[0]{0,3}([S]{0,1}[1-9]{0,1}[0-9][a-z]{0,1})[_HTML]{0,5}\\.jpg", "\\1", next.fig)
+      output$fig.num <- renderText({f$fn})
+    }
+    f$cf <- next.fig
+    return(f)
   }
-  curr.fig <- nextFigure()
+  fig <- nextFigure()
   
   ## DEFINE SHARED VARS
-  rv <- reactiveValues(value='',cf=curr.fig)  
+  rv <- reactiveValues(value='',cf=fig$cf, fn=fig$fn)  
   
   ## BUTTON FUNCTIONALITY
   observeEvent(input$keep, {
     rv$value <- "kept"
     f.path.from<-paste(image.dir,rv$cf, sep = '/')
     f.path.to<-paste(image.dir,keep.dir, sep = '/')
-    write.table(data.frame(rv$cf,"fig number","fig title","fig caption"), 
+    write.table(data.frame(rv$cf,rv$fn,"fig title","fig caption"), 
               paste(f.path.to,"pfocr_curated.tsv",sep = '/'), 
               append = TRUE,
               sep = '\t',
@@ -89,7 +98,9 @@ server <- function(input, output) {
               col.names = FALSE, 
               row.names = FALSE)
     filesstrings::file.move(f.path.from,f.path.to)
-    rv$cf <- nextFigure()
+    fig <- nextFigure()
+    rv$cf <- fig$cf
+    rv$fn <- fig$fn
   })
   
   observeEvent(input$trash, {
@@ -97,7 +108,9 @@ server <- function(input, output) {
     f.path.from<-paste(image.dir,rv$cf, sep = '/')
     f.path.to<-paste(image.dir,trash.dir, sep = '/')
     filesstrings::file.move(f.path.from,f.path.to)
-    rv$cf <- nextFigure()
+    fig <- nextFigure()
+    rv$cf <- fig$cf
+    rv$fn <- fig$fn
   })
   
   ## OTHER OUTPUTS
