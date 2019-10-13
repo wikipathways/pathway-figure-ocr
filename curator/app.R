@@ -79,10 +79,13 @@ server <- function(input, output, session) {
       # Attempt extract figure number from filename
       f$fn <- gsub("PMC\\d+__.*[0]{0,3}([S]{0,1}[1-9]{0,1}[0-9][a-z]{0,1})[_HTML]{0,5}\\.jpg", "\\1", next.fig)
       updateTextInput(session, "fig.num", value=f$fn) 
-      # Construct paper url
-      f$pmc <- gsub("(PMC\\d+)__.*\\.jpg", "\\1", next.fig)
-      f$url <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",f$pmc)
-      display.url <- a(f$pmc, href=f$url)
+      # Construct paper and figure url
+      f.split <- unlist(strsplit(next.fig, "__"))
+      f$pmc <- f.split[1]
+      f$fig <- f.split[2]
+      f$pmc.url <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",f$pmc)
+      f$fig.url <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",f$pmc,"/bin/",f$fig)
+      display.url <- a(f$pmc, href=f$pmc.url)
       output$url <- renderUI({display.url})
     }
     f$cf <- next.fig
@@ -91,14 +94,14 @@ server <- function(input, output, session) {
   fig <- nextFigure()
   
   ## DEFINE SHARED VARS
-  rv <- reactiveValues(value='',cf=fig$cf, fn=fig$fn)  
+  rv <- reactiveValues(value='',cf=fig$cf, fn=fig$fn, pu=fig$pmc.url, fu=fig$fig.url)  
   
   ## BUTTON FUNCTIONALITY
   observeEvent(input$keep, {
     rv$value <- "kept"
     f.path.from<-paste(image.dir,rv$cf, sep = '/')
     f.path.to<-paste(image.dir,keep.dir, sep = '/')
-    write.table(data.frame(rv$cf,input$fig.num,"fig title","fig caption"), 
+    write.table(data.frame(rv$cf,input$fig.num, rv$pu, rv$fu, "fig title","fig caption"), 
               paste(f.path.to,"pfocr_curated.tsv",sep = '/'), 
               append = TRUE,
               sep = '\t',
