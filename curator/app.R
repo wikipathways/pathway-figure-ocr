@@ -18,7 +18,8 @@ ui <- fluidPage(
         h5("Current figure file:"),
         p(textOutput("fig.title")),
         h5("Figure number:"),
-        p(textOutput("fig.num")),
+        p(textInput("fig.num", NULL,"NA")),
+        
         ## TODO: figure number extracted (allow override)
         ## TODO: link to paper
         ## TODO: figure caption retrieval (allow override)
@@ -43,7 +44,7 @@ ui <- fluidPage(
 )
 
 # SHINY SERVER
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   ## INITIALIZATION
   # TODO: get filepath from user
@@ -75,7 +76,8 @@ server <- function(input, output) {
     if (fig.cnt > 0){
       # Attempt extract figure number from filename
       f$fn <- gsub("PMC\\d+__.*[0]{0,3}([S]{0,1}[1-9]{0,1}[0-9][a-z]{0,1})[_HTML]{0,5}\\.jpg", "\\1", next.fig)
-      output$fig.num <- renderText({f$fn})
+      #$output$fig.num <- renderText({f$fn})
+      updateTextInput(session, "fig.num", value=f$fn) 
     }
     f$cf <- next.fig
     return(f)
@@ -90,7 +92,7 @@ server <- function(input, output) {
     rv$value <- "kept"
     f.path.from<-paste(image.dir,rv$cf, sep = '/')
     f.path.to<-paste(image.dir,keep.dir, sep = '/')
-    write.table(data.frame(rv$cf,rv$fn,"fig title","fig caption"), 
+    write.table(data.frame(rv$cf,input$fig.num,"fig title","fig caption"), 
               paste(f.path.to,"pfocr_curated.tsv",sep = '/'), 
               append = TRUE,
               sep = '\t',
