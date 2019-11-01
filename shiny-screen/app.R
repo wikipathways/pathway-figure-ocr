@@ -1,11 +1,12 @@
 # screen - segregate pathway, composite and other images
 
 library(shiny)
+library(shinyjs)
 library(filesstrings)  
 library(magrittr)
 
 ## LOCAL INFO PER INSTALLATION
-fetch.path <- "/git/wikipathways/pathway-figure-ocr/20191020"
+fetch.path <- "/git/wikipathways/pathway-figure-ocr/20181216"
 image.path <- paste(fetch.path, "images", sep = '/')
 to.dir <- c("pathway", "composite", "other", "skip")
 dir.create(image.path, FALSE)
@@ -15,7 +16,7 @@ lapply(to.dir, function(x){
 
 ## Read in PFOCR fetch results
 setwd(fetch.path)
-pmc.df.all <- readRDS("pmc.df.all.rds")
+pmc.df.all <- readRDS("pmc.df.target.rds") ## MODIFIED: targets i/o all
 fig.list <- pmc.df.all$pmc.figid
 # set headers for output files
 headers <- c(names(pmc.df.all), "cur.figtype")
@@ -49,8 +50,16 @@ getBulkFigures <- function(fig.todo) {
       figname <- df$pmc.filename
       pmcid <- df$pmc.pmcid
       ## retrieve image from PMC
-      figure_link <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",pmcid,"/bin/",figname)
-      download.file(figure_link,paste(image.path,figname,sep = '/'), mode = 'wb')
+      # figure_link <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",pmcid,"/bin/",figname)
+      # download.file(figure_link,paste(image.path,figname,sep = '/'), mode = 'wb')
+      ## retrieve from local folder ## MODIFIED: local vs PMC
+      f.path.from<-paste(fetch.path, "all_images",df$pmc.figid, sep = '/')
+      f.path.to<-paste(image.path)
+      if(file.exists(f.path.from)){
+        filesstrings::file.move(f.path.from,f.path.to,overwrite = TRUE)
+        file.rename(paste(f.path.to, df$pmc.figid, sep = '/'), paste(f.path.to, figname, sep = '/'))
+      }
+      ## count it!
       incProgress(1/nrow(df.todo))
     })
   })
@@ -70,6 +79,20 @@ saveChoice <- function(df){
     filesstrings::file.move(f.path.from,f.path.to,overwrite = TRUE)
 }
 
+undoChoice <- function(choice){
+  fn <- paste(image.path,choice,paste0("pfocr_",choice,".rds"),sep = '/')
+  ## read/save rds
+  df.old <- readRDS(fn)
+  filename <- tail(df.old$pmc.filename,1)
+  df.new <- df.old[-nrow(df.old),]
+  saveRDS(df.new, fn)
+  ## move figure
+  f.path.from<-paste(image.path,choice,filename, sep = '/')
+  f.path.to<-paste(image.path)
+  if(file.exists(f.path.from))
+    filesstrings::file.move(f.path.from,f.path.to,overwrite = TRUE)
+}
+
 # SHINY UI
 ui <- fluidPage(
   titlePanel("PFOCR Curator"),
@@ -77,6 +100,7 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       fluidPage(
+        useShinyjs(),
         # Figure information
         textOutput("fig.count"),
         h5("Current figure"),
@@ -121,7 +145,18 @@ ui <- fluidPage(
                          }
                          });
                          })")),
-        actionButton("skip", label = "Skip") #space bar
+        actionButton("skip", label = "Skip"), #space bar
+        
+        hr(),
+        tags$script(HTML("$(function(){ 
+                         $(document).keyup(function(e) {
+                         if (e.which == 90) {
+                         $('#undo').click()
+                         }
+                         });
+                         })")),
+        actionButton("undo", label = "Undo"), #z key
+        textOutput("last.choice")
       ),
       width = 4
     ),
@@ -185,24 +220,44 @@ server <- function(input, output, session) {
     rv$fig.df$choice <- to.dir[1]
     saveChoice(rv$fig.df)
     rv$fig.df <- nextFigure()
+    rv$fig.df$choice <- to.dir[1] # temp track last choice for undo
+    output$last.choice <- renderText({as.character(rv$fig.df$choice)})
+    shinyjs::enable("undo")
   })
   
   observeEvent(input$two, {
     rv$fig.df$choice <- to.dir[2]
     saveChoice(rv$fig.df)
     rv$fig.df <- nextFigure()
+    rv$fig.df$choice <- to.dir[2] # temp track last choice for undo
+    output$last.choice <- renderText({as.character(rv$fig.df$choice)})
+    shinyjs::enable("undo")
   })
   
   observeEvent(input$three, {
     rv$fig.df$choice <- to.dir[3]
     saveChoice(rv$fig.df)
     rv$fig.df <- nextFigure()
+    rv$fig.df$choice <- to.dir[3] # temp track last choice for undo
+    output$last.choice <- renderText({as.character(rv$fig.df$choice)})
+    shinyjs::enable("undo")
   })
-
+  
   observeEvent(input$skip, {
     rv$fig.df$choice <- to.dir[4]
     saveChoice(rv$fig.df)
     rv$fig.df <- nextFigure()
+    rv$fig.df$choice <- to.dir[4] # temp track last choice for undo
+    output$last.choice <- renderText({as.character(rv$fig.df$choice)})
+    shinyjs::enable("undo")
+  })
+  
+  observeEvent(input$undo, {
+    if(!is.null(rv$fig.df$choice)){ #only respond if last.choice is known
+      undoChoice(rv$fig.df$choice)
+      rv$fig.df <- nextFigure()
+    }
+    shinyjs::disable("undo")
   })
 }
 
