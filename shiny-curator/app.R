@@ -1,11 +1,12 @@
 # curator - update figure number, title and caption
 
 library(shiny)
+library(shinyjs)
 library(filesstrings)  
 library(magrittr)
 
 ## LOCAL INFO PER INSTALLATION
-fetch.path <- "/git/wikipathways/pathway-figure-ocr/20191020"
+fetch.path <- "/git/wikipathways/pathway-figure-ocr/20181216"
 image.path <- paste(fetch.path, "images", "pathway", sep = '/')
 
 
@@ -45,6 +46,7 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       fluidPage(
+        useShinyjs(),
         # Figure information
         textOutput("fig.count"),
         h5("Current figure"),
@@ -80,9 +82,16 @@ server <- function(input, output, session) {
     fig.cnt <- length(fig.list.todo)
     output$fig.count <- renderText({paste(fig.cnt,"figures remaining")})
     if (fig.cnt == 0){
-      #TODO: fail gracefully
-      # shinyjs::disable("keep") ## not working...
-      # shinyjs::disable("trash")
+      shinyjs::disable("save")
+      
+      df<-data.frame(pmc.filename="No more files!")
+      output$fig.name <- renderText({as.character(df$pmc.filename)})
+      updateTextInput(session, "fig.num", value="") 
+      updateTextInput(session, "fig.title", value="") 
+      updateTextInput(session, "fig.caption", value="") 
+      display.url <- a("", href="")
+      output$url <- renderUI({display.url})
+      return(df)
     }
     # Get next fig info
     df <- pmc.df.all %>% 
@@ -94,7 +103,7 @@ server <- function(input, output, session) {
     output$fig.name <- renderText({as.character(df$pmc.filename)})
     ## retrieve image from local
     output$figure <- renderImage({
-      list(src = paste(image.path,figname, sep = '/'),
+      list(src = paste(image.path,df$pmc.figid, sep = '/'),
            alt = "No image available",
            width="600px")
     }, deleteFile = FALSE)

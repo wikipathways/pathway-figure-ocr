@@ -7,7 +7,7 @@ library(magrittr)
 library(dplyr)
 
 ## LOCAL INFO PER INSTALLATION
-fetch.path <- "/git/wikipathways/pathway-figure-ocr/20181216"
+fetch.path <- "/git/wikipathways/pathway-figure-ocr/20191020"
 image.path <- paste(fetch.path, "images", sep = '/')
 to.dir <- c("pathway", "composite", "other", "skip")
 dir.create(image.path, FALSE)
@@ -17,7 +17,7 @@ lapply(to.dir, function(x){
 
 ## Read in PFOCR fetch results
 setwd(fetch.path)
-pmc.df.all <- readRDS("pmc.df.target.rds") ## MODIFIED: targets i/o all
+pmc.df.all <- readRDS("pmc.df.all.rds") ## MOD: pmc.df.target.rds or pmc.df.all.rds
 fig.list <- pmc.df.all$pmc.figid
 # set headers for output files
 headers <- c(names(pmc.df.all), "cur.figtype")
@@ -39,7 +39,7 @@ getFigListTodo <- function(){
       as.character(data$pmc.figid)
     }
   }))
-  setdiff(fig.list, fig.list.done)
+  list(todo=setdiff(fig.list, fig.list.done), done=fig.list.done)
 }
 
 getBulkFigures <- function(fig.todo) {
@@ -53,7 +53,7 @@ getBulkFigures <- function(fig.todo) {
       ## retrieve image from PMC #NOTE: USE PMC+FILENAME TO KEEP UNIQUE 
       figure_link <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",pmcid,"/bin/",figname)
       download.file(figure_link,paste(image.path,df$pmc.figid,sep = '/'), mode = 'wb')
-      ## retrieve from local folder 
+      ## retrieve from local folder ## MOD: local vs PMC
       # f.path.from<-paste(fetch.path, "all_images",df$pmc.figid, sep = '/')
       # f.path.to<-paste(image.path)
       # if(file.exists(f.path.from)){
@@ -95,7 +95,7 @@ undoChoice <- function(choice){
 
 # SHINY UI
 ui <- fluidPage(
-  titlePanel("PFOCR Curator"),
+  titlePanel("PFOCR Screen"),
   
   sidebarLayout(
     sidebarPanel(
@@ -174,9 +174,11 @@ server <- function(input, output, session) {
   ## FUNCTION: retrieve next figure
   nextFigure <- function(){
     # Display remaining count and select next figure to process
-    fig.list.todo <- getFigListTodo() 
+    fig.todo.lists <- getFigListTodo() 
+    fig.list.todo <- fig.todo.lists$todo
     fig.cnt <- length(fig.list.todo)
-    output$fig.count <- renderText({paste(fig.cnt,"figures remaining")})
+    fig.cnt.done <- length(fig.todo.lists$done)
+    output$fig.count <- renderText({paste0(fig.cnt.done,"/",fig.cnt.done+fig.cnt," (",fig.cnt," remaining)")})
     if (fig.cnt == 0){
       shinyjs::disable("one")
       shinyjs::disable("two")
@@ -193,13 +195,13 @@ server <- function(input, output, session) {
     # Assess bulk set of images
     fig.list <- list.files(image.path, pattern = "\\.jpg$")
     if(length(fig.list) < 1){
-      bulk <- ifelse(length(fig.list.todo) < 50, length(fig.list.todo), 50)
-      getBulkFigures(fig.list.todo[1:bulk])
+      bulk <- ifelse(fig.cnt < 50, fig.cnt, 50)
+      getBulkFigures(head(fig.list.todo,bulk)) ## MOD: head or tail
       fig.list <- list.files(image.path, pattern = "\\.jpg$")
     }
     # Get next fig info
     df <- pmc.df.all %>% 
-      filter(pmc.figid==fig.list.todo[1])  %>% 
+      filter(pmc.figid==head(fig.list.todo,1))  %>% ## MOD: head or tail
       droplevels()
     # output$reftext <- renderText({as.character(df$pmc.reftext)})
     figname <- df$pmc.filename
