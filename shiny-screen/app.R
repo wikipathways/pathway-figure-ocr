@@ -4,6 +4,7 @@ library(shiny)
 library(shinyjs)
 library(filesstrings)  
 library(magrittr)
+library(dplyr)
 
 ## LOCAL INFO PER INSTALLATION
 fetch.path <- "/git/wikipathways/pathway-figure-ocr/20181216"
@@ -49,16 +50,15 @@ getBulkFigures <- function(fig.todo) {
     by(df.todo, 1:nrow(df.todo), function(df){
       figname <- df$pmc.filename
       pmcid <- df$pmc.pmcid
-      ## retrieve image from PMC
-      # figure_link <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",pmcid,"/bin/",figname)
-      # download.file(figure_link,paste(image.path,figname,sep = '/'), mode = 'wb')
-      ## retrieve from local folder ## MODIFIED: local vs PMC
-      f.path.from<-paste(fetch.path, "all_images",df$pmc.figid, sep = '/')
-      f.path.to<-paste(image.path)
-      if(file.exists(f.path.from)){
-        filesstrings::file.move(f.path.from,f.path.to,overwrite = TRUE)
-        file.rename(paste(f.path.to, df$pmc.figid, sep = '/'), paste(f.path.to, figname, sep = '/'))
-      }
+      ## retrieve image from PMC #NOTE: USE PMC+FILENAME TO KEEP UNIQUE 
+      figure_link <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",pmcid,"/bin/",figname)
+      download.file(figure_link,paste(image.path,df$pmc.figid,sep = '/'), mode = 'wb')
+      ## retrieve from local folder 
+      # f.path.from<-paste(fetch.path, "all_images",df$pmc.figid, sep = '/')
+      # f.path.to<-paste(image.path)
+      # if(file.exists(f.path.from)){
+      #   filesstrings::file.move(f.path.from,f.path.to,overwrite = TRUE)
+      # }
       ## count it!
       incProgress(1/nrow(df.todo))
     })
@@ -66,7 +66,7 @@ getBulkFigures <- function(fig.todo) {
 }
 
 saveChoice <- function(df){
-  f.path.from<-paste(image.path,df$pmc.filename, sep = '/')
+  f.path.from<-paste(image.path,df$pmc.figid, sep = '/')
   f.path.to<-paste(image.path,df$choice, sep = '/')
   fn <- paste(f.path.to,paste0("pfocr_",df$choice,".rds"),sep = '/')
   ## read/save rds
@@ -83,11 +83,11 @@ undoChoice <- function(choice){
   fn <- paste(image.path,choice,paste0("pfocr_",choice,".rds"),sep = '/')
   ## read/save rds
   df.old <- readRDS(fn)
-  filename <- tail(df.old$pmc.filename,1)
+  figid <- tail(df.old$pmc.figid,1)
   df.new <- df.old[-nrow(df.old),]
   saveRDS(df.new, fn)
   ## move figure
-  f.path.from<-paste(image.path,choice,filename, sep = '/')
+  f.path.from<-paste(image.path,choice,figid, sep = '/')
   f.path.to<-paste(image.path)
   if(file.exists(f.path.from))
     filesstrings::file.move(f.path.from,f.path.to,overwrite = TRUE)
@@ -178,9 +178,17 @@ server <- function(input, output, session) {
     fig.cnt <- length(fig.list.todo)
     output$fig.count <- renderText({paste(fig.cnt,"figures remaining")})
     if (fig.cnt == 0){
-      #TODO: fail gracefully
-      # shinyjs::disable("keep") ## not working...
-      # shinyjs::disable("trash")
+      shinyjs::disable("one")
+      shinyjs::disable("two")
+      shinyjs::disable("three")
+      shinyjs::disable("skip")
+      
+      df<-data.frame(pmc.figtitle="No more files!")
+      output$fig.title <- renderText({as.character(df$pmc.figtitle)})
+      output$fig.name <- renderText({as.character("")})
+      display.url <- a("", href="")
+      output$url <- renderUI({display.url})
+      return(df)
     }
     # Assess bulk set of images
     fig.list <- list.files(image.path, pattern = "\\.jpg$")
@@ -196,10 +204,10 @@ server <- function(input, output, session) {
     # output$reftext <- renderText({as.character(df$pmc.reftext)})
     figname <- df$pmc.filename
     pmcid <- df$pmc.pmcid
-    output$fig.name <- renderText({as.character(df$pmc.filename)})
+    output$fig.name <- renderText({as.character(figname)})
     ## retrieve image from local
     output$figure <- renderImage({
-      list(src = paste(image.path,figname, sep = '/'),
+      list(src = paste(image.path,df$pmc.figid, sep = '/'),
            alt = "No image available",
            width="600px")
     }, deleteFile = FALSE)
