@@ -3,3 +3,7 @@ outputs/
 .Rproj.user
 .Rdata
 .Rhistory
+pfocr.egg-info/
+dist/
+MANIFEST
+old/
