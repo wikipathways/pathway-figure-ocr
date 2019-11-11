@@ -7,7 +7,7 @@ library(magrittr)
 library(dplyr)
 
 ## LOCAL INFO PER INSTALLATION
-fetch.path <- "/git/wikipathways/pathway-figure-ocr/20191020"
+fetch.path <- "/git/wikipathways/pathway-figure-ocr/20191102"
 image.path <- paste(fetch.path, "images", sep = '/')
 to.dir <- c("pathway", "composite", "other", "skip")
 dir.create(image.path, FALSE)
@@ -17,7 +17,7 @@ lapply(to.dir, function(x){
 
 ## Read in PFOCR fetch results
 setwd(fetch.path)
-pmc.df.all <- readRDS("pmc.df.all.rds") ## MOD: pmc.df.target.rds or pmc.df.all.rds
+pmc.df.all <- readRDS("pmc.df.last1k.rds") ## MOD: pmc.df.target.rds or pmc.df.all.rds
 fig.list <- pmc.df.all$pmc.figid
 # set headers for output files
 headers <- c(names(pmc.df.all), "cur.figtype")

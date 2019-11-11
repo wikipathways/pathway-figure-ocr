@@ -37,8 +37,8 @@ query.terms <- c("signaling+pathway",
                  "cycle+pathway"
 )
 
-query.date.from <- "2018/01/01"
-query.date.to <- "2019/01/01"
+query.date.from <- "1995/01/01"
+query.date.to <- "3000/01/01"
 
 term <- paste0("term=",paste(rep("(",length(query.terms)),collapse = ""),paste(lapply(query.terms, function(x){
   paste0(x,")")
@@ -59,7 +59,7 @@ library(xml2)
 library(tidyverse)
 
 # set dir for saving results as tsv
-setwd("/git/wikipathways/pathway-figure-ocr/20191020")
+setwd("/git/wikipathways/pathway-figure-ocr/20191102")
 cat(query.url, file="query.txt")
 write.table(data.frame("figureid","pmcid", "filename", "fignumber", "figtitle",  "papertitle", "figcaption", "figlink", "reftext"), 
             file = "pmc.df.all.tsv",
@@ -113,8 +113,7 @@ for (i in 1:page.count){
   pmc.number <- page.source %>%
     rvest::html_nodes(".rprt_img") %>%
     rvest::html_node("img") %>%
-    rvest::html_attr("alt") %>%
-    str_remove_all("<.*?>")
+    rvest::html_attr("alt") 
   pmc.titles <- page.source %>%
     rvest::html_nodes(".rprt_img") %>%
     rvest::html_node(xpath='..') %>%
@@ -139,7 +138,7 @@ for (i in 1:page.count){
     rvest::html_node(".rprt_cont") %>%
     rvest::html_node(".aux") %>%
     rvest::html_text() %>%
-    str_remove("CitationFull text")
+    str_remove(fixed("CitationFull text"))
   pmc.pmcid <- page.source %>%
     rvest::html_nodes(".rprt_img") %>%
     rvest::html_node(xpath='..') %>%
@@ -152,12 +151,14 @@ for (i in 1:page.count){
   
   ## Extract best figure title from analysis of provided, number, title and caption
   temp.df  <- data.frame(n=pmc.number, t=pmc.titles[,1], c=pmc.caption, stringsAsFactors = FALSE) %>%
-    mutate(t=str_trim(str_remove(t,paste0(as.character(n),"\\.{0,1}")))) 
+    mutate(t=str_trim(str_remove(t,fixed(as.character(pmc.number)))))
   temp.df  <- temp.df  %>%
     mutate(c=if_else(is.na(c),t,c)) %>%
+    mutate(t=str_trim(str_remove(t,"\\.$"))) %>%
     mutate(t=if_else(t=="",c,t)) %>%
     mutate(t=if_else(!is.na(str_match(t,"\\. .*")),str_remove(t,"\\. .*"),t)) %>%
     mutate(t=str_trim(str_remove(t,"\\.+$"))) %>%
+    mutate(t=str_trim(str_remove(t,"^\\."))) %>%
     mutate(c=str_trim(str_replace(c,"\\.\\.","\\."))) %>%
     mutate(n=str_trim(str_replace(n,"\\.$","")))
   pmc.number <- as.character(temp.df[,1])

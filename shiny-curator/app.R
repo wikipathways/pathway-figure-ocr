@@ -11,32 +11,29 @@ image.path <- paste(fetch.path, "images", "pathway", sep = '/')
 
 
 ## Read in PFOCR fetch results
-setwd(fetch.path)
+setwd(image.path)
 pmc.df.all <- readRDS("pfocr_pathway.rds")
-fig.list <- pmc.df.all[,1]
+fig.list <- unlist(unname(as.list(pmc.df.all[,1])))
 # set headers for output files
 headers <- c(names(pmc.df.all), "cur.figtype")
-fn <- (paste(image.path,paste0("pfocr_curated.rds"),sep = '/'))
-if(!file.exists(fn)){
+if(!file.exists("pfocr_curated.rds")){
   df <- data.frame(matrix(ncol=10,nrow=0))
   names(df)<-headers
-  saveRDS(df, fn)
+  saveRDS(df, "pfocr_curated.rds")
 }
 
 
 getFigListTodo <- function(){
-  fn <- paste(image.path,x,paste0("pfocr_curated.rds"),sep = '/')
-  data <- readRDS(fn)
+  data <- readRDS("pfocr_curated.rds")
   fig.list.done <<-data[,1]
   setdiff(fig.list, fig.list.done)
 }
 
 saveChoice <- function(df){
-  fn <- paste(image.path,x,paste0("pfocr_curated.rds"),sep = '/')
-  df.old <- readRDS(fn)
+  df.old <- readRDS("pfocr_curated.rds")
   names(df) <- names(df.old)
   df.new <- rbind(df.old,df)
-  saveRDS(df.new, fn)
+  saveRDS(df.new, "pfocr_curated.rds")
 }
 
 # SHINY UI
@@ -103,7 +100,7 @@ server <- function(input, output, session) {
     output$fig.name <- renderText({as.character(df$pmc.filename)})
     ## retrieve image from local
     output$figure <- renderImage({
-      list(src = paste(image.path,df$pmc.figid, sep = '/'),
+      list(src = df$pmc.figid,
            alt = "No image available",
            width="600px")
     }, deleteFile = FALSE)
