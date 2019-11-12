@@ -4,18 +4,18 @@ library(shiny)
 library(shinyjs)
 library(filesstrings)  
 library(magrittr)
+library(dplyr)
 
 ## LOCAL INFO PER INSTALLATION
-fetch.path <- "/git/wikipathways/pathway-figure-ocr/20181216"
+fetch.path <- "~/Documents/WikiPathways/PFOCR"
 image.path <- paste(fetch.path, "images", "pathway", sep = '/')
-
 
 ## Read in PFOCR fetch results
 setwd(image.path)
 pmc.df.all <- readRDS("pfocr_pathway.rds")
 fig.list <- unlist(unname(as.list(pmc.df.all[,1])))
 # set headers for output files
-headers <- c(names(pmc.df.all), "cur.figtype")
+headers <- names(pmc.df.all)
 if(!file.exists("pfocr_curated.rds")){
   df <- data.frame(matrix(ncol=10,nrow=0))
   names(df)<-headers
