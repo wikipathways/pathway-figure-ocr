@@ -13,17 +13,20 @@ from pathlib import Path, PurePath
 from confusable_homoglyphs import confusables
 from deadline import deadline, TimedOutExc
 from regexes import frozen_zone_re
+from get_all_symbol_chars import get_all_symbol_chars
 
 
 # symbol_chars.json is obtained by running ../get_all_symbol_chars.py
 # NOTE: symbol_chars.json is missing things would be in gene mentions but not symbols,
 # such as comma, but that's ok, because those parts should be in the frozen zone(s).
-symbol_chars_raw = json.loads(open(Path(PurePath(os.path.dirname(__file__), "..", "..", "symbol_chars.json")), "r").read())
-# TODO: pre-process this.
+symbol_chars_path = Path(PurePath(os.path.dirname(__file__), "..", "..", "symbol_chars.json"))
+if not os.path.exists(symbol_chars_path):
+    get_all_symbol_chars()
+
+symbol_chars_raw = json.loads(open(symbol_chars_path, "r").read())
+
+# TODO: pre-process this:
 symbol_chars = set([char.upper() for char in symbol_chars_raw])
-#CURRENT_SCRIPT_PATH = os.path.dirname(sys.argv[0])
-#symbol_chars = set(json.loads(open(Path(PurePath(CURRENT_SCRIPT_PATH, "symbol_chars.json")), "r").read()))
-#symbol_chars = set(json.loads(open(Path(PurePath("./symbol_chars.json")), "r").read()))
 
 # Relevant links:
 # https://confusable-homoglyphs.readthedocs.io/en/latest/apidocumentation.html

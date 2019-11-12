@@ -28,10 +28,9 @@ def write_mappbuilder_file(OUTPUT_DIR, sub_dir, figure_file_stem, matches):
             matchwriter.writerow(match)
 
 
-def mappbuilder(args):
-    db = args.db
-    INPUT_DIR = PurePath(args.input_dir)
-    OUTPUT_DIR = PurePath(args.output_dir)
+def mappbuilder(db, input_dir, output_dir):
+    INPUT_DIR = PurePath(input_dir)
+    OUTPUT_DIR = PurePath(output_dir)
 
     conn = get_pg_conn(db)
     annotations_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -106,5 +105,5 @@ def mappbuilder(args):
         if conn:
             conn.close()
 
-if __name__ == '__main__':
-    mappbuilder(None)
+def mappbuilder_cli(args):
+    mappbuilder(db=args.db, input_dir=args.input_dir, output_dir=args.output_dir)

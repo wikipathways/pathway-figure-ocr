@@ -16,12 +16,13 @@ from wand.image import Image
 
 from get_pg_conn import get_pg_conn
 
-from mappbuilder import mappbuilder
+from mappbuilder import mappbuilder_cli
 from match import match
-from load_pmc_html import load_pmc_html
+from load_pmc_html import load_pmc_html_cli
 from ocr_pmc import get_engines, ocr_pmc
-from summarize import summarize
-from europepmc import europepmc
+from summarize import summarize_cli
+from europepmc import europepmc_cli
+from get_all_symbol_chars import get_all_symbol_chars_cli
 
 CURRENT_SCRIPT_PATH = os.path.dirname(sys.argv[0])
 
@@ -69,7 +70,7 @@ cwd = os.getcwd()
 #LOGS_DIR="../outputs"
 #FAILS_FILE_PATH=Path(PurePath(LOGS_DIR, "fails.txt"))
 
-def clear(args):
+def clear_cli(args):
     db = args.db
     target = args.target
     conn = get_pg_conn(db)
@@ -134,13 +135,13 @@ def clear(args):
 
 # NOTE: the script 'copy_tables.sh' is (basically? exactly?) the same as running
 # db_copy + clear matches
-def db_copy(args):
+def db_copy_cli(args):
     template = args.template
     db = args.db
     subprocess.run(["createdb", "-Opfocr", "-T%s" % template, db])
 
 
-def ocr(args):
+def ocr_cli(args):
     db = args.db
     engine = args.engine
     preprocessor = args.preprocessor
@@ -150,7 +151,7 @@ def ocr(args):
     ocr_pmc(db, engine, preprocessor, limit)
 
 
-def load_figures(args):
+def load_figures_cli(args):
     db = args.db
     figures_dir = args.input_dir
 
@@ -290,7 +291,7 @@ parser_clear.add_argument('db',
 parser_clear.add_argument('target',
                           help='What to clear',
                           choices=["figures", "matches"])
-parser_clear.set_defaults(func=clear)
+parser_clear.set_defaults(func=clear_cli)
 
 # create the parser for the "db_copy" command
 parser_db_copy = subparsers.add_parser('db_copy',
@@ -301,7 +302,7 @@ parser_db_copy.add_argument('template',
 parser_db_copy.add_argument('db',
                           type=str,
                           help='name of new database')
-parser_db_copy.set_defaults(func=db_copy)
+parser_db_copy.set_defaults(func=db_copy_cli)
 
 
 # create the parser for the "ocr" command
@@ -317,7 +318,7 @@ parser_ocr.add_argument('--preprocessor',
 parser_ocr.add_argument('--limit',
                         type=int,
                         help='limit number of figures to process')
-parser_ocr.set_defaults(func=ocr)
+parser_ocr.set_defaults(func=ocr_cli)
 
 # create the parser for the "europepmc" command
 parser_europepmc = subparsers.add_parser('europepmc',
@@ -325,7 +326,15 @@ parser_europepmc = subparsers.add_parser('europepmc',
 parser_europepmc.add_argument('db',
                         type=str,
                         help='database name')
-parser_europepmc.set_defaults(func=europepmc)
+parser_europepmc.set_defaults(func=europepmc_cli)
+
+# create the parser for the "get_all_symbol_chars" command
+parser_get_all_symbol_chars = subparsers.add_parser('get_all_symbol_chars',
+                                     help='Generate symbol_chars.json, as needed by ./transforms/homoglyphs2symbol_chars.py')
+parser_get_all_symbol_chars.add_argument('db',
+                        type=str,
+                        help='database name')
+parser_get_all_symbol_chars.set_defaults(func=get_all_symbol_chars_cli)
 
 # create the parser for the "load_figures" command
 parser_load_figures = subparsers.add_parser('load_figures',
@@ -335,7 +344,7 @@ parser_load_figures.add_argument('db',
                         help='database name')
 parser_load_figures.add_argument('input_dir',
                                  help='Directory containing figures and optionally papers')
-parser_load_figures.set_defaults(func=load_figures)
+parser_load_figures.set_defaults(func=load_figures_cli)
 
 # create the parser for the "load_pmc_html" command
 parser_load_pmc_html = subparsers.add_parser('load_pmc_html',
@@ -348,7 +357,7 @@ parser_load_pmc_html.add_argument('db',
 parser_load_pmc_html.add_argument('input_dir',
                         type=str,
                         help='input directory path')
-parser_load_pmc_html.set_defaults(func=load_pmc_html)
+parser_load_pmc_html.set_defaults(func=load_pmc_html_cli)
 
 # create the parser for the "mappbuilder" command
 parser_mappbuilder = subparsers.add_parser('mappbuilder',
@@ -366,7 +375,7 @@ parser_mappbuilder.add_argument('input_dir',
 parser_mappbuilder.add_argument('output_dir',
                         type=str,
                         help='output directory path')
-parser_mappbuilder.set_defaults(func=mappbuilder)
+parser_mappbuilder.set_defaults(func=mappbuilder_cli)
 
 # create the parser for the "match" command
 parser_match = subparsers.add_parser('match',
@@ -397,7 +406,7 @@ parser_summarize.add_argument('db',
 parser_summarize.add_argument('output_dir',
                         type=str,
                         help='output directory path')
-parser_summarize.set_defaults(func=summarize)
+parser_summarize.set_defaults(func=summarize_cli)
 
 args = parser.parse_args()
 

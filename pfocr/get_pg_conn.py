@@ -9,7 +9,9 @@ import sys
 
 def get_pg_conn(db):
     if not db:
-        db = os.environ['PFOCR_DB']
-        if not db:
-            raise Exception('Error: neither db arg nor PFOCR_DB env variable set.')
+        if 'PFOCR_DB' in os.environ and os.environ['PFOCR_DB']:
+            db = os.environ['PFOCR_DB']
+        else:
+            raise Exception('Error: you need to either specify parameter "db" or set env variable "PFOCR_DB".')
+
     return psycopg2.connect("dbname=%s" % db)

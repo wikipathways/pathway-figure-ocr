@@ -17,7 +17,7 @@ fig_id_re = re.compile(r".*(?:figure|fig|f)\.?\s?(S?\d+).*", flags=re.IGNORECASE
 pmcid_re = re.compile(r".*(PMC\d+).*")
 
 
-def load_pmc_html(args):
+def load_pmc_html_cli(args):
     db = args.db
     rawhtml_dir = args.input_dir
 

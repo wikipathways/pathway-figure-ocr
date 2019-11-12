@@ -37,10 +37,8 @@ CURRENT_SCRIPT_PATH = os.path.dirname(sys.argv[0])
 fig_id_re = re.compile(r".*(?:figure|fig|f)\.?\s?(\d+).*", flags=re.IGNORECASE)
 
 
-def europepmc(args):
-    db = args.db
-
-    conn = get_pg_conn(db)
+def europepmc(db=None):
+    conn = get_pg_conn(db=db)
     annotations_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
     try:
@@ -111,5 +109,5 @@ def europepmc(args):
         if conn:
             conn.close()
 
-if __name__ == '__main__':
-    europepmc(None)
+def europepmc_cli(args):
+    europepmc(db=args.db)

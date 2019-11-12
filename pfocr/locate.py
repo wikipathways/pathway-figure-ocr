@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# TODO: what does this file do?
+
+import argparse
 import json
 import csv
 import os
@@ -14,10 +17,8 @@ from get_pg_conn import get_pg_conn
 from pathlib import Path, PurePath
 
 
-def locate(args):
-    db = args.db
-
-    conn = get_pg_conn(db)
+def locate(db=None):
+    conn = get_pg_conn(db=db)
     summary_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     stats_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     results_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -159,4 +160,11 @@ def locate(args):
             conn.close()
 
 if __name__ == '__main__':
-    locate(1)
+    # python pfocr/locate.py --db "pfocr2018121717"
+    parser = argparse.ArgumentParser(
+        description='''Locate.''')
+    parser.add_argument('--db',
+                        type=str,
+                        help='Database to query, e.g., pfocr2018121717')
+    args = parser.parse_args()
+    locate(db=args.db)

@@ -7,3 +7,4 @@ pfocr.egg-info/
 dist/
 MANIFEST
 old/
+symbol_chars.json

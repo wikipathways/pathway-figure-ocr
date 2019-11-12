@@ -12,10 +12,7 @@ import sys
 
 from get_pg_conn import get_pg_conn
 
-def summarize(args):
-    db = args.db
-    output_dir = args.output_dir
-
+def summarize(db, output_dir):
     conn = get_pg_conn(db)
     summary_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     stats_cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -127,3 +124,8 @@ def summarize(args):
     finally:
         if conn:
             conn.close()
+
+def summarize_cli(args):
+    db = args.db
+    output_dir = args.output_dir
+    summarize(db=db, output_dir=output_dir)
