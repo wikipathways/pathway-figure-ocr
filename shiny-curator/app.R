@@ -9,7 +9,7 @@ library(magrittr)
 
 ## LOCAL INFO PER INSTALLATION
 fetch.path <- "/git/wikipathways/pathway-figure-ocr/20181216"
-image.path <- paste(fetch.path, "images_kh", "pathway", sep = '/')
+image.path <- paste(fetch.path, "images", "pathway", sep = '/')
 
 ## Read in PFOCR fetch results
 setwd(image.path)
@@ -26,9 +26,7 @@ if(!file.exists("pfocr_curated.rds")){
 
 getFigListTodo <- function(){
   data <- readRDS("pfocr_curated.rds")
-  fig.list.done <<-data[,1]
-  if (length(fig.list.done) > 0)
-    fig.list.done <<- fig.list.done[['pmc.figid']]
+  fig.list.done <<-data[,1, drop=TRUE]
   base::setdiff(fig.list, fig.list.done)
 }
 
