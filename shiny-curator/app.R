@@ -60,12 +60,12 @@ ui <- fluidPage(
         # Buttons
         actionButton("save", label = "Save")
       ),
-      width = 7
+      width = 6
     ),
     
     mainPanel(
       imageOutput("figure"),
-      width = 5
+      width = 6
     )
   )
 )
