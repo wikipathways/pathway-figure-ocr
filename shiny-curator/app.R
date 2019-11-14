@@ -3,12 +3,13 @@
 library(shiny)
 library(shinyjs)
 library(filesstrings)  
-library(magrittr)
 library(dplyr)
+library(magrittr)
+
 
 ## LOCAL INFO PER INSTALLATION
-fetch.path <- "~/Documents/WikiPathways/PFOCR"
-image.path <- paste(fetch.path, "images", "pathway", sep = '/')
+fetch.path <- "/git/wikipathways/pathway-figure-ocr/20181216"
+image.path <- paste(fetch.path, "images_kh", "pathway", sep = '/')
 
 ## Read in PFOCR fetch results
 setwd(image.path)
@@ -26,7 +27,9 @@ if(!file.exists("pfocr_curated.rds")){
 getFigListTodo <- function(){
   data <- readRDS("pfocr_curated.rds")
   fig.list.done <<-data[,1]
-  setdiff(fig.list, fig.list.done)
+  if (length(fig.list.done) > 0)
+    fig.list.done <<- fig.list.done[['pmc.figid']]
+  base::setdiff(fig.list, fig.list.done)
 }
 
 saveChoice <- function(df){
@@ -92,7 +95,7 @@ server <- function(input, output, session) {
     }
     # Get next fig info
     df <- pmc.df.all %>% 
-      filter(pmc.figid==fig.list.todo[1])  %>% 
+      dplyr::filter(pmc.figid==fig.list.todo[1])  %>% 
       droplevels()
     # output$reftext <- renderText({as.character(df$pmc.reftext)})
     figname <- df$pmc.filename
