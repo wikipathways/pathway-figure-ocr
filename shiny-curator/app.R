@@ -7,8 +7,9 @@ library(dplyr)
 library(magrittr)
 
 
+
 ## LOCAL INFO PER INSTALLATION
-fetch.path <- "/git/wikipathways/pathway-figure-ocr/20181216"
+fetch.path <- "SET_TO_YOUR_LOCAL_DIRECTORY"
 image.path <- paste(fetch.path, "images", "pathway", sep = '/')
 
 ## Read in PFOCR fetch results
@@ -32,7 +33,7 @@ getFigListTodo <- function(){
 
 saveChoice <- function(df){
   df.old <- readRDS("pfocr_curated.rds")
-  names(df) <- names(df.old)
+  df <- df[,names(df.old)]
   df.new <- rbind(df.old,df)
   saveRDS(df.new, "pfocr_curated.rds")
 }
@@ -55,6 +56,12 @@ ui <- fluidPage(
         textInput("fig.num", "Figure number","NA"),
         textAreaInput("fig.title", "Figure title", "NA", width = "100%",rows = 3, resize = "vertical" ),
         textAreaInput("fig.caption", "Figure caption", "NA", width = "100%", rows = 6, resize = "vertical" ),
+        
+        hr(),
+        # Buttons
+        actionButton("preamble", label = "Remove Preamble"),
+        actionButton("word", label = "Remove Word"),
+        actionButton("cap", label = "Capitalize"),
         
         hr(),
         # Buttons
@@ -112,6 +119,36 @@ server <- function(input, output, session) {
     display.url <- a(pmcid, href=pmc.url)
     output$url <- renderUI({display.url})
     
+    # Check for preamble
+    ## update top 20 preambles so far
+    df.cur <- readRDS("pfocr_curated.rds")
+    df.ori <- as.data.frame(pmc.df.all %>%
+                              filter(pmc.figid %in% df.cur$pmc.figid))
+    df.diff <- merge(df.ori, df.cur, by="pmc.figid")
+    df.diff <- droplevels(df.diff)
+    gsub_v <- Vectorize(gsub, c("pattern", "x"))
+    df.diff <- df.diff %>%
+      mutate(diff = unname(gsub_v(tolower(pmc.figtitle.y), "XXXXXX", tolower(pmc.figtitle.x)))) %>%
+      separate(diff, c("diff.pre","diff.suf"),"XXXXXX", remove = F, fill="right") %>%
+      mutate(diff.pre = ifelse(diff.pre == diff|diff.pre == "", NA, diff.pre))
+    pre.20 <- names(sort(table(df.diff$diff.pre),decreasing = T)[1:20])
+    pre.20 <- pre.20[order(nchar(pre.20), pre.20, decreasing = T)]
+    ## update title
+    cur.title <- as.character(df$pmc.figtitle)
+    new.title.list <- sapply(pre.20, function(x){
+      sub(paste0("^",x),"", cur.title, ignore.case = T)
+    })
+    new.title.list <- new.title.list[order(nchar(new.title.list), new.title.list, decreasing = F)]
+    new.title <- unname(new.title.list[1])
+    ## capitalize first characters
+    substr(new.title, 1, 1) <- toupper(substr(new.title, 1, 1))
+    df$new.title <- new.title
+    if (!nchar(new.title) < nchar(cur.title)){
+      shinyjs::disable("preamble")
+    } else {
+      shinyjs::enable("preamble")
+    }
+      
     return(df)
   }
   fig <- nextFigure()
@@ -132,6 +169,23 @@ server <- function(input, output, session) {
     rv <- getInputValues(rv)
     saveChoice(rv$fig.df)
     rv$fig.df <- nextFigure()
+  })
+  
+  observeEvent(input$preamble, {
+    updateTextInput(session, "fig.title", value=rv$fig.df$new.title) 
+  })
+
+  observeEvent(input$word, {
+    new.title <- input$fig.title
+    new.title <- gsub("^\\w+\\s","",new.title)
+    substr(new.title, 1, 1) <- toupper(substr(new.title, 1, 1))
+    updateTextInput(session, "fig.title", value=new.title) 
+  })
+  
+  observeEvent(input$cap, {
+    new.title <- input$fig.title
+    substr(new.title, 1, 1) <- toupper(substr(new.title, 1, 1))
+    updateTextInput(session, "fig.title", value=new.title) 
   })
   
 }
