@@ -3,13 +3,14 @@
 library(shiny)
 library(shinyjs)
 library(filesstrings)  
+library(tidyr)
 library(dplyr)
 library(magrittr)
 
 
 
 ## LOCAL INFO PER INSTALLATION
-fetch.path <- "SET_TO_YOUR_LOCAL_DIRECTORY"
+fetch.path <- "SET_TO_LOCAL_DIRECTORY"
 image.path <- paste(fetch.path, "images", "pathway", sep = '/')
 
 ## Read in PFOCR fetch results
@@ -129,7 +130,7 @@ server <- function(input, output, session) {
     gsub_v <- Vectorize(gsub, c("pattern", "x"))
     df.diff <- df.diff %>%
       mutate(diff = unname(gsub_v(tolower(pmc.figtitle.y), "XXXXXX", tolower(pmc.figtitle.x)))) %>%
-      separate(diff, c("diff.pre","diff.suf"),"XXXXXX", remove = F, fill="right") %>%
+      tidyr::separate(diff, c("diff.pre","diff.suf"),"XXXXXX", remove = F, fill="right") %>%
       mutate(diff.pre = ifelse(diff.pre == diff|diff.pre == "", NA, diff.pre))
     pre.20 <- names(sort(table(df.diff$diff.pre),decreasing = T)[1:20])
     pre.20 <- pre.20[order(nchar(pre.20), pre.20, decreasing = T)]
