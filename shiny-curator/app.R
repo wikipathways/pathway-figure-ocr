@@ -232,10 +232,10 @@ server <- function(input, output, session) {
     new.title <- gsub("α-", "Alpha-", new.title)
     new.title <- gsub("β-", "Beta-", new.title)
     new.title <- gsub("(-)?α", "A", new.title)
-    new.title <- gsub("(-)?β", "G", new.title)
+    new.title <- gsub("(-)?β", "B", new.title)
     new.title <- gsub("(-)?γ", "G", new.title)
-    new.title <- gsub("(-)?δ", "G", new.title)
-    new.title <- gsub("(-)?κ", "G", new.title)
+    new.title <- gsub("(-)?δ", "D", new.title)
+    new.title <- gsub("(-)?κ", "K", new.title)
     updateTextInput(session, "fig.title", value=new.title) 
   })
   
