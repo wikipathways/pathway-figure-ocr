@@ -10,7 +10,7 @@ library(magrittr)
 
 
 ## LOCAL INFO PER INSTALLATION
-fetch.path <- "SET_TO_LOCAL_DIRECTORY"  # SET_TO_LOCAL_DIRECTORY
+fetch.path <- "SET_TO_LOCAL_DIRECTORY"  
 image.path <- paste(fetch.path, "images", "pathway", sep = '/')
 
 ## Read in PFOCR fetch results
@@ -62,6 +62,7 @@ ui <- fluidPage(
         # Buttons
         actionButton("preamble", label = "Remove Preamble"),
         actionButton("word", label = "Remove Word"),
+        actionButton("greek", label = "Un-Greek"),
         actionButton("cap", label = "Capitalize"),
         br(),
         actionButton("papertitle", label = "Replace: Paper Title"),
@@ -145,8 +146,8 @@ server <- function(input, output, session) {
     })
     new.title.list <- new.title.list[order(nchar(new.title.list), new.title.list, decreasing = F)]
     new.title <- unname(new.title.list[1])
-    ## Check for "of|by (the )"
-    pattern <- "^(.*?\\s(of|by)\\s(the\\s)?)"
+    ## Check for "of the"
+    pattern <- "^(.*?\\s(of|by|between)\\s(the\\s)?)"
     if (grepl(pattern, cur.title)){
       new.title2 <- gsub(pattern, "", cur.title)
       if (nchar(new.title2) < nchar(new.title)) { #keep shortest
@@ -223,6 +224,18 @@ server <- function(input, output, session) {
   observeEvent(input$cap, {
     new.title <- input$fig.title
     substr(new.title, 1, 1) <- toupper(substr(new.title, 1, 1))
+    updateTextInput(session, "fig.title", value=new.title) 
+  })
+  
+  observeEvent(input$greek, {
+    new.title <- input$fig.title
+    new.title <- gsub("α-", "Alpha-", new.title)
+    new.title <- gsub("β-", "Beta-", new.title)
+    new.title <- gsub("(-)?α", "A", new.title)
+    new.title <- gsub("(-)?β", "G", new.title)
+    new.title <- gsub("(-)?γ", "G", new.title)
+    new.title <- gsub("(-)?δ", "G", new.title)
+    new.title <- gsub("(-)?κ", "G", new.title)
     updateTextInput(session, "fig.title", value=new.title) 
   })
   
