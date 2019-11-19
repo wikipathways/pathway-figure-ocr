@@ -10,7 +10,7 @@ library(magrittr)
 
 
 ## LOCAL INFO PER INSTALLATION
-fetch.path <- "SET_TO_LOCAL_DIRECTORY"
+fetch.path <- "SET_TO_LOCAL_DIRECTORY"  # SET_TO_LOCAL_DIRECTORY
 image.path <- paste(fetch.path, "images", "pathway", sep = '/')
 
 ## Read in PFOCR fetch results
@@ -63,10 +63,14 @@ ui <- fluidPage(
         actionButton("preamble", label = "Remove Preamble"),
         actionButton("word", label = "Remove Word"),
         actionButton("cap", label = "Capitalize"),
+        br(),
+        actionButton("papertitle", label = "Replace: Paper Title"),
+        actionButton("xxxpathway", label = "Replace: ... pathway"),
         
         hr(),
         # Buttons
-        actionButton("save", label = "Save")
+        actionButton("save", label = "Save"),
+        actionButton("reload", label = "Reload")
       ),
       width = 6
     ),
@@ -132,7 +136,7 @@ server <- function(input, output, session) {
       mutate(diff = unname(gsub_v(tolower(pmc.figtitle.y), "XXXXXX", tolower(pmc.figtitle.x)))) %>%
       tidyr::separate(diff, c("diff.pre","diff.suf"),"XXXXXX", remove = F, fill="right") %>%
       mutate(diff.pre = ifelse(diff.pre == diff|diff.pre == "", NA, diff.pre))
-    pre.20 <- names(sort(table(df.diff$diff.pre),decreasing = T)[1:20])
+    pre.20 <- names(sort(table(df.diff$diff.pre),decreasing = T)[1:40])
     pre.20 <- pre.20[order(nchar(pre.20), pre.20, decreasing = T)]
     ## update title
     cur.title <- as.character(df$pmc.figtitle)
@@ -141,13 +145,34 @@ server <- function(input, output, session) {
     })
     new.title.list <- new.title.list[order(nchar(new.title.list), new.title.list, decreasing = F)]
     new.title <- unname(new.title.list[1])
-    ## capitalize first characters
-    substr(new.title, 1, 1) <- toupper(substr(new.title, 1, 1))
-    df$new.title <- new.title
+    ## Check for "of|by (the )"
+    pattern <- "^(.*?\\s(of|by)\\s(the\\s)?)"
+    if (grepl(pattern, cur.title)){
+      new.title2 <- gsub(pattern, "", cur.title)
+      if (nchar(new.title2) < nchar(new.title)) { #keep shortest
+        new.title <- new.title2
+      }
+    }
+    ## Did we find anything?
     if (!nchar(new.title) < nchar(cur.title)){
+      df$new.title <- cur.title
       shinyjs::disable("preamble")
     } else {
+      ## capitalize first characters
+      substr(new.title, 1, 1) <- toupper(substr(new.title, 1, 1))
+      df$new.title <- new.title
       shinyjs::enable("preamble")
+    }
+    
+    # Check for "XXX pathway"
+    pattern <- ".*?\\b(\\w+\\s(signaling\\s)?pathway).*"
+    if (grepl(pattern, cur.title)){
+      df$alt.title <- gsub(pattern, "\\1", cur.title)
+      substr(df$alt.title, 1, 1) <- toupper(substr(df$alt.title, 1, 1))
+      shinyjs::enable("xxxpathway")
+    } else {
+      df$alt.title <- df$pmc.figtitle
+      shinyjs::disable("xxxpathway")
     }
       
     return(df)
@@ -172,10 +197,22 @@ server <- function(input, output, session) {
     rv$fig.df <- nextFigure()
   })
   
+  observeEvent(input$reload, {
+    rv$fig.df <- nextFigure()
+  })
+  
   observeEvent(input$preamble, {
     updateTextInput(session, "fig.title", value=rv$fig.df$new.title) 
   })
-
+  
+  observeEvent(input$papertitle, {
+    updateTextInput(session, "fig.title", value=rv$fig.df$pmc.papertitle) 
+  })
+  
+  observeEvent(input$xxxpathway, {
+    updateTextInput(session, "fig.title", value=rv$fig.df$alt.title) 
+  })
+  
   observeEvent(input$word, {
     new.title <- input$fig.title
     new.title <- gsub("^\\w+\\s","",new.title)
