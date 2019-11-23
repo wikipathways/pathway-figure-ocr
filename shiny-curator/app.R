@@ -147,7 +147,7 @@ server <- function(input, output, session) {
     new.title.list <- new.title.list[order(nchar(new.title.list), new.title.list, decreasing = F)]
     new.title <- unname(new.title.list[1])
     ## Check for "of the"
-    pattern <- "^(.*?\\s(of|by|between)\\s(the\\s)?)"
+    pattern <- "^(.*\\s(of|by|between)\\s((the|which)\\s)?)"
     if (grepl(pattern, cur.title)){
       new.title2 <- gsub(pattern, "", cur.title)
       if (nchar(new.title2) < nchar(new.title)) { #keep shortest
@@ -166,7 +166,7 @@ server <- function(input, output, session) {
     }
     
     # Check for "XXX pathway"
-    pattern <- ".*?\\b(\\w+\\s(signaling\\s)?pathway).*"
+    pattern <- "^.*?\\s*?([A-Za-z0-9_/-]+\\s([Ss]ignaling\\s)*pathway).*$"
     if (grepl(pattern, cur.title)){
       df$alt.title <- gsub(pattern, "\\1", cur.title)
       substr(df$alt.title, 1, 1) <- toupper(substr(df$alt.title, 1, 1))
