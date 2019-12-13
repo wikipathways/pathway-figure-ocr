@@ -60,13 +60,11 @@ nix-shell
 Create database and load pmc and organism data. To get the data, see sections
 `gene2pubmed, pmc2pmid & organism2pubmed` and
 `gene2pubtator & organism2pubtator` below. Change database name, if desired, in
-the sql files. Then run:
+the sql file and the example below. Then run:
 
 ```
-psql
-\i database/create_tables.sql
-\i database/load_data.sql
-\q
+psql -f database/create_tables.sql
+psql pfocr20191102 -f database/load_data.sql
 ```
 
 Load figure data:
@@ -121,16 +119,16 @@ Enter nix-shell:
 nix-shell
 ```
 
-Caution: if you don't specify a `limit` value, it'll run until the last figure. Default `start` value is 0.
+Caution: if you don't specify a `limit` value, it'll run until the last figure.
 
 ```sh
-./pfocr/pfocr.py ocr gcv --preprocessor noop --start 1 --limit 20
+./pfocr/pfocr.py ocr pfocr2018121717 gcv --preprocessor noop --limit 20
 ```
 
 Note: This command calls `ocr_pmc.py` at the end, passing along args and functions. The `ocr_pmc.py` script then:
 
 * gets an `ocr_processor_id` corresponding the unique hash of processing parameters
-* retrieves all figure rows and steps through rows, starting with `start`
+* retrieves all figure rows and steps through rows
 
   * runs image pre-processing
   * performs OCR
@@ -252,16 +250,18 @@ Do not apply upper() or remove non-alphanumerics during lexicon constuction. The
 ### organism names from taxdump
 
 Taxonomy names file (names.dmp):
-tax_id -- the id of node associated with this name
-name_txt -- name itself
-unique name -- the unique variant of this name if name not unique
-name class -- (synonym, common name, ...)
+* `tax_id`: the id of node associated with this name
+* `name_txt`: name itself
+* `unique name`: the unique variant of this name if name not unique
+* `name class`: synonym, common name, ...
 
 ```
 wget ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz
 tar -xzf taxdump.tar.gz names.dmp
-sed -r 's/\|\t(Microtetraspora parvosata subsp. kistnae)"\t\|/|\t"\1"\t|/g' names.dmp | sed -r 's/\t\|$//g' | sed -r 's/\t\|\t/\t/g' > organism_names.tsv
-rm names.dmp taxdump.tar.gz
+sed -r 's/\t\|$//g' names.dmp |\
+	sed -r 's/\t\|\t/\t/g' |\
+	sort -u > organism_names.tsv
+rm taxdump.tar.gz names.dmp
 ```
 
 ### gene2pubmed, pmc2pmid & organism2pubmed
@@ -276,14 +276,6 @@ tail -n +2 gene2pubmed.tsv | cut -f 1,3 | sort -u >> organism2pubmed.tsv
 
 wget ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/PMC-ids.csv.gz
 gunzip PMC-ids.csv.gz
-# There is a weird section that has a newline in the middle of what should be
-# one row (lines 5286267 and 5286268):
-# Transbound Emerg Dis,1865-1674,1865-1682,2017,65,Suppl.
-# 1,199,10.1111/tbed.12682,PMC6190748,28984428,,live^M
-# It appears to be that most rows are delimited by Windows \r\n,
-# but that one line ends with just \n.
-# Here's a fix:
-tr -d '\n' < PMC-ids.csv | sed -e "s/\r/\n/g" > PMC-ids.unix.csv
 ```
 
 ### gene2pubtator & organism2pubtator
@@ -299,11 +291,9 @@ rm gene2pubtator
 
 wget ftp://ftp.ncbi.nlm.nih.gov/pub/lu/PubTator/species2pubtator.gz
 gunzip species2pubtator.gz
-# There are some incorrect PMIDs. The first sed is needed to fix those.
-# The second sed removes leading zeros from pmids.
-# There can be multiple organisms per row. Reshape wide -> long with awk.
-sed -E 's/^2[0-9]*?(27[0-9]{6}\t)/\1/g' species2pubtator |\
-	sed -E 's/^0*//g' |\
+# sed: Remove leading zeros from pmids.
+# awk: Reshape wide -> long to handle when multiple organisms per row.
+sed -E 's/^0*//g' species2pubtator |\
 	awk -F '\t' -v OFS='\t' '{split($2,a,/,|;/); for(i in a) print $1,a[i],$3,$4}' > organism2pubtator.tsv
 head -n 1 organism2pubtator.tsv | cut -f 1,2 > organism2pubtator_uniq.tsv
 tail -n +2 organism2pubtator.tsv | cut -f 1,2 | sort -u >> organism2pubtator_uniq.tsv

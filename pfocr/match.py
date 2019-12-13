@@ -248,20 +248,45 @@ def match(db, output_dir, args):
                 for f in fig_matches:
                     figure_matches_upper.add(f.upper())
                 if figure_matches_upper != match_testable_matches:
-                    print(full_text)
+                    print('')
+                    print('=========================================')
+                    print('figure_id:' + str(figure_id))
+                    print('=========================================')
+
+                    print('full_text:')
+                    print(str(full_text))
                     fig_matches_expected = list()
                     for f in (fig_matches|match_testable_matches):
-                        fig_matches_expected.append({
-                            "symbol": f,
-                            "id": symbol_ids_by_symbol[f],
-                            })
-                    print(fig_matches_expected)
+                        if f in symbol_ids_by_symbol:
+                            fig_matches_expected.append({
+                                "symbol": f,
+                                "id": symbol_ids_by_symbol[f],
+                                })
+                        else:
+                            print("symbol " + f + " missing from symbol_ids_by_symbol")
+                    # print('fig_matches_expected:')
+                    # print(fig_matches_expected)
 
-                    print('figure_matches_upper')
-                    print(figure_matches_upper)
-                    print('match_testable_matches')
-                    print(match_testable_matches)
-                    raise Exception('figure_matches_upper != match_testable_matches')
+                    print('common:')
+                    print(str(figure_matches_upper & match_testable_matches))
+
+                    if not figure_matches_upper <= match_testable_matches:
+                        print('in old only:')
+                        print(str(figure_matches_upper - match_testable_matches))
+
+                    if not match_testable_matches <= figure_matches_upper:
+                        print('in new only:')
+                        print(str(match_testable_matches - figure_matches_upper))
+
+#                     print('figure_matches_upper as sorted list:')
+#                     print(sorted(list(figure_matches_upper)))
+#                     print('match_testable_matches as sorted list:')
+#                     print(sorted(list(match_testable_matches)))
+#                     print('figure_matches_upper != match_testable_matches')
+
+                    # TODO: use logging https://docs.python.org/3.8/library/logging.html#module-logging
+                    # raise Warning('figure_matches_upper != match_testable_matches')
+                    # raise Exception('figure_matches_upper != match_testable_matches')
 
         conn.commit()
 

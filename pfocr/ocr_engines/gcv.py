@@ -24,6 +24,10 @@ def gcv_raw(
         body = json.dumps({
             "requests": [{
                 "image": {"content": image_b64},
+                "imageContext": {
+                    "languageHints": ["en"]
+                    #"languageHints": ["en", "el"]
+                },
                 "features": [{"type": type}]
             }]
         })
@@ -35,7 +39,10 @@ def gcv_raw(
 
 
 def gcv(prepared_filepath):
-    gcv_result_raw = gcv_raw(filepath=prepared_filepath, type='TEXT_DETECTION')
+    gcv_result_raw = gcv_raw(
+            filepath=prepared_filepath,
+            type='TEXT_DETECTION'
+            )
     if len(gcv_result_raw['responses']) != 1:
         print(gcv_result_raw)
         raise ValueError("""
@@ -55,5 +62,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     filepath = args.filepath
 
-    result = gcv_raw(filepath=filepath, type='TEXT_DETECTION')
+    result = gcv_raw(
+            filepath=filepath,
+            type='TEXT_DETECTION'
+            )
     print(result)

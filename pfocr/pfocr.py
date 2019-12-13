@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import inspect
 import argparse
 import json
 from pathlib import Path, PurePath
@@ -12,7 +13,10 @@ import sys
 import warnings
 from itertools import zip_longest
 import hashlib
+import tempfile
+
 from wand.image import Image
+from wand.exceptions import ImageError
 
 from get_pg_conn import get_pg_conn
 
@@ -66,9 +70,10 @@ abbr_for_organism = {
 organism_for_abbr = {v: k for k, v in abbr_for_organism.items()}
 
 cwd = os.getcwd()
-# TODO: should LOGS_DIR use '.', 'cwd' or 'current script path'?
-#LOGS_DIR="../outputs"
-#FAILS_FILE_PATH=Path(PurePath(LOGS_DIR, "fails.txt"))
+LOGS_DIR=Path(PurePath(cwd, "outputs"))
+FAILS_FILE_PATH=Path(PurePath(LOGS_DIR, "fails.txt"))
+TEMP_DIR = Path(tempfile.mkdtemp())
+temp_path1 = Path(PurePath(TEMP_DIR, "dummy.txt"))
 
 def clear_cli(args):
     db = args.db
@@ -184,6 +189,7 @@ def load_figures_cli(args):
 
         for figure_path in figure_paths:
             filepath = str(figure_path.resolve())
+            filename = figure_path.name
             filename_stem = figure_path.stem
             paper_filename_components = pmcid_re.match(filename_stem)
             wp_filename_components = wp_re.match(filename_stem)
@@ -251,8 +257,32 @@ def load_figures_cli(args):
                 m.update(image_file.read())
             figure_hash = m.hexdigest()
 
-            with Image(filename=filepath) as img:
-                resolution = int(round(min(img.resolution)))
+            # TODO: A resolution of zero could actually mean undefined,
+            # because img.units appears to often be undefined.
+            # Only some images have print size specified.
+            # Look at getting a better measure of resolution.
+            # img.compression_quality appears to always be 75
+            # Could we get print size from the HTML?
+            try:
+                temp_path = Path(PurePath(TEMP_DIR, filename))
+                resolution = 0
+                with Image(filename=filepath) as img:
+                    resolution = int(round(min(img.resolution)))
+            except(psycopg2.DatabaseError) as e:
+                print('Database Error:', sys.exc_info()[0], '\n', e, '\n', 'load_figures: FAIL')
+                raise
+            except(ImageError) as e:
+                # we skip these but don't end the process
+                print('ImageError:', sys.exc_info()[0], '\n', e, '\n', 'load_figures: FAIL')
+                # TODO: do we want to move them?
+                #print('ImageError:', sys.exc_info()[0], '\n', e, '\n', 'Moved to ' + str(temp_path), '\n', 'load_figures: FAIL')
+                #figure_path.rename(temp_path)
+                pass
+            except(Exception) as e:
+                print('UnknownError:', sys.exc_info()[0], '\n', e, '\n', '\n', 'load_figures: FAIL')
+                raise
+            else:
+                # if we can parse the figure, we'll load it into the db
                 figures_cur.execute(
                     "INSERT INTO figures (filepath, figure_number, paper_id, resolution, hash) VALUES (%s, %s, %s, %s, %s);",
                     (filepath, figure_number, paper_id, resolution, figure_hash)
@@ -264,6 +294,7 @@ def load_figures_cli(args):
 
     except(psycopg2.DatabaseError) as e:
         print('Database Error:', sys.exc_info()[0], '\n', e, '\n', 'load_figures: FAIL')
+        raise
 
     finally:
         if papers_cur:
@@ -272,6 +303,9 @@ def load_figures_cli(args):
             figures_cur.close()
         if conn:
             conn.close()
+
+        if os.path.isdir(TEMP_DIR) and len(os.listdir(TEMP_DIR)) == 0:
+            TEMP_DIR.rmdir()
 
 
 # Create parser and subparsers
