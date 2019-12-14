@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 function finish() {
         echo "Error on line $1"

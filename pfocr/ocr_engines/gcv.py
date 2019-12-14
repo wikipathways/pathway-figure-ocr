@@ -26,7 +26,6 @@ def gcv_raw(
                 "image": {"content": image_b64},
                 "imageContext": {
                     "languageHints": ["en"]
-                    #"languageHints": ["en", "el"]
                 },
                 "features": [{"type": type}]
             }]

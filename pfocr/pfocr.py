@@ -16,7 +16,7 @@ import hashlib
 import tempfile
 
 from wand.image import Image
-from wand.exceptions import ImageError
+from wand.exceptions import ImageError, CorruptImageError
 
 from get_pg_conn import get_pg_conn
 
@@ -271,15 +271,15 @@ def load_figures_cli(args):
             except(psycopg2.DatabaseError) as e:
                 print('Database Error:', sys.exc_info()[0], '\n', e, '\n', 'load_figures: FAIL')
                 raise
-            except(ImageError) as e:
+            except(ImageError, CorruptImageError) as e:
                 # we skip these but don't end the process
-                print('ImageError:', sys.exc_info()[0], '\n', e, '\n', 'load_figures: FAIL')
+                print('Wand-related Error:', sys.exc_info()[0], '\n', e, '\n', 'load_figures: FAIL')
                 # TODO: do we want to move them?
-                #print('ImageError:', sys.exc_info()[0], '\n', e, '\n', 'Moved to ' + str(temp_path), '\n', 'load_figures: FAIL')
+                #print('CorruptImageError:', sys.exc_info()[0], '\n', e, '\n', 'Moved to ' + str(temp_path), '\n', 'load_figures: FAIL')
                 #figure_path.rename(temp_path)
                 pass
             except(Exception) as e:
-                print('UnknownError:', sys.exc_info()[0], '\n', e, '\n', '\n', 'load_figures: FAIL')
+                print('Unhandled Error:', sys.exc_info()[0], '\n', e, '\n', '\n', 'load_figures: FAIL')
                 raise
             else:
                 # if we can parse the figure, we'll load it into the db
