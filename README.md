@@ -10,3 +10,7 @@ Check out the [codebook](codebook.md) for the current recipe. Be forewarned, how
 ### How to Develop
 Contact us by email or via Issues if you're interested in contributing to the development. All our projects are open source.
 
+### Databases
+
+* bioarchive paper: `pfocr2018121717`
+* LKG 100k: `pfocr20191102`
