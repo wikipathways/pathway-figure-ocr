@@ -1,8 +1,13 @@
 __pycache__/
-outputs/
+/outputs/
 .Rproj.user
 .Rdata
 .Rhistory
 .Rapp.history
 2018*
 2019*
+*.egg-info
+/outputs*/
+/dist/
+/examples/
+MANIFEST
