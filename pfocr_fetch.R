@@ -53,13 +53,17 @@ query.url <- paste0("https://www.ncbi.nlm.nih.gov/pmc/?",
 ################
 ## PMC SCRAPER
 ################
+library(conflicted)
 library(RSelenium)
 library(rvest)
 library(xml2)
 library(tidyverse)
+conflict_prefer("filter", "dplyr")
+conflict_prefer("select", "dplyr")
+conflict_prefer("mutate", "dplyr")
 
 # set dir for saving results as tsv
-setwd("/git/wikipathways/pathway-figure-ocr/20191102")
+setwd("/git/wikipathways/pathway-figure-ocr/20200214")
 cat(query.url, file="query.txt")
 write.table(data.frame("figureid","pmcid", "filename", "fignumber", "figtitle",  "papertitle", "figcaption", "figlink", "reftext"), 
             file = "pmc.df.all.tsv",
@@ -86,9 +90,9 @@ remDr$navigate(query.url)
 remDr$screenshot(display = TRUE)
 
 ## Collect all pages!
-pmc.df.all <- data.frame(pmc.figid=character(),pmc.pmcid=character(), pmc.filename=character(), 
-                         pmc.number=character(), pmc.figtitle=character(), pmc.papertitle=character(), 
-                         pmc.caption=character(), pmc.figlink=character(), pmc.reftext=character())
+df.all <- data.frame(figid=character(),pmcid=character(), filename=character(), 
+                         number=character(), figtitle=character(), papertitle=character(), 
+                         caption=character(), figlink=character(), reftext=character())
 
 page.count <- xml2::read_html(remDr$getPageSource()[[1]]) %>%
   rvest::html_nodes(".title_and_pager") %>%
@@ -101,7 +105,7 @@ for (i in 1:page.count){
 
   ## Parse page
   page.source <- xml2::read_html(remDr$getPageSource()[[1]])
-  pmc.filename <- page.source %>%
+  filename <- page.source %>%
     rvest::html_nodes(".rprt_img") %>%
     rvest::html_node("img") %>%
     rvest::html_attr("src-large") %>%
@@ -110,36 +114,36 @@ for (i in 1:page.count){
     select(2) %>%
     as.matrix() %>%
     as.character()
-  pmc.number <- page.source %>%
+  number <- page.source %>%
     rvest::html_nodes(".rprt_img") %>%
     rvest::html_node("img") %>%
     rvest::html_attr("alt") 
-  pmc.titles <- page.source %>%
+  titles <- page.source %>%
     rvest::html_nodes(".rprt_img") %>%
     rvest::html_node(xpath='..') %>%
     rvest::html_node(".rprt_cont") %>%
     rvest::html_node(".title") %>%
     rvest::html_text() %>%
     str_split("\\s+From: ", simplify = TRUE)
-  pmc.papertitle <- pmc.titles[,2] %>% 
+  papertitle <- titles[,2] %>% 
     str_trim()
-  pmc.caption <- page.source %>%
+  caption <- page.source %>%
     rvest::html_nodes(".rprt_img") %>%
     rvest::html_node(xpath='..') %>%
     rvest::html_node(".rprt_cont") %>%
     rvest::html_node(".supp") %>%
     rvest::html_text()
-  pmc.figlink <- page.source %>%
+  figlink <- page.source %>%
     rvest::html_nodes(".rprt_img") %>% 
     rvest::html_attr("image-link")
-  pmc.reftext <- page.source %>%
+  reftext <- page.source %>%
     rvest::html_nodes(".rprt_img") %>%
     rvest::html_node(xpath='..') %>%
     rvest::html_node(".rprt_cont") %>%
     rvest::html_node(".aux") %>%
     rvest::html_text() %>%
     str_remove(fixed("CitationFull text"))
-  pmc.pmcid <- page.source %>%
+  pmcid <- page.source %>%
     rvest::html_nodes(".rprt_img") %>%
     rvest::html_node(xpath='..') %>%
     rvest::html_node(".rprt_cont") %>%
@@ -150,8 +154,8 @@ for (i in 1:page.count){
     as.character()
   
   ## Extract best figure title from analysis of provided, number, title and caption
-  temp.df  <- data.frame(n=pmc.number, t=pmc.titles[,1], c=pmc.caption, stringsAsFactors = FALSE) %>%
-    mutate(t=str_trim(str_remove(t,fixed(as.character(pmc.number)))))
+  temp.df  <- data.frame(n=number, t=titles[,1], c=caption, stringsAsFactors = FALSE) %>%
+    mutate(t=str_trim(str_remove(t,fixed(as.character(number)))))
   temp.df  <- temp.df  %>%
     mutate(c=if_else(is.na(c),t,c)) %>%
     mutate(t=str_trim(str_remove(t,"\\.$"))) %>%
@@ -161,18 +165,18 @@ for (i in 1:page.count){
     mutate(t=str_trim(str_remove(t,"^\\."))) %>%
     mutate(c=str_trim(str_replace(c,"\\.\\.","\\."))) %>%
     mutate(n=str_trim(str_replace(n,"\\.$","")))
-  pmc.number <- as.character(temp.df[,1])
-  pmc.figtitle <- as.character(temp.df[,2])
-  pmc.caption <- as.character(temp.df[,3])
+  number <- as.character(temp.df[,1])
+  figtitle <- as.character(temp.df[,2])
+  caption <- as.character(temp.df[,3])
   
   ## Prepare df and write to R.object and tsv
-  pmc.df <- data.frame(pmc.pmcid, pmc.filename, pmc.number, pmc.figtitle, pmc.papertitle, pmc.caption, pmc.figlink, pmc.reftext) %>%
-    mutate(pmc.figid=paste(pmc.pmcid,pmc.filename, sep = "__")) %>%
-    select(pmc.figid,pmc.pmcid, pmc.filename, pmc.number, pmc.figtitle, pmc.papertitle, pmc.caption, pmc.figlink, pmc.reftext)
+  df <- data.frame(pmcid, filename, number, figtitle, papertitle, caption, figlink, reftext) %>%
+    mutate(figid=paste(pmcid,filename, sep = "__")) %>%
+    select(figid,pmcid, filename, number, figtitle, papertitle, caption, figlink, reftext)
   
-  pmc.df.all <- rbind(pmc.df.all, pmc.df)
+  df.all <- rbind(df.all, df)
   
-  write.table(pmc.df, 
+  write.table(df, 
               file = "pmc.df.all.tsv",
               append = TRUE,
               sep = '\t',
@@ -190,15 +194,17 @@ for (i in 1:page.count){
   print(paste(i,"of",page.count))
 }
 
+#If error, go back a page (next line) and enter last page number as new start in for loop
 #remDr$goBack()
 
 ## At the end of the day...
-pmc.df.all<-unique(pmc.df.all)
-saveRDS(pmc.df.all, file = "pmc.df.all.rds")
-#pmc.df.all <- readRDS("pmc.df.all.rds")
+df.all<-unique(df.all)
+saveRDS(df.all, file = "pmc.df.all.rds")
+#df.all <- readRDS("pmc.df.all.rds")
 
 ## Close up shop
 remDr$closeall()
+
 # In Terminal:
-# docker ps ## note process_id
-# docker stop <process_id>
+# docker ps ## note CONTAINER ID
+# docker stop <CONTAINER ID>

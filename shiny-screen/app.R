@@ -7,7 +7,7 @@ library(magrittr)
 library(dplyr)
 
 ## LOCAL INFO PER INSTALLATION
-fetch.path <- "/git/wikipathways/pathway-figure-ocr/20191102"
+fetch.path <- "/git/wikipathways/pathway-figure-ocr/20200131"
 image.path <- paste(fetch.path, "images", sep = '/')
 to.dir <- c("pathway", "composite", "other", "skip")
 dir.create(image.path, FALSE)
@@ -17,15 +17,20 @@ lapply(to.dir, function(x){
 
 ## Read in PFOCR fetch results
 setwd(fetch.path)
-pmc.df.all <- readRDS("pmc.df.last1k.rds") ## MOD: pmc.df.target.rds or pmc.df.all.rds
-fig.list <- pmc.df.all$pmc.figid
+df.all <- readRDS("pfocr.man.235k_10k.rds") ## MOD: df.target.rds or df.all.rds
+df.all <- df.all %>%
+  arrange((as.numeric(pathway_score_diff))) %>%
+  top_n(-100) %>%
+  dplyr::select(figid, pmcid, filename, figtitle) 
+
+fig.list <- df.all$figid
 # set headers for output files
-headers <- c(names(pmc.df.all), "cur.figtype")
+headers <- c(names(df.all), "type.man")
 lapply(to.dir, function(x){
   f.path.to<-paste(image.path,x, sep = '/')
   fn <- (paste(f.path.to,paste0("pfocr_",x,".rds"),sep = '/'))
   if(!file.exists(fn)){
-    df <- data.frame(matrix(ncol=10,nrow=0))
+    df <- data.frame(matrix(ncol=5,nrow=0))
     names(df)<-headers
     saveRDS(df, fn)
   }
@@ -36,25 +41,25 @@ getFigListTodo <- function(){
     next.file <- paste(image.path,x,paste0("pfocr_",x,".rds"),sep = '/')
     if (file.exists(next.file)){
       data <- readRDS(next.file)
-      as.character(data$pmc.figid)
+      as.character(data$figid)
     }
   }))
-  list(todo=setdiff(fig.list, fig.list.done), done=fig.list.done)
+  list(todo=BiocGenerics::setdiff(fig.list, fig.list.done), done=fig.list.done)
 }
 
 getBulkFigures <- function(fig.todo) {
-  df.todo <- pmc.df.all %>%
-    filter(pmc.figid %in% fig.todo) %>%
+  df.todo <- df.all %>%
+    filter(figid %in% fig.todo) %>%
     droplevels()
   withProgress(message="Fetching more images...", {
     by(df.todo, 1:nrow(df.todo), function(df){
-      figname <- df$pmc.filename
-      pmcid <- df$pmc.pmcid
+      figname <- df$filename
+      pmcid <- df$pmcid
       ## retrieve image from PMC #NOTE: USE PMC+FILENAME TO KEEP UNIQUE 
       figure_link <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",pmcid,"/bin/",figname)
-      download.file(figure_link,paste(image.path,df$pmc.figid,sep = '/'), mode = 'wb')
+      download.file(figure_link,paste(image.path,df$figid,sep = '/'), mode = 'wb')
       ## retrieve from local folder ## MOD: local vs PMC
-      # f.path.from<-paste(fetch.path, "all_images",df$pmc.figid, sep = '/')
+      # f.path.from<-paste(fetch.path, "all_images",df$figid, sep = '/')
       # f.path.to<-paste(image.path)
       # if(file.exists(f.path.from)){
       #   filesstrings::file.move(f.path.from,f.path.to,overwrite = TRUE)
@@ -66,7 +71,7 @@ getBulkFigures <- function(fig.todo) {
 }
 
 saveChoice <- function(df){
-  f.path.from<-paste(image.path,df$pmc.figid, sep = '/')
+  f.path.from<-paste(image.path,df$figid, sep = '/')
   f.path.to<-paste(image.path,df$choice, sep = '/')
   fn <- paste(f.path.to,paste0("pfocr_",df$choice,".rds"),sep = '/')
   ## read/save rds
@@ -83,7 +88,7 @@ undoChoice <- function(choice){
   fn <- paste(image.path,choice,paste0("pfocr_",choice,".rds"),sep = '/')
   ## read/save rds
   df.old <- readRDS(fn)
-  figid <- tail(df.old$pmc.figid,1)
+  figid <- tail(df.old$figid,1)
   df.new <- df.old[-nrow(df.old),]
   saveRDS(df.new, fn)
   ## move figure
@@ -185,8 +190,8 @@ server <- function(input, output, session) {
       shinyjs::disable("three")
       shinyjs::disable("skip")
       
-      df<-data.frame(pmc.figtitle="No more files!")
-      output$fig.title <- renderText({as.character(df$pmc.figtitle)})
+      df<-data.frame(figtitle="No more files!")
+      output$fig.title <- renderText({as.character(df$figtitle)})
       output$fig.name <- renderText({as.character("")})
       display.url <- a("", href="")
       output$url <- renderUI({display.url})
@@ -200,22 +205,21 @@ server <- function(input, output, session) {
       fig.list <- list.files(image.path, pattern = "\\.jpg$")
     }
     # Get next fig info
-    df <- pmc.df.all %>% 
-      filter(pmc.figid==head(fig.list.todo,1))  %>% ## MOD: head or tail
+    df <- df.all %>% 
+      filter(figid==head(fig.list.todo,1))  %>% ## MOD: head or tail
       droplevels()
-    # output$reftext <- renderText({as.character(df$pmc.reftext)})
-    figname <- df$pmc.filename
-    pmcid <- df$pmc.pmcid
+    figname <- df$filename
+    pmcid <- df$pmcid
     output$fig.name <- renderText({as.character(figname)})
     ## retrieve image from local
     output$figure <- renderImage({
-      list(src = paste(image.path,df$pmc.figid, sep = '/'),
+      list(src = paste(image.path,df$figid, sep = '/'),
            alt = "No image available",
            width="600px")
     }, deleteFile = FALSE)
-    output$fig.title <- renderText({as.character(df$pmc.figtitle)})
-    pmc.url <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",pmcid)
-    display.url <- a(pmcid, href=pmc.url)
+    output$fig.title <- renderText({as.character(df$figtitle)})
+    url <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",pmcid)
+    display.url <- a(pmcid, href=url)
     output$url <- renderUI({display.url})
     
     return(df)
