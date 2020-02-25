@@ -88,6 +88,7 @@ def ocr_pmc(
                     but the result above indicates that assumption was incorrect.
                     """)
             ocr_processors__figures_cur.execute("INSERT INTO ocr_processors__figures (ocr_processor_id, figure_id, result) VALUES (%s, %s, %s);", (ocr_processor_id, figure_id, json.dumps(ocr_result)))
+            # TODO: should we commit here to avoid losing OCR work we've done in case there's an error or something?
 
         conn.commit()
         print('ocr_pmc successfully completed')
