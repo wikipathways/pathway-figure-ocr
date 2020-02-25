@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 import requests
 
-p = Path('/home/pfocr/gcv/API_KEY')
+p = Path('/home/ariutta/.credentials/GCV_API_KEY')
 API_KEY = p.read_text().strip()
 URL = "https://vision.googleapis.com/v1/images:annotate?key=%s" % (API_KEY)
 
@@ -34,8 +34,23 @@ def gcv_raw(
         return r.json()
 
 
-def gcv(prepared_filepath):
+def gcv_black_formatted(prepared_filepath):
     gcv_result_raw = gcv_raw(filepath=prepared_filepath, type='TEXT_DETECTION')
+    if len(gcv_result_raw['responses']) != 1:
+        print(gcv_result_raw)
+        raise ValueError("""
+            gcv.py expects the JSON result from GCV will always be {"responses": [...]},
+            with "responses" having just a single value, but
+            the result above indicates that assumption was incorrect.
+            """)
+    return gcv_result_raw['responses'][0]
+
+
+def gcv(prepared_filepath):
+    gcv_result_raw = gcv_raw(
+            filepath=prepared_filepath,
+            type='TEXT_DETECTION'
+            )
     if len(gcv_result_raw['responses']) != 1:
         print(gcv_result_raw)
         raise ValueError("""

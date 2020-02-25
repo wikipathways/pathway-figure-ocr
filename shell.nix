@@ -4,6 +4,7 @@
 # https://nixos.org/nix/manual/#sec-nix-shell
 
 with import <nixpkgs> { config.allowUnfree = true; };
+
 with import ./custom_pkgs/requirements.nix { inherit pkgs; };
 stdenv.mkDerivation rec {
   name = "env";
@@ -23,16 +24,16 @@ stdenv.mkDerivation rec {
 
     # With Python configuration requiring a special wrapper
     # find names here: https://github.com/NixOS/nixpkgs/blob/release-17.03/pkgs/top-level/python-packages.nix
-    (python36.buildEnv.override {
+    (python37.buildEnv.override {
       ignoreCollisions = true;
-      extraLibs = with python36Packages; [
+      extraLibs = with python37Packages; [
         # Add pythonPackages without the prefix
         dill
         # TODO clean up how I'm specifying the homoglyphs package.
         # When I first tried it, I couldn't just add homoglyphs below like this:
         #homoglyphs
         # I had to install it using pypi2nix:
-        #   (cd custom_pkgs; pypi2nix -V 3 -e homoglyphs==1.3.1)
+        #   (cd custom_pkgs; pypi2nix -V python37 -e homoglyphs==1.3.2)
         # and then use packages."homoglyphs", which looks ugly.
         packages."homoglyphs"
         idna
