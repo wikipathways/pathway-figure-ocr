@@ -10,12 +10,12 @@ library(magrittr)
 
 
 ## LOCAL INFO PER INSTALLATION
-fetch.path <- "SET_TO_LOCAL_DIRECTORY"  
+fetch.path <- "/git/wikipathways/pathway-figure-ocr/20181216"  
 image.path <- paste(fetch.path, "images", "pathway", sep = '/')
 
 ## Read in PFOCR fetch results
 setwd(image.path)
-pmc.df.all <- readRDS("pfocr_pathway.rds")
+pmc.df.all <- readRDS("pfocr_pathway_ap.rds")
 fig.list <- unlist(unname(as.list(pmc.df.all[,1])))
 # set headers for output files
 headers <- names(pmc.df.all)
