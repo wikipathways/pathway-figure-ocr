@@ -8,7 +8,7 @@ library(magrittr)
 library(ggplot2)
 
 ## READ DF
-df.shiny <- readRDS("pfocr.man.235k_10k.rds")
+df.shiny <- readRDS("pfocr_sample.rds")
 
 df.sample <<- df.shiny %>%
   filter(!is.na(year)) %>%
