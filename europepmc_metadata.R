@@ -80,9 +80,16 @@ pmc_info <- lapply(pmc_ids,  function(p){
 }) %>% bind_rows()
 
 
-saveRDS(pmc_info, "tables/europepmc_metadata.RDS")
+saveRDS(pmc_info, "tables/europepmc_metadata.rds")
 
 ## Get Authors
+pmc_info_auth <- select(pmc_info, c(1,3,4))
+pmc_info_auth2 <- pmc_info_auth %>%
+  filter(pub.year == 2019) %>%
+  mutate(author.full = strsplit(author.full.list, " | ",fixed=TRUE)) %>%
+  unnest(author.full) %>%
+  select(c(pmcid, author.full))
+
 pmc_authors <- unname(unlist(lapply(pmc_info$author.full.list, function(a){
   strsplit(a, " | ",fixed=TRUE)
   
@@ -93,7 +100,7 @@ pmc_authors.df <- data.frame(authors = pmc_authors) %>%
   summarise(count = n()) %>%
   arrange(desc(count))
 
-#saveRDS(pmc_authors.df, "tables/pmc_authors.RDS")
+#saveRDS(pmc_authors.df, "tables/pmc_authors.rds")
 write.table(pmc_authors.df, "tables/pfocr_figures_authors.tsv", sep = "\t", row.names = F)
 
 ## Restructure for MESH
@@ -127,7 +134,7 @@ pmc_info_chem2 <- pmc_info_chem %>%
   mutate(chem.reg = strsplit(chem.reg.list, " | ",fixed=TRUE)) %>%
   unnest(chem.name,chem.reg) %>%
   select(c(1,4,5))
-write.table(pmc_info_pub, "tables/europepmc_chemicals.tsv", sep = "\t", row.names = F)
+write.table(pmc_info_chem2, "tables/europepmc_chemicals.tsv", sep = "\t", row.names = F)
 
 
 #######################
@@ -135,6 +142,8 @@ write.table(pmc_info_pub, "tables/europepmc_chemicals.tsv", sep = "\t", row.name
 ###############
 
 pmc_tm <- lapply(pmc_ids,  function(p){
+  
+  print(match(p, pmc_ids))
   
   pmc_data <- tryCatch({ epmc_tm(ext_id=p, data_src = "pmc")}, 
     error = function(e) {print("Skipped PMC")})
@@ -163,4 +172,34 @@ pmc_tm <- lapply(pmc_ids,  function(p){
   )
 }) %>% bind_rows()
 
-saveRDS(pmc_tm, "tables/europepmc_tmdata.RDS")
+saveRDS(pmc_tm, "tables/europepmc_tmdata.rds")
+
+## Chem
+pmc_tm_chem <- select(pmc_tm, c(1,2:3))
+pmc_tm_chem2 <- pmc_tm_chem %>%
+  mutate(chem.term = strsplit(chem.term.list, " | ",fixed=TRUE)) %>%
+  mutate(chem.id = strsplit(chem.id.list, " | ",fixed=TRUE)) %>%
+  unnest(chem.term,chem.id) %>%
+  select(c(1,4,5))
+
+write.table(pmc_tm_chem2, "tables/europepmc_tm_chemicals.tsv", sep = "\t", row.names = F)
+
+## gene
+pmc_tm_gene <- select(pmc_tm, c(1,4:5))
+pmc_tm_gene2 <- pmc_tm_gene %>%
+  mutate(gene.term = strsplit(gene.term.list, " | ",fixed=TRUE)) %>%
+  mutate(gene.id = strsplit(gene.id.list, " | ",fixed=TRUE)) %>%
+  unnest(gene.term,gene.id) %>%
+  mutate(gene.id = if_else(gene.id == "uniprot:list()", "", gene.id)) %>%
+  select(c(1,4)) # if all ID are blank, then don't select
+
+write.table(pmc_tm_gene2, "tables/europepmc_tm_genes.tsv", sep = "\t", row.names = F)
+
+## disease
+pmc_tm_disease <- select(pmc_tm, c(1,6))
+pmc_tm_disease2 <- pmc_tm_disease %>%
+  mutate(disease = strsplit(disease.list, " | ",fixed=TRUE)) %>%
+  unnest(disease) %>%
+  select(c(1,3)) 
+
+write.table(pmc_tm_disease2, "tables/europepmc_tm_diseases.tsv", sep = "\t", row.names = F)
