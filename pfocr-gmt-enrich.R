@@ -14,7 +14,7 @@ load.libs <- c(
   "GSEABase",
   "org.Hs.eg.db", ## Human-specific
   "clusterProfiler",
-#  "plyr",  ## for ldply
+  "plyr", 
   "dplyr",
   "tidyr",
   "magrittr",
@@ -32,6 +32,8 @@ if(all(status)){
   status
 }
 
+library(plyr)  ## for ldply and ddply
+
 ####################
 ## Collect gene sets
 ####################
@@ -39,19 +41,14 @@ if(all(status)){
 # For example, download files via https://amp.pharm.mssm.edu/Enrichr/#stats
 
 ## Process Jensen disease files to gmts and save
-# jensen_text <- read.csv("raw/human_disease_textmining_filtered.tsv", sep="\t", stringsAsFactors = F)[ ,c(2,4)]
-# colnames(jensen_text) <- c("symbol", "disease")
 # jensen_know <- read.csv("raw/human_disease_knowledge_filtered.tsv", sep="\t", stringsAsFactors = F)[ ,c(2,4)]
 # colnames(jensen_know) <- c("symbol", "disease")
-# jensen_exp <- read.csv("raw/human_disease_experiments_filtered.tsv", sep="\t", stringsAsFactors = F)[ ,c(2,4)]
-# colnames(jensen_exp) <- c("symbol", "disease")
-# 
-# jensen_text2 <- plyr::ddply(jensen_text, .(disease), summarize, symbol_all=paste(symbol,collapse="\t"))
-# jensen_text2 <- jensen_text %>%
-#   group_by(disease) %>%
-#   summarise(symbol_all=paste(symbol,collapse="\t"))
-# write.table(jensen_text2, file = "raw/jensen_text.gmt", append = FALSE, quote = FALSE, sep = "\t",
-#            na = "NA", dec = ".", row.names = FALSE, 
+# jensen_know2 <- jensen_know %>%
+#   dplyr::group_by(disease) %>%
+#   dplyr::filter(n() > 7) %>%
+#   dplyr::summarise(symbol_all = paste(symbol,collapse="\t"))
+# write.table(jensen_know2, file = "raw/jensen_know.gmt", append = FALSE, quote = FALSE, sep = "\t",
+#            na = "NA", dec = ".", row.names = FALSE,
 #             col.names = FALSE)
 
 ## Prepare list of gene sets from GMTs (e.g., downloaded from Enrichr)
