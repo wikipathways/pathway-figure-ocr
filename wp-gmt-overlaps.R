@@ -57,7 +57,7 @@ wpid2name<-unique(wpid2name)
 #             col.names = FALSE)
 
 # Get GMT from file (e.g., downloaded from Enrichr)
-gmt.file <- "raw/omim_disease.gmt"
+gmt.file <- "raw/omim-disease.gmt"
 gmt <- clusterProfiler::read.gmt(gmt.file)
 gmt.entrez <- bitr(gmt$gene,fromType = "SYMBOL",toType = "ENTREZID",OrgDb = org.Hs.eg.db)
 gmt <-gmt %>%
@@ -208,8 +208,8 @@ gmt.pfocr.overlaps <- gmt.pfocr.overlaps %>%
   rowwise() %>%
   dplyr::mutate(genes = paste(unlist(genes), collapse = ", "))
 
-#write.table(gmt.pfocr.overlaps, "raw/gmt-pfocr-overlaps.tsv", quote=F, sep="\t", row.names = F)
-gmt.pfocr.overlaps <- read.table("raw/gmt-pfocr-overlaps.tsv", header=T, sep="\t", stringsAsFactors = F)
+#write.table(gmt.pfocr.overlaps, "raw/gmt-wp_pfocr-omim-overlaps_10.tsv", quote=F, sep="\t", row.names = F)
+gmt.pfocr.overlaps <- read.table("raw/gmt-wp_pfocr-omim-overlaps_10.tsv", header=T, sep="\t", stringsAsFactors = F)
 
 disease.pfocr.cnt <- unique(gmt.pfocr.overlaps$ont)
 
@@ -233,5 +233,5 @@ disease.genes.targets <- disease.genes.pfocr %>%
   dplyr::filter (pf.diff.overlap.cnt > 0) %>%
   arrange(wp.cnt, ont, desc(pf.diff.overlap.cnt), desc(pf.overlap.cnt))
 
-#write.table(disease.genes.targets, "tables/disease-genes-targets.tsv", quote=F, sep="\t", row.names = F)
-disease.genes.targets <- read.table("tables/disease-genes-targets.tsv", header=T, sep="\t", stringsAsFactors = F)
+#write.table(disease.genes.targets, "tables/omim-disease-genes-targets.tsv", quote=F, sep="\t", row.names = F)
+disease.genes.targets <- read.table("tables/omim-disease-genes-targets.tsv", header=T, sep="\t", stringsAsFactors = F)
