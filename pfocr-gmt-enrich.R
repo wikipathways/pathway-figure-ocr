@@ -138,8 +138,8 @@ gmt.pfocr.overlaps <- plyr::ldply(gmt.lists$ont, function(term){
   }
 })
 
-#write.table(gmt.pfocr.overlaps, "raw/gmt-pfocr-omim-overlaps_7.tsv", quote=F, sep="\t", row.names = F)
-#gmt.pfocr.overlaps <- read.table("raw/gmt-pfocr-omim-overlaps_7.tsv", header=T, sep="\t", stringsAsFactors = F)
+#write.table(gmt.pfocr.overlaps, "raw/gmt-pfocr-jensen_know7-overlaps_7.tsv", quote=F, sep="\t", row.names = F)
+#gmt.pfocr.overlaps <- read.table("raw/???.tsv", header=T, sep="\t", stringsAsFactors = F)
 
 ## Basic counts
 sprintf("Unique figures with hits: %i",length(unique(gmt.pfocr.overlaps$figid)))
@@ -152,12 +152,17 @@ sprintf("Unique overlapping genes: %i",length(unique(gmt.pfocr.overlaps.genes$ge
 sprintf("Unique enriched terms: %i",length(unique(gmt.pfocr.overlaps$ont)))
 
 
-## nobe7:
+## nobe7-jensenknow7:
+# 23,331/28,236 figures with hits (83%)
+# 2378/2913 disease genes
+# 151/160 disease terms
+
+## nobe7-omim:
 # 15,957/28,236 figures with hits (57%)
 # 880/1526 disease genes
 # 78/90 disease terms
 
-## nobe10:
+## nobe10-omim:
 # 11,874/18,917 figures with hits (63%)
 # 838/1526 disease genes 
 # 78/90 disease terms
@@ -172,17 +177,20 @@ sprintf("Unique enriched terms: %i",length(unique(gmt.pfocr.overlaps$ont)))
 ## Aggregate with prior results
 pfocr.figs <- read.table("tables/enriched_annots.tsv", header=T, sep="\t", stringsAsFactors = F)
 
+### CAUTION: change name to be used in this chunk to reflect current analysis
+set.name <- "jensenknow7"
+
 gmt.pfocr.overlaps.tidy <- gmt.pfocr.overlaps %>%
-  mutate(omim7 = ont) %>%
-  dplyr::select(figid, omim7) %>%
-  group_by(figid) %>%
-  summarise(omim7_list = paste(unique(omim7), collapse=" | "),
-            omim7_cnt = n()) 
+  dplyr::mutate(!!set.name := ont) %>%
+  dplyr::select(figid, !!as.name(set.name)) %>%
+  dplyr::group_by(figid) %>%
+  dplyr::summarise(!!paste(set.name, "list", sep = "_") := paste(unique(!!as.name(set.name)), collapse=" | "),
+                   !!paste(set.name, "cnt", sep = "_") := n()) 
 
 enriched.annots <- merge(gmt.pfocr.overlaps.tidy, 
                          pfocr.figs, 
                          by = "figid", 
                          all.y = TRUE)
 
-write.table(enriched.annots, "tables/enriched_annots.tsv", quote=F, sep="\t", row.names = F)
+write.table(enriched.annots, "tables/enriched_annots.tsv", quote=T, sep="\t", row.names = F)
 
