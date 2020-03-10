@@ -5,6 +5,7 @@ __pycache__/
 .Rapp.history
 2018*
 2019*
+2020*
 *.egg-info
 /outputs*/
 /dist/

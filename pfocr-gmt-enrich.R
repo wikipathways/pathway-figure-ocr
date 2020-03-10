@@ -80,7 +80,7 @@ pfocr.nobe <- pfocr.genes %>%
   dplyr::summarise(entrez_count = n()) 
 # ... then count entrez per figure.
 pfocr.nobecnt <- pfocr.nobe %>% 
-  dplyr::select(-source, -symbol) %>% 
+  dplyr::select(-c(source, -symbol)) %>% 
   dplyr::group_by(figid) %>%
   dplyr::summarise(entrez_count = n()) #  count
 # Subset with N or more nobe genes
