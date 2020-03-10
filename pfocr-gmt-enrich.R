@@ -70,22 +70,22 @@ gmt.all.genes <- unique(gmt$ENTREZID)
 
 ## Prepare GMT of PFOCR results to serve as enrichment database
 pfocr.genes <- readRDS("pfocr_genes.rds") %>%
-  dplyr::select(figid, word, source, entrez)
+  dplyr::select(figid, symbol, source, entrez)
 
 # Get counts of nobe genes in order to subset:
 # First collapse bioentity cases per figure and word,...
 pfocr.nobe <- pfocr.genes %>% 
   dplyr::select(-entrez) %>% 
-  dplyr::group_by(figid, word, source) %>%
+  dplyr::group_by(figid, symbol, source) %>%
   dplyr::summarise(entrez_count = n()) 
 # ... then count entrez per figure.
 pfocr.nobecnt <- pfocr.nobe %>% 
-  dplyr::select(-source, -word) %>% 
+  dplyr::select(-source, -symbol) %>% 
   dplyr::group_by(figid) %>%
   dplyr::summarise(entrez_count = n()) #  count
 # Subset with N or more nobe genes
-pfocr.nobecnt7 <- pfocr.nobecnt %>%
-  dplyr::filter(entrez_count >= 7) %>%
+pfocr.nobecnt3 <- pfocr.nobecnt %>%
+  dplyr::filter(entrez_count >= 3) %>%
   ungroup()
 # Prepare subset for enrichment database
 pfocr.genes.sub <- pfocr.genes %>%
