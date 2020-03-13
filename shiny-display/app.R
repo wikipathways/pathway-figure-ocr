@@ -8,7 +8,7 @@ library(magrittr)
 library(ggplot2)
 
 ## READ DF
-df.shiny <- readRDS("pfocr_sample.rds")
+df.shiny <- readRDS("pfocr_figures.rds")
 
 df.sample <<- df.shiny %>%
   filter(!is.na(year)) %>%
@@ -33,7 +33,7 @@ ui <- fluidPage(
         # textOutput("fig.num"),
         # textOutput("fig.title"),
         # textOutput("fig.caption"),
-
+        
         hr(),
         
         # Buttons
@@ -52,13 +52,13 @@ ui <- fluidPage(
 
 
 server <- function(input, output) {
-  rv <- reactiveValues(toHighlight = rep(FALSE, nrow(df.sample)), 
+  rv <- reactiveValues(toHighlight = rep(FALSE, nrow(df.sample)),
                        selYear = NULL, selCount = NULL)
-  
+
   observeEvent(eventExpr = input$plot1_click, {
     rv$selYear <- df.sample$year[round(input$plot1_click$x)]
     rv$selCount <- df.sample$fig_cnt[which(df.sample$year == rv$selYear)]
-   # rv$toHighlight <- df.sample$year %in% rv$selYear
+    # rv$toHighlight <- df.sample$year %in% rv$selYear
   })
   
   observeEvent(input$pscore, {

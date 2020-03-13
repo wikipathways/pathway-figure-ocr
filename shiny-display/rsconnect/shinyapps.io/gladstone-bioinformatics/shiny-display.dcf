@@ -1,0 +1,10 @@
+name: shiny-display
+title:
+username:
+account: gladstone-bioinformatics
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1932625
+bundleId: 2869969
+url: https://gladstone-bioinformatics.shinyapps.io/shiny-display/
+when: 1583897842.91589
