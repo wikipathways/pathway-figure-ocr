@@ -152,7 +152,7 @@ server <- function(input, output) {
                                            levels = df.reactive.annot.plot$jensenknow7)
     
     df.reactive.annot.plot %>%
-      top_n(40) %>%
+      filter(row_number() <=40) %>% #breaks ties, unlike top_n()
       ggplot(aes(x=jensenknow7, y=annot_cnt)) +
       geom_bar(fill = "#CC6699",stat="identity") +
       theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
@@ -174,7 +174,7 @@ server <- function(input, output) {
                                            levels = df.reactive.gene.plot$symbol)
     
     df.reactive.gene.plot %>%
-      top_n(40) %>%
+      filter(row_number() <=40) %>%
       ggplot(aes(x=symbol, y=gene_cnt)) +
       geom_bar(fill = "#66CC99",stat="identity") +
       theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
@@ -190,7 +190,7 @@ server <- function(input, output) {
       summarize(fig_cnt = n())
     
     df.reactive.year.plot %>%
-      ggplot(aes(x=year, y=fig_cnt, 
+      ggplot(aes(x=factor(year, levels = 1995:2019), y=fig_cnt, 
                  fill = case_when(
                    year %in% input$years ~ "yes",
                    is.null(input$years) ~ "yes",
@@ -201,7 +201,8 @@ server <- function(input, output) {
       theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 14),
             axis.text.y = element_text(size = 12)) +
       ggtitle("Figures by Year") +
-      xlab("") + ylab("")
+      xlab("") + ylab("")+
+      scale_x_discrete(breaks = factor(1995:2019), drop=FALSE)
   })
   
   ## TABLE
