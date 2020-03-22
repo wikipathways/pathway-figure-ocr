@@ -1,3 +1,4 @@
+library(DT)
 library(shiny)
 library(shinyjs)
 library(filesstrings)  
@@ -18,7 +19,7 @@ df.jensen[] <- lapply(df.jensen, as.character)
 # df.active.genes <<- df.genes %>% filter(figid %in% df.active$figid)
 
 ui <- fixedPage(
-  titlePanel("PFOCR Display"),
+  titlePanel("25 Years of Pathway Figures"),
   
   sidebarLayout(
     sidebarPanel(
@@ -55,9 +56,11 @@ ui <- fixedPage(
     ),
     mainPanel(
       # plotOutput("plot1", click = "plot1_click"),
-      plotOutput("top.annots", height = "400px"),
-      plotOutput("top.genes", height = "200px"),
+      plotOutput("top.annots", height = "300px"),
+      plotOutput("top.genes", height = "250px"),
       plotOutput("years", height = "200px"),
+      h5("Table of Filtered Figures"),
+      DT::dataTableOutput('table'),
       width = 9
     )
   )
@@ -129,52 +132,14 @@ server <- function(input, output) {
                                                                  distinct(figid))[[1]]) else filter(., TRUE) }
   })
   
-  # df.reactive <- reactive({
-  #   df.jensen %>%
-  #     filter(if(!is.null(input$annots)) jensenknow7 %in% input$annots else TRUE) %>%
-  #     inner_join(df.genes, by=c("figid" = "figid"))
-  #   df.figures %>%
-  #     filter(if(!is.null(input$years)) year %in% input$years else TRUE) 
-  # })
-  # df.reactive.genes <- reactive({
-  #   df.genes %>% 
-  #     filter(figid %in% df.reactive()$figid)
-  # })
-
-  # observeEvent(input$years, {
-  #   rv$selYear <- input$year
-  # })
   
-  # observeEvent(eventExpr = input$plot1_click, {
-  #   rv$selYear <- df.sample$year[round(input$plot1_click$x)]
-  #   rv$selCount <- df.sample$fig_cnt[which(df.sample$year == rv$selYear)]
-  #  # rv$toHighlight <- df.sample$year %in% rv$selYear
-  # })
   
-  # observeEvent(input$pscore, {
-    # df.sample <<- df.shiny %>%
-    #   filter(!is.na(year)) %>%
-    #   filter(pathway_score > input$pscore) %>%
-    #   group_by(year) %>%
-    #   summarize(fig_cnt = n())
-    # 
-    # rv$selCount <- df.sample$fig_cnt[which(df.sample$year == rv$selYear)]
-    
-  #   output$plot1 <- renderPlot({
-  #     ggplot(df.sample, aes(x=year, y=fig_cnt, 
-  #                           fill = ifelse(df.sample$year %in% rv$selYear, 
-  #                                         yes = "yes", 
-  #                                         no = "no")))+
-  #       geom_bar(stat="identity") +
-  #       scale_fill_manual(values = c("yes" = "blue", "no" = "grey" ), guide = FALSE )
-  #   })
-  # })
   
   ## SUMMARY
-  output$sum.figs <- renderText({paste("Figures:", as.character(length(unique(df.reactive.table()$figid))), sep=" ")})
-  output$sum.papers <- renderText({paste("Papers:", as.character(length(unique(df.reactive.table()$pmcid))), sep=" ")})
-  output$sum.genes <- renderText({paste("Total genes:", as.character(length(df.reactive.genes()$entrez)), sep=" ")})
-  output$sum.genes.unique <- renderText({paste("Unique genes:", as.character(length(unique(df.reactive.genes()$entrez))), sep=" ")})
+  output$sum.figs <- renderText({paste("Figures:", as.character(formatC(length(unique(df.reactive.table()$figid)), format="d", big.mark=',')), sep=" ")})
+  output$sum.papers <- renderText({paste("Papers:", as.character(formatC(length(unique(df.reactive.table()$pmcid)), format="d", big.mark=',')), sep=" ")})
+  output$sum.genes <- renderText({paste("Total genes:", as.character(formatC(length(df.reactive.genes()$entrez), format="d", big.mark=',')), sep=" ")})
+  output$sum.genes.unique <- renderText({paste("Unique genes:", as.character(formatC(length(unique(df.reactive.genes()$entrez)), format="d", big.mark=',')), sep=" ")})
   
   ## PLOT: DISEASE ANNOT
   output$top.annots <- renderPlot({
@@ -190,7 +155,10 @@ server <- function(input, output) {
       top_n(40) %>%
       ggplot(aes(x=jensenknow7, y=annot_cnt)) +
       geom_bar(fill = "#CC6699",stat="identity") +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+      theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+            axis.text.y = element_text(size = 12)) +
+      ggtitle("Top Diseases Associated with Figures") +
+      xlab("") + ylab("")
   })
   
   ## PLOT: GENE
@@ -209,7 +177,10 @@ server <- function(input, output) {
       top_n(40) %>%
       ggplot(aes(x=symbol, y=gene_cnt)) +
       geom_bar(fill = "#66CC99",stat="identity") +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+      theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 12),
+            axis.text.y = element_text(size = 12))  +
+      ggtitle("Top Gene Symbols Used in Figures") +
+      xlab("") + ylab("")
   })
   
   ## PLOT: TIMELINE
@@ -227,9 +198,31 @@ server <- function(input, output) {
                  ))) +
       geom_bar(stat="identity") +
       scale_fill_manual(values = c("yes" = "blue", "no" = "grey" ), guide = FALSE ) + 
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 14),
+            axis.text.y = element_text(size = 12)) +
+      ggtitle("Figures by Year") +
+      xlab("") + ylab("")
   })
   
+  ## TABLE
+  output$table <- DT::renderDataTable(
+    DT::datatable(df.reactive.table()[,c('pmcid','reftext','year','number','figtitle' )], 
+                  extensions = 'Buttons',
+                  options = list(pageLength = 10,
+                                 order = list(list(3, 'desc')),
+                                 dom = 'Bfrtip',
+                                 buttons = c('copy', 'csv', 'excel', 'pdf'),
+                                 columnDefs = list(list(
+                                   targets = "_all",
+                                   render = JS(
+                                     "function(data, type, row, meta) {",
+                                     "return type === 'display' && data != null && data.length > 30 ?",
+                                     "'<span title=\"' + data + '\">' + data.substr(0, 30) + '...</span>' : data;",
+                                     "}")
+                                 ))
+                  )
+    )
+  )
   
 }
 shinyApp(ui, server)
