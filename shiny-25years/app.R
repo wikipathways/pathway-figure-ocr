@@ -9,18 +9,16 @@ library(magrittr)
 library(ggplot2)
 
 ## READ DF
-df.figures <- readRDS("pfocr_figures.rds")
+df.table <- readRDS("pfocr_table.rds")
+df.years <- readRDS("pfocr_years.rds")
 df.genes <- readRDS("pfocr_genes.rds")
-# df.journals <- readRDS("pfocr_journals.rds")
-df.jensen <- readRDS("pfocr_jensen.rds")
-df.jensen[] <- lapply(df.jensen, as.character)
+df.annots <- readRDS("pfocr_annots.rds")
 
-# df.active <<- df.figures
+# df.active <<- df.table
 # df.active.genes <<- df.genes %>% filter(figid %in% df.active$figid)
 
 ui <- fixedPage(
   titlePanel("25 Years of Pathway Figures"),
-  
   sidebarLayout(
     sidebarPanel(
         useShinyjs(), 
@@ -32,15 +30,15 @@ ui <- fixedPage(
         hr(),
         h3("Filters"),
         selectizeInput('annots', 'Disease Annotations', 
-                       choices = sort(unique(df.jensen$jensenknow7)), 
+                       choices = sort(unique(df.annots$jensenknow7)), 
                        multiple = TRUE #, options = list(maxItems = 1)
         ),
         selectizeInput('genes', 'Gene content', 
-                       choices = unique(df.genes$hgnc_symbol), 
+                       choices = sort(unique(df.genes$hgnc_symbol)), 
                        multiple = TRUE
         ),
         selectizeInput('years', 'Publication Years', 
-                       choices = sort(unique(df.figures$year), decreasing = T), 
+                       choices = sort(unique(df.years$year), decreasing = T), 
                        multiple = TRUE
         ),
         # hr(),
@@ -59,11 +57,11 @@ ui <- fixedPage(
       plotOutput("top.annots", height = "300px"),
       plotOutput("top.genes", height = "250px"),
       plotOutput("years", height = "200px"),
-      h5("Table of Filtered Figures"),
-      DT::dataTableOutput('table'),
       width = 9
     )
-  )
+  ),
+  h5("Table of Filtered Figures"),
+  DT::dataTableOutput('table')
 )
 
 
@@ -83,9 +81,8 @@ server <- function(input, output) {
   
   ## REACTIVE
   df.reactive.years <- reactive({
-    df.figures %>%
-      filter(!is.na(year))  %>%
-      {if (!is.null(input$annots)) filter(., figid %in% as.list(df.jensen %>% 
+    df.years %>%
+      {if (!is.null(input$annots)) filter(., figid %in% as.list(df.annots %>% 
                                                                   filter(jensenknow7 %in% input$annots) %>% 
                                                                   distinct(figid))[[1]]) else filter(., TRUE) } %>%
       {if (!is.null(input$genes)) filter(., figid %in% as.list(df.genes %>% 
@@ -98,33 +95,33 @@ server <- function(input, output) {
       {if (!is.null(input$genes)) filter(., figid %in% as.list(df.genes %>% 
                                                                  filter(hgnc_symbol %in% input$genes) %>% 
                                                                  distinct(figid))[[1]]) else filter(., TRUE) } %>%
-      {if (!is.null(input$annots)) filter(., figid %in% as.list(df.jensen %>% 
+      {if (!is.null(input$annots)) filter(., figid %in% as.list(df.annots %>% 
                                                                   filter(jensenknow7 %in% input$annots) %>% 
                                                                   distinct(figid))[[1]]) else filter(., TRUE) } %>%
-      {if (!is.null(input$years)) filter(., figid %in% as.list(df.figures %>% 
+      {if (!is.null(input$years)) filter(., figid %in% as.list(df.years %>% 
                                                                  filter(year %in% input$years) %>% 
                                                                  distinct(figid))[[1]]) else filter(., TRUE) } 
     
   })
   
   df.reactive.annots <- reactive({
-    df.jensen %>%
-      {if (!is.null(input$annots)) filter(., figid %in% as.list(df.jensen %>% 
+    df.annots %>%
+      {if (!is.null(input$annots)) filter(., figid %in% as.list(df.annots %>% 
                                                                   filter(jensenknow7 %in% input$annots) %>% 
                                                                   distinct(figid))[[1]]) else filter(., !is.na(jensenknow7)) } %>%
       {if (!is.null(input$genes)) filter(., figid %in% as.list(df.genes %>% 
                                                                  filter(hgnc_symbol %in% input$genes) %>% 
                                                                  distinct(figid))[[1]]) else filter(., TRUE) } %>%
-      {if (!is.null(input$years)) filter(., figid %in% as.list(df.figures %>% 
+      {if (!is.null(input$years)) filter(., figid %in% as.list(df.years %>% 
                                                                  filter(year %in% input$years) %>% 
                                                                  distinct(figid))[[1]]) else filter(., TRUE) } 
     
   })
   
   df.reactive.table <- reactive({
-    df.figures %>%
+    df.table %>%
       {if (!is.null(input$years)) filter(., year %in% input$years) else filter(., TRUE) } %>%
-      {if (!is.null(input$annots)) filter(., figid %in% as.list(df.jensen %>% 
+      {if (!is.null(input$annots)) filter(., figid %in% as.list(df.annots %>% 
                                                                   filter(jensenknow7 %in% input$annots) %>% 
                                                                   distinct(figid))[[1]]) else filter(., TRUE) } %>%
       {if (!is.null(input$genes)) filter(., figid %in% as.list(df.genes %>% 
@@ -207,10 +204,12 @@ server <- function(input, output) {
   
   ## TABLE
   output$table <- DT::renderDataTable(
-    DT::datatable(df.reactive.table()[,c('pmcid','reftext','year','number','figtitle' )], 
+    DT::datatable(df.reactive.table()[,c('pmcid','paper.title','authors','year','number','figure.title' )], 
                   extensions = 'Buttons',
+                  filter = 'top',
                   options = list(pageLength = 10,
                                  order = list(list(3, 'desc')),
+                                 search = list(regex = TRUE, caseInsensitive = TRUE),
                                  dom = 'Bfrtip',
                                  buttons = c('copy', 'csv', 'excel', 'pdf'),
                                  columnDefs = list(list(

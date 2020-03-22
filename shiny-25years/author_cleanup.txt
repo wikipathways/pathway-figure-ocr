@@ -1,0 +1,10 @@
+df.table2 <- df.table2 %>% rowwise() %>% mutate(authors = ...)
+
+str_replace_all(authors, "([A-Z]\\w*\\s[A-Z]\\s[A-Z]\\s)[A-Z]{2}\\s([A-Za-z]\\w*)", "\\1\\2")
+str_replace_all(authors, "[A-Z]\\s[A-Z]\\s([A-Z]{2}\\s[A-Za-z]\\w*)", "\\1")
+str_replace_all(authors, "([A-Z])\\s(\\1\\s[A-Za-z]\\w*)", "\\2")
+str_replace_all(authors, "([A-Z])(\\w*\\s)([A-Z])\\s\\1\\3(\\s[A-Za-z]\\w*)", "\\1\\2\\3\\4")
+str_replace_all(authors, "([A-Z])\\s([A-Z])(\\w*\\s)\\1\\2\\s([A-Za-z]\\w*)", "\\1 \\2\\3\\4")
+str_replace_all(authors, "([A-Z])(\\w*\\s)\\1\\s([A-Za-z]\\w*)", "\\1\\2\\3")
+str_replace_all(authors, "([A-Z])(\\w*-)([A-Z])(\\w*\\s)\\1\\3\\s([A-Za-z]\\w*)", "\\1\\2\\3\\4\\5")
+str_replace_all(authors, "([A-Z])\\.", "\\1")
