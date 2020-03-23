@@ -61,10 +61,19 @@ ui <- fixedPage(
       width = 9
     )
   ),
-  h5("Table of Filtered Figures"),
-  DT::dataTableOutput('table')
+  h3("Table of Filtered Figures"),
+  DT::dataTableOutput('table'),
+  h3("Selected Figure"),
+  fixedRow(
+    column(7,
+           htmlOutput("figlink"),
+           htmlOutput("figure"),
+    ),
+    column(5, 
+            DT::dataTableOutput('figtable'),
+    )
+  )
 )
-
 
 
 server <- function(input, output, session) {
@@ -79,11 +88,16 @@ server <- function(input, output, session) {
   output$debug.years <- renderPrint({
     str(input$years)
   })
-  output$row.sel <- renderPrint({
-    str(selectedFigid())
-  })
   
-  ## REACTIVE
+  
+  ## SUMMARY
+  output$sum.figs <- renderText({paste("Figures:", as.character(formatC(length(unique(df.reactive.table()$figid)), format="d", big.mark=',')), sep=" ")})
+  output$sum.papers <- renderText({paste("Papers:", as.character(formatC(length(unique(df.reactive.table()$pmcid)), format="d", big.mark=',')), sep=" ")})
+  output$sum.genes <- renderText({paste("Total genes:", as.character(formatC(length(df.reactive.genes()$entrez), format="d", big.mark=',')), sep=" ")})
+  output$sum.genes.unique <- renderText({paste("Unique genes:", as.character(formatC(length(unique(df.reactive.genes()$entrez)), format="d", big.mark=',')), sep=" ")})
+  
+  
+  ## REACTIVE FILTER SELECTION
   df.reactive.years <- reactive({
     df.years %>%
       {if (!is.null(input$annots)) filter(., figid %in% as.list(df.annots %>% 
@@ -133,11 +147,6 @@ server <- function(input, output, session) {
                                                                  distinct(figid))[[1]]) else filter(., TRUE) }
   })
   
-  
-  selectedFigid <- eventReactive(input$table_rows_selected,{
-    df.reactive.table()$figid[c(input$table_rows_selected)]
-  })
-  
   ## UPDATE FILTERS
   observe ({
     updateSelectizeInput(session, 'annots',
@@ -154,13 +163,7 @@ server <- function(input, output, session) {
     )
   })
   
-  ## SUMMARY
-  output$sum.figs <- renderText({paste("Figures:", as.character(formatC(length(unique(df.reactive.table()$figid)), format="d", big.mark=',')), sep=" ")})
-  output$sum.papers <- renderText({paste("Papers:", as.character(formatC(length(unique(df.reactive.table()$pmcid)), format="d", big.mark=',')), sep=" ")})
-  output$sum.genes <- renderText({paste("Total genes:", as.character(formatC(length(df.reactive.genes()$entrez), format="d", big.mark=',')), sep=" ")})
-  output$sum.genes.unique <- renderText({paste("Unique genes:", as.character(formatC(length(unique(df.reactive.genes()$entrez)), format="d", big.mark=',')), sep=" ")})
-  
-  ## PLOT: DISEASE ANNOT
+   ## PLOT: DISEASE ANNOT
   output$top.annots <- renderPlot({
     df.reactive.annot.plot <- df.reactive.annots() %>%
       group_by(jensenknow7) %>%
@@ -225,13 +228,13 @@ server <- function(input, output, session) {
     
   })
   
-  ## TABLE
+  ## TABLE OF FILTERED FIGURES
   output$table <- DT::renderDataTable(
     DT::datatable(df.reactive.table()[,c('pmcid','paper.title','authors','year','number','figure.title' )],
                   extensions = 'Buttons',
                   filter = 'top',
                   rownames= FALSE,
-                  selection = 'single',
+                  selection = list(mode = 'single', selected = c(53101)), #top row sorted by desc(year)
                   options = list(pageLength = 10,
                                  order = list(list(3, 'desc')),
                                  autoWidth = TRUE,
@@ -270,6 +273,32 @@ server <- function(input, output, session) {
                   )
     )
   )
+  
+  ## REACTIVE TABLE SELECTION
+  observeEvent(input$table_rows_selected,{
+    sel.figid <- df.reactive.table()$figid[c(input$table_rows_selected)]
+    sel.figlink <- df.reactive.table()$figure.link[c(input$table_rows_selected)]
+    figid.split <- strsplit(sel.figid, "__")[[1]]
+    src <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",figid.split[1],"/bin/",figid.split[2])
+    linkout <- paste0("https://www.ncbi.nlm.nih.gov/",sel.figlink)
+    output$figlink <- renderText({c('Link to figure: <a href="',linkout,'">',linkout,'</a>')})
+    output$figure<-renderText({c('<a href="',linkout,'"><img src="',src,'", width="600px"></a>')})
+  
+    ## TABLE OF SELECTED FIGURE
+    output$figtable <- DT::renderDataTable(
+      DT::datatable(df.genes[which(df.genes$figid == sel.figid),c('symbol','source','hgnc_symbol','entrez' )],
+                    extensions = 'Buttons',
+                    rownames= FALSE,
+                    selection = 'none',
+                    options = list(pageLength = 10,
+                                   order = list(list(2, "asc")),
+                                   autoWidth = TRUE,
+                                   dom = 'Bfrtip',
+                                   buttons = c('copy', 'csv', 'excel', 'pdf')
+                    )
+      )
+    )
+  })
   
 }
 shinyApp(ui, server)
