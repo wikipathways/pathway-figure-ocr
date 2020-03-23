@@ -46,6 +46,7 @@ ui <- fixedPage(
         # textOutput("debug.annots"),
         # textOutput("debug.genes"),
         # textOutput("debug.years"),
+        # textOutput("row.sel"),
         # Buttons
         # sliderInput("pscore", "pathway score", 0, 1, 0.5, 0.01)
         #actionButton("reload", label = "Reload")
@@ -66,7 +67,7 @@ ui <- fixedPage(
 
 
 
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   ## DEBUG
   output$debug.annots <- renderPrint({
@@ -77,6 +78,9 @@ server <- function(input, output) {
   })
   output$debug.years <- renderPrint({
     str(input$years)
+  })
+  output$row.sel <- renderPrint({
+    str(selectedFigid())
   })
   
   ## REACTIVE
@@ -130,7 +134,25 @@ server <- function(input, output) {
   })
   
   
+  selectedFigid <- eventReactive(input$table_rows_selected,{
+    df.reactive.table()$figid[c(input$table_rows_selected)]
+  })
   
+  ## UPDATE FILTERS
+  observe ({
+    updateSelectizeInput(session, 'annots',
+                         choices = sort(unique(df.reactive.annots()$jensenknow7)),
+                         selected = input$annots
+    )
+    updateSelectizeInput(session, 'genes',
+                         choices = sort(unique(df.reactive.genes()$hgnc_symbol)),
+                         selected = input$genes
+    )
+    updateSelectizeInput(session, 'years',
+                         choices = sort(unique(df.reactive.years()$year), decreasing = T),
+                         selected = input$years
+    )
+  })
   
   ## SUMMARY
   output$sum.figs <- renderText({paste("Figures:", as.character(formatC(length(unique(df.reactive.table()$figid)), format="d", big.mark=',')), sep=" ")})
@@ -200,26 +222,51 @@ server <- function(input, output) {
       ggtitle("Figures by Year") +
       xlab("") + ylab("")+
       scale_x_discrete(breaks = factor(1995:2019), drop=FALSE)
+    
   })
   
   ## TABLE
   output$table <- DT::renderDataTable(
-    DT::datatable(df.reactive.table()[,c('pmcid','paper.title','authors','year','number','figure.title' )], 
+    DT::datatable(df.reactive.table()[,c('pmcid','paper.title','authors','year','number','figure.title' )],
                   extensions = 'Buttons',
                   filter = 'top',
+                  rownames= FALSE,
+                  selection = 'single',
                   options = list(pageLength = 10,
                                  order = list(list(3, 'desc')),
+                                 autoWidth = TRUE,
+                                 scrollX=TRUE,
                                  search = list(regex = TRUE, caseInsensitive = TRUE),
                                  dom = 'Bfrtip',
                                  buttons = c('copy', 'csv', 'excel', 'pdf'),
-                                 columnDefs = list(list(
-                                   targets = "_all",
-                                   render = JS(
-                                     "function(data, type, row, meta) {",
-                                     "return type === 'display' && data != null && data.length > 30 ?",
-                                     "'<span title=\"' + data + '\">' + data.substr(0, 30) + '...</span>' : data;",
-                                     "}")
-                                 ))
+                                 columnDefs = list(
+                                   list(targets = "_all"
+                                   ),
+                                   list(targets=c(0), visible=TRUE, width='75'), #pmcid
+                                   list(targets=c(1), visible=TRUE,              #papertitle
+                                        render = JS(
+                                          "function(data, type, row, meta) {",
+                                          "return type === 'display' && data != null && data.length > 50 ?",
+                                          "'<span title=\"' + data + '\">' + data.substr(0, 50) + '...</span>' : data;",
+                                          "}")
+                                   ),
+                                   list(targets=c(2), visible=TRUE, width='120',  #authors
+                                        render = JS(
+                                          "function(data, type, row, meta) {",
+                                          "return type === 'display' && data != null && data.length > 15 ?",
+                                          "'<span title=\"' + data + '\">' + data.substr(0, 15) + '...</span>' : data;",
+                                          "}")
+                                   ),
+                                   list(targets=c(3), visible=TRUE, width='35'), #year
+                                   list(targets=c(4), visible=TRUE, width='50'), #number
+                                   list(targets=c(5), visible=TRUE, width='250',  #figuretitle
+                                        render = JS(
+                                          "function(data, type, row, meta) {",
+                                          "return type === 'display' && data != null && data.length > 35 ?",
+                                          "'<span title=\"' + data + '\">' + data.substr(0, 35) + '...</span>' : data;",
+                                          "}")
+                                   )
+                                 )
                   )
     )
   )
