@@ -21,56 +21,64 @@ ui <- fixedPage(
   titlePanel("25 Years of Pathway Figures"),
   sidebarLayout(
     sidebarPanel(
-        useShinyjs(), 
-        h3("Summary"),
-        textOutput("sum.figs"),
-        textOutput("sum.papers"),
-        textOutput("sum.genes"),
-        textOutput("sum.genes.unique"),
-        hr(),
-        h3("Filters"),
-        selectizeInput('annots', 'Disease Annotations', 
-                       choices = sort(unique(df.annots$jensenknow7)), 
-                       multiple = TRUE #, options = list(maxItems = 1)
-        ),
-        selectizeInput('genes', 'Gene content', 
-                       choices = sort(unique(df.genes$hgnc_symbol)), 
-                       multiple = TRUE
-        ),
-        selectizeInput('years', 'Publication Years', 
-                       choices = sort(unique(df.years$year), decreasing = T), 
-                       multiple = TRUE
-        ),
-        # hr(),
-        # h5("DEBUG"),
-        # textOutput("debug.annots"),
-        # textOutput("debug.genes"),
-        # textOutput("debug.years"),
-        # textOutput("row.sel"),
-        # Buttons
-        # sliderInput("pscore", "pathway score", 0, 1, 0.5, 0.01)
-        #actionButton("reload", label = "Reload")
-        
+      useShinyjs(), 
+      h4("Introduction"),
+      HTML('The <a href="https://www.wikipathways.org/index.php/WikiPathways:Team#Team_Members" target="_blank">WikiPathways team</a>
+          at <a hrf="https://gladstone.org/" target="_blank">Gladstone Instiutes</a> has searched the literature 
+          over the past 25 years for pathway figures. This interactive tool lets you
+          filter, search and view their findings.'),
+      h4("Summary stats"),
+      textOutput("sum.figs"),
+      textOutput("sum.papers"),
+      textOutput("sum.genes"),
+      textOutput("sum.genes.unique"),
+      hr(),
+      h3("1. Filter Figures"),
+      selectizeInput('annots', 'Disease Annotations', 
+                     choices = sort(unique(df.annots$jensenknow7)), 
+                     multiple = TRUE #, options = list(maxItems = 1)
+      ),
+      selectizeInput('genes', 'Gene content', 
+                     choices = sort(unique(df.genes$hgnc_symbol)), 
+                     multiple = TRUE
+      ),
+      selectizeInput('years', 'Publication Years', 
+                     choices = sort(unique(df.years$year), decreasing = T), 
+                     multiple = TRUE
+      ),
+      # hr(),
+      # h5("DEBUG"),
+      # textOutput("debug.annots"),
+      # textOutput("debug.genes"),
+      # textOutput("debug.years"),
+      # textOutput("row.sel"),
+      # Buttons
+      # sliderInput("pscore", "pathway score", 0, 1, 0.5, 0.01)
+      #actionButton("reload", label = "Reload")
+      
       width = 3
     ),
     mainPanel(
       # plotOutput("plot1", click = "plot1_click"),
       plotOutput("top.annots", height = "300px"),
-      plotOutput("top.genes", height = "250px"),
-      plotOutput("years", height = "200px"),
+      plotOutput("top.genes", height = "210px"),
+      plotOutput("years", height = "180px"),
       width = 9
     )
   ),
-  h3("Table of Filtered Figures"),
+  hr(),
+  h3("2. Search Filtered Figures"),
   DT::dataTableOutput('table'),
-  h3("Selected Figure"),
+  hr(),
+  h3("3. View Selected Figure"),
   fixedRow(
     column(7,
            htmlOutput("figlink"),
            htmlOutput("figure"),
     ),
     column(5, 
-            DT::dataTableOutput('figtable'),
+           h4("Genes automatically extracted from selected figure"),
+           DT::dataTableOutput('figtable'),
     )
   )
 )
