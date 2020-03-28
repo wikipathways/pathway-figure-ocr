@@ -289,8 +289,8 @@ server <- function(input, output, session) {
     figid.split <- strsplit(sel.figid, "__")[[1]]
     src <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",figid.split[1],"/bin/",figid.split[2])
     linkout <- paste0("https://www.ncbi.nlm.nih.gov/",sel.figlink)
-    output$figlink <- renderText({c('Link to figure: <a href="',linkout,'">',linkout,'</a>')})
-    output$figure<-renderText({c('<a href="',linkout,'"><img src="',src,'", width="600px"></a>')})
+    output$figlink <- renderText({c('Link to figure: <a href="',linkout,'" target="_blank">',linkout,'</a>')})
+    output$figure<-renderText({c('<a href="',linkout,'" target="_blank"><img src="',src,'", width="600px"></a>')})
   
     ## TABLE OF SELECTED FIGURE
     output$figtable <- DT::renderDataTable(
