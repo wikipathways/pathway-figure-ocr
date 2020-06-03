@@ -19,4 +19,4 @@ This work is supported by NIGMS, [R01GM100039](https://app.dimensions.ai/details
 
 ### Developers
 The [codebook](codebook.md) is a good place to start to see how we assemble and run the PFOCR pipeline. Be forewarned, however, this project is still in development and is not ready for production or even dev releases. So, don't expect things to work :)
-Contact us via [Issues](issues) if you're interested in contributing to the development. All our code are open source.
+Contact us via [Issues](https://github.com/wikipathways/pathway-figure-ocr/issues) if you're interested in contributing to the development. All our code are open source.
