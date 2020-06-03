@@ -1,0 +1,10 @@
+name: shiny-covidpathways
+title:
+username:
+account: gladstone-bioinformatics
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1991209
+bundleId: 2934667
+url: https://gladstone-bioinformatics.shinyapps.io/shiny-covidpathways/
+when: 1585360229.60951
