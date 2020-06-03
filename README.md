@@ -5,10 +5,10 @@ The goal of this project is to extract identifyable genes, proteins and metaboli
 * [25 Years of Pathway Figures (BioRxiv 2020)](https://www.biorxiv.org/content/10.1101/2020.05.29.124503v1)
   * Interactive search tool for 65k pathway figures and their gene content: [shiny app](https://gladstone-bioinformatics.shinyapps.io/shiny-25years) and [code](shiny-25years)
   * NIH Figshare of [identified pathway figures](https://doi.org/10.1101/2020.05.29.124503) and [OCR results](https://doi.org/10.1101/2020.05.29.124503) and RDS datasets
-  * UpSet plot of top text and figure genes: [script](pfocr_qc.R)
-  * Pie chart data for top disease terms for text and figure genes: [script](pfocr-gmt-enrich.R)
+  * UpSet plot of top text and figure genes: [script](pfocr_qc.R#L681)
+  * Pie chart data for top disease terms for text and figure genes: [script](pfocr-gmt-enrich.R#L329)
   * Overlap matrix for Hippo Signaling pathway figure genes: [script](matrix-visualization.R)
-  * Machine learning progression plots: [script](pfocr_qc.R)
+  * Machine learning progression plots: [script](pfocr_qc.R#L154)
   * Local database name: `pfocr20200131`
   
 * [Identifying Genes in Published Pathway Figure Images (BioRxiv 2018)](https://www.biorxiv.org/content/10.1101/379446v1)
