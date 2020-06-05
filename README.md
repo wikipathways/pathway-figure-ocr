@@ -9,7 +9,6 @@ The goal of this project is to extract identifyable genes, proteins and metaboli
   * Pie chart data for top disease terms for text and figure genes: [script](pfocr-gmt-enrich.R#L329)
   * Overlap matrix for Hippo Signaling pathway figure genes: [script](matrix-visualization.R)
   * Machine learning progression plots: [script](pfocr_qc.R#L154)
-  * Tagged release of this repo: https://doi.org/10.5281/zenodo.3875673
   * Local database name: `pfocr20200131`
   
 * [Identifying Genes in Published Pathway Figure Images (BioRxiv 2018)](https://www.biorxiv.org/content/10.1101/379446v1)
