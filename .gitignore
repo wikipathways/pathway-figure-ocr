@@ -12,3 +12,5 @@ __pycache__/
 /examples/
 MANIFEST
 shiny-25years/rsconnect
+enrichment_results/
+shiny-screen/images/
