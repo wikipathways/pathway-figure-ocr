@@ -107,6 +107,20 @@ pfocr.nobecnt7 <- pfocr.nobecnt %>%
 pfocr.genes.sub <- pfocr.genes %>%
   dplyr::filter(figid %in% pfocr.nobecnt7$figid)
 
+
+## Make GMT of PFOCR 
+library(stringr)
+pfocr.gmt <- pfocr.genes.sub %>%
+  dplyr::select(c(figid,entrez)) %>% 
+  mutate(term = figid) %>%
+  unique() %>%
+  dplyr::group_by(figid, term) %>%
+  #dplyr::summarise("genes" := paste(unique(entrez, collapse=" | ")))
+  dplyr::summarise("genes" = list(unique(entrez)))  %>%
+  rowwise() %>%
+  mutate(genes = paste(unname(unlist(genes)), collapse = "\t"))
+write.table(pfocr.gmt, "pfocr.gmt", row.names = F, col.names = F, quote = F, sep = "\t")
+
 ## Make clusterProfiler enricher files from PFOCR 
 pfocr2gene <- pfocr.genes.sub %>% dplyr::select(figid,entrez) #TERM2GENE
 pfocr2name <- pfocr.genes.sub %>% mutate(name = figid) %>% dplyr::select(figid,name) #TERM2NAME
@@ -161,8 +175,8 @@ gmt.pfocr.overlaps <- plyr::ldply(gmt.lists$term, function(t){
   }
 })
 
-#write.table(gmt.pfocr.overlaps, "raw/gmt-pfocr-jensen_know7-overlaps_7.tsv", quote=F, sep="\t", row.names = F)
-#gmt.pfocr.overlaps <- read.table("raw/gmt-pfocr-jensen_know7-overlaps_7.tsv", header=T, sep="\t", stringsAsFactors = F)
+# saveRDS(gmt.pfocr.overlaps, "raw/gmt-pfocr-overlaps.RDS")
+# gmt.pfocr.overlaps <- readRDS("raw/gmt-pfocr-overlaps.RDS")
 
 ## Basic counts
 sprintf("Unique figures with hits: %i",length(unique(gmt.pfocr.overlaps$figid)))
@@ -176,8 +190,8 @@ sprintf("Unique enriched terms: %i",length(unique(gmt.pfocr.overlaps$term)))
 
 
 ## nobe7-jensenknow7:
-# 23,331/28,236 figures with hits (83%)
-# 2378/2913 disease genes
+# 23,739/28,836 figures with hits (82%)
+# 2377/2913 disease genes
 # 151/160 disease terms
 
 ## nobe7-omim:
@@ -190,55 +204,95 @@ sprintf("Unique enriched terms: %i",length(unique(gmt.pfocr.overlaps$term)))
 # 838/1526 disease genes 
 # 78/90 disease terms
 
+## Filter for n+ hits
+gmt.pfocr.overlaps.5 <- filter(gmt.pfocr.overlaps, pf.overlap.cnt >= 5)
+
+## Filter for curated terms: 58 confirmed disease annotations with good pathway hits
+cur.pf.terms <- readRDS("raw/cur-pf-terms.RDS")
+gmt.pfocr.overlaps.5 <- gmt.pfocr.overlaps.5 %>%
+  filter(term %in% cur.pf.terms$term)
 
 ## COUNTS
-# with 2+ hits
-twocnt.df <- filter(gmt.pfocr.overlaps, pf.overlap.cnt >= 2)
-total.figids <- length(unique(twocnt.df$figid))
-sprintf("Unique figures with hits: %i",total.figids)
+total.figids <- length(unique(gmt.pfocr.overlaps.5$figid))
+sprintf("Unique figures with n+ hits: %i/%i (%.0f%%)",
+        total.figids,
+        nrow(pfocr2name),
+        total.figids/nrow(pfocr2name)*100)
 
-total.terms <- length(unique(twocnt.df$term))
-sprintf("Unique enriched go terms: %i",total.terms)
+total.terms <- length(unique(gmt.pfocr.overlaps.5$term))
+sprintf("Unique enriched disease terms: %i/%i (%.0f%%)",
+        total.terms,
+        nrow(gmt.lists),
+        total.terms/nrow(gmt.lists)*100)
 
-ont.terms <- twocnt.df %>% dplyr::group_by(term) %>% dplyr::summarise(count=n())
+ont.terms <- gmt.pfocr.overlaps.5 %>% dplyr::group_by(term) %>% dplyr::summarise(count=n())
 sprintf("Average pathway hits per term: %f",mean(ont.terms$count))
 
-figs <- twocnt.df %>% dplyr::group_by(figid) %>% dplyr::summarise(count=n())
-sprintf("Average terms per pathway figure: %f",mean(figs$count))
+figs <- gmt.pfocr.overlaps.5 %>% dplyr::group_by(figid) %>% dplyr::summarise(count=n())
+sprintf("Average disease terms per figure: %f",mean(figs$count))
 
+# n=5 curated
+# [1] "Unique figures with n+ hits: 8419/28836 (29%)"
+# [1] "Unique enriched disease terms: 64/160 (40%)"
+# [1] "Average pathway hits per term: 233.906250"
+# [1] "Average disease terms per figure: 1.778121"
 
 #########################
 ## TOP TEN DISEASE
 # with exclusion to reduce redundancy
-# with 2+ hits
+# with n+ hits
 #########################
 
+gmt.pf.temp <- gmt.pfocr.overlaps.2
 for(i in 1:10){
-  dis <- twocnt.df %>% dplyr::group_by(term) %>% dplyr::summarise(count=n())
+  dis <- gmt.pf.temp %>% dplyr::group_by(term) %>% dplyr::summarise(count=n())
   dis.arr <- arrange(dis, desc(count))
   top.term <- dis.arr$term[1]
   top.term.figids <- dis.arr$count[1]
-  print(sprintf("#%i. %s %i (%f)",i, top.term, top.term.figids, top.term.figids/total.figids))
-  rm.figs <- twocnt.df %>% filter(term == top.term)
-  twocnt.df <- twocnt.df %>% filter(!figid %in% rm.figs$figid)
+  print(sprintf("#%i. %s %i (%.0f%%)",i, top.term, top.term.figids, top.term.figids/total.figids*100))
+  rm.figs <- gmt.pf.temp %>% filter(term == top.term)
+  gmt.pf.temp <- gmt.pf.temp %>% filter(!figid %in% rm.figs$figid)
 }
 
-other.figids <- length(unique(twocnt.df$figid))
+other.figids <- length(unique(gmt.pf.temp$figid))
 sprintf("#%i. %s %i (%f)",11, "Other", other.figids, other.figids/total.figids)
 
-# know7_pfocr7_cnt2:
+# know7_pfocr7_cnt5_cur:
 #
-# [1] "#1. Cancer 9700 (0.469075)"
-# [1] "#2. Juvenile rheumatoid arthritis 1742 (0.084240)"
-# [1] "#3. Ovarian cancer 1368 (0.066154)"
-# [1] "#4. Primary hyperaldosteronism 935 (0.045215)"
-# [1] "#5. Aortic aneurysm 710 (0.034334)"
-# [1] "#6. Alopecia areata 684 (0.033077)"
-# [1] "#7. Primary cutaneous amyloidosis 525 (0.025388)"
-# [1] "#8. Melanoma 495 (0.023937)"
-# [1] "#9. Alzheimer's disease 444 (0.021471)"
-# [1] "#10. Rheumatoid arthritis 432 (0.020891)"
-# [1] "#11. Other 3644 (0.176217)"
+# [1] "#1. Cancer 7852 (0.932652)"
+# [1] "#2. Rheumatoid arthritis 85 (0.010096)"
+# [1] "#3. Breast cancer 75 (0.008908)"
+# [1] "#4. Cardiomyopathy 53 (0.006295)"
+# [1] "#5. Diabetes mellitus 52 (0.006177)"
+# [1] "#6. Noonan syndrome 27 (0.003207)"
+# [1] "#7. Crohn's disease 23 (0.002732)"
+# [1] "#8. Neurodegenerative disease 23 (0.002732)"
+# [1] "#9. Glycogen storage disease 21 (0.002494)"
+# [1] "#10. Porphyria 21 (0.002494)"
+# [1] "#11. Other 187 (0.022212)"
+
+# initial sort order of disesae terms (dis.arr), without exclusive rounds of counting
+# 1 Cancer                    7852
+# 2 Noonan syndrome           2204
+# 3 Lung cancer               2003
+# 4 Cardiomyopathy            1857
+# 5 Melanoma                   157
+# 6 Rheumatoid arthritis       145
+# 7 Diabetes mellitus          139
+# 8 Breast cancer              133
+# 9 Fanconi anemia              70
+# 10 Glycogen storage disease    43
+
+
+saveRDS(gmt.pfocr.overlaps.5, "raw/gmt-pfocr-jensen_know7-overlaps_5_curated.RDS")
+saveRDS(gmt.pfocr.overlaps.5[,c(4,1)], "pfocr_disease.rds")
+write.csv(gmt.pfocr.overlaps.5[,c(1,4,5)], 
+          "tables/gmt-pfocr-jensen_know7-overlaps_5_curated.csv",
+          sep = ",", row.names = F)
+
+
+###############################################################################
+
 
 #########################
 ## Annotate PFOCR figures
@@ -307,8 +361,8 @@ pfocr.ont.overlaps <- plyr::ldply(pfocr.lists$figid, function(f){
   }
 })
 
-#write.table(pfocr.ont.overlaps, "raw/gmt-jensen_know7-pfocr-overlaps_7.tsv", quote=F, sep="\t", row.names = F)
-#gmt.pfocr.overlaps <- read.table("raw/gmt-jensen_know7-pfocr-overlaps_7.tsv", header=T, sep="\t", stringsAsFactors = F)
+# saveRDS(pfocr.ont.overlaps, "raw/pfocr-ont-overlaps.RDS")
+# pfocr.ont.overlaps <- readRDS("raw/pfocr-ont-overlaps.RDS")
 
 ## COUNTS
 # with 2+ hits
