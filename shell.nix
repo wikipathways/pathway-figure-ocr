@@ -150,7 +150,6 @@ let
         # needed by jupyterlab-launch
         p.ps
         p.lsof
-        p.re2
 
         imagemagick
 
