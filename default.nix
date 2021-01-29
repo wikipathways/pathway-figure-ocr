@@ -1,7 +1,7 @@
 with import <nixpkgs> { overlays = [ (import ./python-overlay.nix) ]; };
 with pkgs.lib.strings;
 let
-  nixos = import <nixos> {};
+  #nixos = import <nixos> {};
   # This property is just for jupyter server extensions, but it is
   # OK if the server extension includes a lab extension.
   serverextensions = p: with p; [
@@ -59,7 +59,8 @@ let
     tidyr
   ];
 
-  myR = [ nixos.R ] ++ (myRPackages pkgs.rPackages);
+  #myR = [ nixos.R ] ++ (myRPackages pkgs.rPackages);
+  myR = [ R ] ++ (myRPackages pkgs.rPackages);
 
   juniper = jupyter.kernels.juniperWith {
     # Identifier that will appear on the Jupyter interface.
