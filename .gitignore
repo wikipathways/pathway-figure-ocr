@@ -16,3 +16,4 @@ enrichment_results/
 shiny-screen/images/
 .direnv
 share-jupyter/
+.ipynb_checkpoints/
