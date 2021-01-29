@@ -14,3 +14,5 @@ MANIFEST
 shiny-25years/rsconnect
 enrichment_results/
 shiny-screen/images/
+.direnv
+share-jupyter/
