@@ -11,18 +11,14 @@ let
     rev = "35eb565c6d00f3c61ef5e74e7e41870cfa3926f7";
   };
 
-  mynixpkgs = import (builtins.fetchGit {
+  myoverlay = import (builtins.fetchGit {
     url = https://github.com/ariutta/mynixpkgs;
-    rev = "19af7e427a460c81a20979ab3bec69f92df93b57";
-  }) {
-    inherit pkgs;
-    buildPythonPackage=pkgs.python3Packages.buildPythonPackage;
-  };
+    rev = "49f0c1bcdc79a5f6b3dd6f58c988e8c90d024fb1";
+    ref = "overlay";
+  });
 
-  # Importing overlays from that path.
   overlays = [
-    # my custom python overlays
-    #(import ./python-overlay.nix)
+    myoverlay
     # jupyterWith overlays
     # Only necessary for Haskell kernel
     (import "${jupyterWithPath}/nix/haskell-overlay.nix")
@@ -37,16 +33,18 @@ let
   jupyterExtraPython = (pkgs.python3.withPackages (ps: with ps; [ 
     # Declare all server extensions in here, plus anything else needed.
 
+    jupyterlab
+
     #-----------------
     # Language Server
     #-----------------
 
-    mynixpkgs.python3Packages.jupyter_lsp
+    jupyter_lsp
 
     # Even when it's specified here, we also need to specify it in
     # jupyterEnvironment.extraPackages for the LS for R to work.
     # TODO: why?
-    mynixpkgs.python3Packages.jupyterlab-lsp
+    jupyterlab-lsp
     # jupyterlab-lsp also supports other languages:
     # https://jupyterlab-lsp.readthedocs.io/en/latest/Language%20Servers.html#NodeJS-based-Language-Servers
 
@@ -62,7 +60,7 @@ let
     # Code Formatting
     #-----------------
 
-    mynixpkgs.python3Packages.jupyterlab_code_formatter
+    jupyterlab_code_formatter
     black
     isort
     autopep8
@@ -72,12 +70,12 @@ let
     #-----------------
 
     jupytext
+    jupyter-resource-usage
+    aquirdturtle_collapsible_headings
 
     # TODO: is this needed here?
-    mynixpkgs.python3Packages.jupyter_packaging
+    jupyter_packaging
   ]));
-
-  # From here, everything happens as in other examples.
   jupyter = pkgs.jupyterWith;
 
   #########################
@@ -151,7 +149,7 @@ let
 
       # TODO: nb_black is a 'python magic', not a server extension. Since it is
       # intended only for augmenting jupyter, where should I specify it?
-      mynixpkgs.python3Packages.nb_black
+      nb_black
 
       # TODO: for code formatting, compare nb_black with jupyterlab_code_formatter.
       # One difference:
@@ -171,7 +169,7 @@ let
       beautifulsoup4
       soupsieve
 
-      mynixpkgs.python3Packages.seaborn
+      seaborn
 
       requests
       requests-cache
@@ -193,8 +191,8 @@ let
       spacy
 
       unidecode
-      mynixpkgs.python3Packages.homoglyphs
-      mynixpkgs.python3Packages.confusable-homoglyphs
+      homoglyphs
+      confusable-homoglyphs
 
       # Python interface to the libmagic file type identification library
       python_magic
@@ -207,8 +205,8 @@ let
       ftfy
 
       lxml
-      mynixpkgs.python3Packages.wikidata2df
-      mynixpkgs.python3Packages.skosmos_client
+      wikidata2df
+      skosmos_client
     ];
   };
 
@@ -232,7 +230,7 @@ let
 
         # jupyterlab-lsp must be specified here in order for the LSP for R to work.
         # TODO: why isn't it enough that this is specified for jupyterExtraPython?
-        mynixpkgs.python3Packages.jupyterlab-lsp
+        pkgs.python3Packages.jupyterlab-lsp
 
         # Note: has packages for augmenting Jupyter and for other purposes.
         jupyterExtraPython
@@ -353,7 +351,7 @@ in
     # Yes, it does appear that 'server extensions' are indeed specified in
     # jupyter_notebook_config, not jupyter_server_config. That's confusing.
     #
-    echo '{ "NotebookApp": { "nbserver_extensions": { "jupyterlab": true, "jupytext": true, "jupyter_lsp": true, "jupyterlab_code_formatter": true }}}' >"$JUPYTER_CONFIG_DIR/jupyter_notebook_config.json"
+    echo '{ "NotebookApp": { "nbserver_extensions": { "jupyterlab": true, "jupytext": true, "jupyter_lsp": true, "jupyterlab_code_formatter": true, "jupyter_resource_usage": true }}}' >"$JUPYTER_CONFIG_DIR/jupyter_notebook_config.json"
 
     #-------------------
     # widgetsnbextension
@@ -391,46 +389,41 @@ in
     #   jupyterlab-hide-code v3.0.1 enabled OK
     # This difference could be due to the install.json being in share/...
     #
-    ln -s "${mynixpkgs.python3Packages.jupyterlab_hide_code}/share/jupyter/labextensions/jupyterlab-hide-code" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-hide-code"
+    ln -s "${pkgs.python3Packages.jupyterlab_hide_code}/share/jupyter/labextensions/jupyterlab-hide-code" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-hide-code"
 
     # @axlair/jupyterlab_vim
     mkdir -p "$JUPYTER_DATA_DIR/labextensions/@axlair"
-    ln -s "${mynixpkgs.python3Packages.jupyterlab_vim}/lib/python3.8/site-packages/jupyterlab_vim/labextension" "$JUPYTER_DATA_DIR/labextensions/@axlair/jupyterlab_vim"
-    # TODO: customize vim so 'jk' leaves insert mode
-    # https://github.com/ianhi/jupyterlab-vimrc
-    # https://github.com/jwkvam/jupyterlab-vim/issues/126
-    # https://github.com/jwkvam/jupyterlab-vim/issues/17#issuecomment-632903257
+    ln -s "${pkgs.python3Packages.jupyterlab_vim}/lib/${pkgs.python3.libPrefix}/site-packages/jupyterlab_vim/labextension" "$JUPYTER_DATA_DIR/labextensions/@axlair/jupyterlab_vim"
 
     # jupyterlab-vimrc
-    ln -s "${mynixpkgs.python3Packages.jupyterlab-vimrc}/lib/python3.8/site-packages/jupyterlab-vimrc" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-vimrc"
+    ln -s "${pkgs.python3Packages.jupyterlab-vimrc}/lib/${pkgs.python3.libPrefix}/site-packages/jupyterlab-vimrc" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-vimrc"
 
     # @krassowski/jupyterlab-lsp
     mkdir -p "$JUPYTER_DATA_DIR/labextensions/@krassowski"
-    ln -s "${mynixpkgs.python3Packages.jupyterlab-lsp}/share/jupyter/labextensions/@krassowski/jupyterlab-lsp" "$JUPYTER_DATA_DIR/labextensions/@krassowski/jupyterlab-lsp"
+    ln -s "${pkgs.python3Packages.jupyterlab-lsp}/share/jupyter/labextensions/@krassowski/jupyterlab-lsp" "$JUPYTER_DATA_DIR/labextensions/@krassowski/jupyterlab-lsp"
 
     # @ryantam626/jupyterlab_code_formatter
     mkdir -p "$JUPYTER_DATA_DIR/labextensions/@ryantam626"
-    ln -s "${mynixpkgs.python3Packages.jupyterlab_code_formatter}/share/jupyter/labextensions/@ryantam626/jupyterlab_code_formatter" "$JUPYTER_DATA_DIR/labextensions/@ryantam626/jupyterlab_code_formatter"
+    ln -s "${pkgs.python3Packages.jupyterlab_code_formatter}/share/jupyter/labextensions/@ryantam626/jupyterlab_code_formatter" "$JUPYTER_DATA_DIR/labextensions/@ryantam626/jupyterlab_code_formatter"
 
     # jupyterlab-drawio
-    ln -s "${mynixpkgs.python3Packages.jupyterlab-drawio}/lib/python3.8/site-packages/jupyterlab-drawio/labextension" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-drawio"
+    ln -s "${pkgs.python3Packages.jupyterlab-drawio}/lib/${pkgs.python3.libPrefix}/site-packages/jupyterlab-drawio/labextension" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-drawio"
 
-    # TODO: the following doesn't work at the moment
-#    # @aquirdturtle/collapsible_headings
-#    mkdir -p "$JUPYTER_DATA_DIR/labextensions/@aquirdturtle/collapsible_headings"
-#    ln -s "${mynixpkgs.python3Packages.aquirdturtle_collapsible_headings}/share/jupyter/labextensions/@aquirdturtle/collapsible_headings" "$JUPYTER_DATA_DIR/labextensions/@aquirdturtle/collapsible-headings"
+    # @aquirdturtle/collapsible_headings
+    mkdir -p "$JUPYTER_DATA_DIR/labextensions/@aquirdturtle"
+    ln -s "${pkgs.python3Packages.aquirdturtle_collapsible_headings}/share/jupyter/labextensions/@aquirdturtle/collapsible_headings" "$JUPYTER_DATA_DIR/labextensions/@aquirdturtle/collapsible_headings"
 
-    # TODO: check whether this works.
-#    # jupyterlab-system-monitor depends on jupyterlab-topbar and jupyter-resource-usage
-#
-#    # jupyterlab-topbar
-#    ln -s "${mynixpkgs.python3Packages.jupyterlab-topbar}/lib/python3.8/site-packages/jupyterlab-topbar/labextension" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-topbar"
-#
-#    # jupyter-resource-usage
-#    ln -s "${mynixpkgs.python3Packages.jupyter-resource-usage}/lib/python3.8/site-packages/jupyter-resource-usage/labextension" "$JUPYTER_DATA_DIR/labextensions/jupyter-resource-usage"
-#
-#    # jupyterlab-system-monitor
-#    ln -s "${mynixpkgs.python3Packages.jupyterlab-system-monitor}/lib/python3.8/site-packages/jupyterlab-system-monitor/labextension" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-system-monitor"
+    # jupyterlab-system-monitor depends on jupyterlab-topbar and jupyter-resource-usage
+
+    # jupyterlab-topbar
+    ln -s "${pkgs.python3Packages.jupyterlab-topbar}/lib/${pkgs.python3.libPrefix}/site-packages/jupyterlab-topbar/labextension" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-topbar-extension"
+
+    # jupyter-resource-usage
+    mkdir -p "$JUPYTER_DATA_DIR/labextensions/@jupyter-server"
+    ln -s "${pkgs.python3Packages.jupyter-resource-usage}/share/jupyter/labextensions/@jupyter-server/resource-usage" "$JUPYTER_DATA_DIR/labextensions/@jupyter-server/resource-usage"
+
+    # jupyterlab-system-monitor
+    ln -s "${pkgs.python3Packages.jupyterlab-system-monitor}/lib/${pkgs.python3.libPrefix}/site-packages/jupyterlab-system-monitor/labextension" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-system-monitor"
 
     if [ ! -d "$JUPYTERLAB_DIR" ]; then
       # We are overwriting everything else, but we only run this section when
@@ -481,9 +474,10 @@ in
     ###########
 
     # Specify a font for the Terminal to make the Powerline prompt look OK.
+
     # TODO: should we install the fonts as part of this Nix definition?
     # TODO: one setting is '"theme": "inherit"'. Where does it inherit from?
-    # is it @jupyterlab/apputils-extension:themes.theme?
+    #       is it @jupyterlab/apputils-extension:themes.theme?
 
     mkdir -p "$JUPYTERLAB_DIR/settings"
     touch "$JUPYTERLAB_DIR/settings/overrides.json"
