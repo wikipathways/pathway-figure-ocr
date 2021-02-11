@@ -1,190 +1,499 @@
-with import <nixpkgs> { overlays = [ (import ./python-overlay.nix) ]; };
-with pkgs.lib.strings;
+with builtins;
 let
-  #nixos = import <nixos> {};
-  # This property is just for jupyter server extensions, but it is
-  # OK if the server extension includes a lab extension.
-  serverextensions = p: with p; [
-    jupytext
-    # look into getting jupyterlab-lsp working:
-    # https://github.com/krassowski/jupyterlab-lsp
+  #4
+  # this corresponds to notebook_dir (impure)
+  rootDirectoryImpure = toString ./.;
+  shareDirectoryImpure = "${rootDirectoryImpure}/share-jupyter";
+  jupyterlabDirectoryImpure = "${rootDirectoryImpure}/share-jupyter/lab";
+  # Path to the JupyterWith folder.
+  jupyterWithPath = builtins.fetchGit {
+    url = https://github.com/tweag/jupyterWith;
+    rev = "35eb565c6d00f3c61ef5e74e7e41870cfa3926f7";
+  };
+
+  mynixpkgs = import (builtins.fetchGit {
+    url = https://github.com/ariutta/mynixpkgs;
+    rev = "19af7e427a460c81a20979ab3bec69f92df93b57";
+  }) {
+    inherit pkgs;
+    buildPythonPackage=pkgs.python3Packages.buildPythonPackage;
+  };
+
+  # Importing overlays from that path.
+  overlays = [
+    # my custom python overlays
+    #(import ./python-overlay.nix)
+    # jupyterWith overlays
+    # Only necessary for Haskell kernel
+    (import "${jupyterWithPath}/nix/haskell-overlay.nix")
+    # Necessary for Jupyter
+    (import "${jupyterWithPath}/nix/python-overlay.nix")
+    (import "${jupyterWithPath}/nix/overlay.nix")
   ];
 
-  mynixpkgs = import (fetchFromGitHub {
-    owner = "ariutta";
-    repo = "mynixpkgs";
-    rev = "aca57c0";
-    sha256 = "1ab3izpdfiylzdxq1hpgljbcmdvdwnch8mxcd6ybx4yz8hlp8gm0";
-  });
+  # Your Nixpkgs snapshot, with JupyterWith packages.
+  pkgs = import <nixpkgs> { inherit overlays; };
 
-  # TODO: specify a lab extensions property
+  jupyterExtraPython = (pkgs.python3.withPackages (ps: with ps; [ 
+    # Declare all server extensions in here, plus anything else needed.
 
-  jupyter = import (
+    #-----------------
+    # Language Server
+    #-----------------
 
-#    # for dev, clone a jupyterWith fork as a sibling of demo directory
-#    ../jupyterWith/default.nix
+    mynixpkgs.python3Packages.jupyter_lsp
 
-    # for "prod"
-    builtins.fetchGit {
-      url = https://github.com/ariutta/jupyterWith;
-      ref = "proposals";
-    }
+    # Even when it's specified here, we also need to specify it in
+    # jupyterEnvironment.extraPackages for the LS for R to work.
+    # TODO: why?
+    mynixpkgs.python3Packages.jupyterlab-lsp
+    # jupyterlab-lsp also supports other languages:
+    # https://jupyterlab-lsp.readthedocs.io/en/latest/Language%20Servers.html#NodeJS-based-Language-Servers
 
-  ) {
-    # this corresponds to notebook_dir (impure)
-    directory = toString ./.;
-    labextensions = [
-      "jupyterlab_vim"
+    # The formatter for Python code is working, but formatR for R code is not.
 
-      # TODO: this may have been needed for bokeh. Can I remove it?
-      "@jupyter-widgets/jupyterlab-manager"
+    python-language-server
+    rope
+    pyflakes
+    mccabe
+    # others also available
 
-    ];
-    serverextensions = serverextensions;
-    overlays = [ (import ./python-overlay.nix) ];
-  };
+    #-----------------
+    # Code Formatting
+    #-----------------
+
+    mynixpkgs.python3Packages.jupyterlab_code_formatter
+    black
+    isort
+    autopep8
+
+    #-----------------
+    # Other
+    #-----------------
+
+    jupytext
+
+    # TODO: is this needed here?
+    mynixpkgs.python3Packages.jupyter_packaging
+  ]));
+
+  # From here, everything happens as in other examples.
+  jupyter = pkgs.jupyterWith;
 
   #########################
   # R
   #########################
 
   myRPackages = p: with p; [
+    #------------
+    # for Jupyter
+    #------------
+    formatR
+    languageserver
+
+    #----------------
+    # not for Jupyter
+    #----------------
     pacman
-    dplyr
-    ggplot2
+
+    tidyverse
+    # tidyverse includes the following:
+    # * ggplot2 
+    # * purrr   
+    # * tibble  
+    # * dplyr   
+    # * tidyr   
+    # * stringr 
+    # * readr   
+    # * forcats 
+
     knitr
-    purrr
-    readr
-    stringr
-    tidyr
   ];
 
-  #myR = [ nixos.R ] ++ (myRPackages pkgs.rPackages);
-  myR = [ R ] ++ (myRPackages pkgs.rPackages);
+  myR = [ pkgs.R ] ++ (myRPackages pkgs.rPackages);
 
-  juniper = jupyter.kernels.juniperWith {
+  irkernel = jupyter.kernels.iRWith {
     # Identifier that will appear on the Jupyter interface.
-    name = "JuniperKernel";
-    # Libraries (R packages) to be available to the kernel.
+    name = "pkgs_on_IRkernel";
+    # Libraries to be available to the kernel.
     packages = myRPackages;
     # Optional definition of `rPackages` to be used.
     # Useful for overlaying packages.
-    # TODO: why not just do this in overlays above?
-    #rPackages = pkgs.rPackages;
+    rPackages = pkgs.rPackages;
   };
+
+#  # It appears juniper doesn't work anymore
+#  juniper = jupyter.kernels.juniperWith {
+#    # Identifier that will appear on the Jupyter interface.
+#    name = "JuniperKernel";
+#    # Libraries (R packages) to be available to the kernel.
+#    packages = myRPackages;
+#    # Optional definition of `rPackages` to be used.
+#    # Useful for overlaying packages.
+#    # TODO: why not just do this in overlays above?
+#    #rPackages = pkgs.rPackages;
+#  };
 
   #########################
   # Python
   #########################
 
-  myPythonPackages = (p: (with p; [
-    numpy
-    pandas
+  # TODO: take a look at xeus-python
+  # https://github.com/jupyter-xeus/xeus-python#what-are-the-advantages-of-using-xeus-python-over-ipykernel-ipython-kernel
+  # It supports the jupyterlab debugger. But it's not packaged for nixos yet.
 
-    # TODO: the following are not serverextensions, but they ARE specifically
-    # intended for augmenting jupyter. Where should we specify them?
+  iPython = jupyter.kernels.iPythonWith {
+    name = "pkgs_on_IPython";
+    packages = p: with p; [
+      ##############################
+      # Packages to augment Jupyter
+      ##############################
 
-    # TODO: compare nb_black with https://github.com/ryantam626/jupyterlab_code_formatter
-    nb_black
+      # TODO: nb_black is a 'python magic', not a server extension. Since it is
+      # intended only for augmenting jupyter, where should I specify it?
+      mynixpkgs.python3Packages.nb_black
 
-    beautifulsoup4
-    soupsieve
+      # TODO: for code formatting, compare nb_black with jupyterlab_code_formatter.
+      # One difference:
+      # nb_black is an IPython Magic (%), whereas
+      # jupyterlab_code_formatter is a combo lab & server extension.
 
-    nbconvert
-    seaborn
+      # similar question for nbconvert: where should we specify it?
+      nbconvert
 
-    requests
-    requests-cache
+      ################################
+      # Non-Jupyter-specific packages
+      ################################
 
-    #google_api_core
-    #google_cloud_core
-    #google-cloud-sdk
-    #google_cloud_testutils
-    #google_cloud_automl
-    #google_cloud_storage
+      numpy
+      pandas
 
-    # tzlocal is needed to make rpy2 work
-    tzlocal
-    rpy2
+      beautifulsoup4
+      soupsieve
 
-    pyahocorasick
-    spacy
+      mynixpkgs.python3Packages.seaborn
 
-    unidecode
-    homoglyphs
-    confusable-homoglyphs
+      requests
+      requests-cache
 
-    # Python interface to the libmagic file type identification library
-    python_magic
-    # python bindings for imagemagick
-    Wand
-    # Python Imaging Library
-    pillow
+      #google_api_core
+      #google_cloud_core
+      #google-cloud-sdk
+      #google_cloud_testutils
+      #google_cloud_automl
+      #google_cloud_storage
 
-    # fix encodings
-    ftfy
+      # some of these may be needed to make rpy2 work
+      simplegeneric
+      # tzlocal is needed to make rpy2 work
+      tzlocal
+      rpy2
 
-    lxml
-    wikidata2df
-    skosmos_client
-  ]) ++
-  # TODO: it would be nice not have to specify serverextensions here, but the
-  # current jupyterLab code needs it to be specified both here and above.
-  (serverextensions p));
+      pyahocorasick
+      spacy
 
-  myPython = pkgs.python3.withPackages(myPythonPackages);
+      unidecode
+      mynixpkgs.python3Packages.homoglyphs
+      mynixpkgs.python3Packages.confusable-homoglyphs
 
-  iPythonWithPackages = jupyter.kernels.iPythonWith {
-    name = "IPythonKernel";
+      # Python interface to the libmagic file type identification library
+      python_magic
+      # python bindings for imagemagick
+      Wand
+      # Python Imaging Library
+      pillow
 
-    # TODO: I shouldn't need to set this if I'm using overlays, right?
-    #python3 = pkgs.python3Packages;
+      # fix encodings
+      ftfy
 
-    packages = myPythonPackages;
+      lxml
+      mynixpkgs.python3Packages.wikidata2df
+      mynixpkgs.python3Packages.skosmos_client
+    ];
   };
 
   jupyterEnvironment =
     jupyter.jupyterlabWith {
-      kernels = [ iPythonWithPackages juniper ];
-
+      directory = jupyterlabDirectoryImpure;
+      kernels = [ iPython irkernel ];
       extraPackages = p: [
-        # needed by jupyterlab-launch
-        p.ps
-        p.lsof
-
-        imagemagick
-
-        # optionals below
-        myR
-
-        # needed to make server extensions work
-        myPython
-
-        # TODO: do we still need these for lab extensions?
-        nodejs
-        yarn
-
-        # for nbconvert
-        pandoc
+        # needed by nbconvert
+        p.pandoc
         # see https://github.com/jupyter/nbconvert/issues/808
         #tectonic
         # more info: https://nixos.wiki/wiki/TexLive
-        texlive.combined.scheme-full
-        mynixpkgs.jupyterlab-connect
+        p.texlive.combined.scheme-full
+
+        # TODO: these dependencies are only required when want to build a lab
+        # extension from source.
+        # Does jupyterWith allow me to specify them as buildInputs?
+        p.nodejs
+        p.yarn
+
+        # jupyterlab-lsp must be specified here in order for the LSP for R to work.
+        # TODO: why isn't it enough that this is specified for jupyterExtraPython?
+        mynixpkgs.python3Packages.jupyterlab-lsp
+
+        # Note: has packages for augmenting Jupyter and for other purposes.
+        jupyterExtraPython
+
+        ################################
+        # non-Jupyter-specific packages
+        ################################
+
+        p.imagemagick
 
         # to run AutoML Vision
-        google-cloud-sdk
+        p.google-cloud-sdk
 
-        exiftool
+        p.exiftool
 
         # to get perceptual hash values of images
         # p.phash
         p.blockhash
       ];
+
+      extraJupyterPath = pkgs:
+        concatStringsSep ":" [
+          "${jupyterExtraPython}/lib/${jupyterExtraPython.libPrefix}/site-packages"
+          "${pkgs.rPackages.formatR}/library/formatR/R"
+          "${pkgs.rPackages.languageserver}/library/languageserver/R"
+        ];
     };
 in
   jupyterEnvironment.env.overrideAttrs (oldAttrs: {
     shellHook = oldAttrs.shellHook + ''
-    . "${mynixpkgs.jupyterlab-connect}"/share/bash-completion/completions/jupyterlab-connect.bash
+    # this is needed in order that tools like curl and git can work with SSL
+    if [ ! -f "$SSL_CERT_FILE" ] || [ ! -f "$NIX_SSL_CERT_FILE" ]; then
+      candidate_ssl_cert_file=""
+      if [ -f "$SSL_CERT_FILE" ]; then
+        candidate_ssl_cert_file="$SSL_CERT_FILE"
+      elif [ -f "$NIX_SSL_CERT_FILE" ]; then
+        candidate_ssl_cert_file="$NIX_SSL_CERT_FILE"
+      else
+        candidate_ssl_cert_file="/etc/ssl/certs/ca-bundle.crt"
+      fi
+      if [ -f "$candidate_ssl_cert_file" ]; then
+          export SSL_CERT_FILE="$candidate_ssl_cert_file"
+          export NIX_SSL_CERT_FILE="$candidate_ssl_cert_file"
+      else
+        echo "Cannot find a valid SSL certificate file. curl will not work." 1>&2
+      fi
+    fi
+    # TODO: is the following line ever useful?
+    #export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
+
+    # set SOURCE_DATE_EPOCH so that we can use python wheels
+    SOURCE_DATE_EPOCH=$(date +%s)
+
+    export JUPYTERLAB_DIR="${jupyterlabDirectoryImpure}"
+    export JUPYTER_CONFIG_DIR="${shareDirectoryImpure}/config"
+    export JUPYTER_DATA_DIR="${shareDirectoryImpure}"
+    export JUPYTER_RUNTIME_DIR="${shareDirectoryImpure}/runtime"
+
+    # mybinder gave this message when launching:
+    # Installation finished!  To ensure that the necessary environment
+    # variables are set, either log in again, or type
+    # 
+    #   . /home/jovyan/.nix-profile/etc/profile.d/nix.sh
+    # 
+    # in your shell.
+
+    if [ -f /home/jovyan/.nix-profile/etc/profile.d/nix.sh ]; then
+       . /home/jovyan/.nix-profile/etc/profile.d/nix.sh
+    fi
+
+    mkdir -p "$JUPYTER_DATA_DIR"
+    mkdir -p "$JUPYTER_RUNTIME_DIR"
+
+    ##################
+    # specify configs
+    ##################
+
+    rm -rf "$JUPYTER_CONFIG_DIR"
+    mkdir -p "$JUPYTER_CONFIG_DIR"
+
+    # TODO: which of way of specifying server configs is better?
+    # 1. jupyter_server_config.json (single file w/ all jpserver_extensions.)
+    # 2. jupyter_server_config.d/ (directory holding multiple config files)
+    #                            jupyterlab.json
+    #                            jupyterlab_code_formatter.json
+    #                            ... 
+
+    #----------------------
+    # jupyter_server_config
+    #----------------------
+    # We need to set root_dir in config so that this command:
+    #   direnv exec ~/Documents/myenv jupyter lab start
+    # always results in root_dir being ~/Documents/myenv.
+    # Otherwise, running that command from $HOME makes root_dir be $HOME.
+    #
+    # TODO: what is the difference between these two:
+    # - ServerApp.jpserver_extensions
+    # - NotebookApp.nbserver_extensions
+    #
+    # TODO: what's the point of the following check?
+    if [ -f "$JUPYTER_CONFIG_DIR/jupyter_server_config.json" ]; then
+      echo "File already exists: $JUPYTER_CONFIG_DIR/jupyter_server_config.json" >/dev/stderr
+      exit 1
+    fi
+    #
+    # If I don't include jupyterlab_code_formatter in
+    # ServerApp.jpserver_extensions, I get the following error
+    #   Jupyterlab Code Formatter Error
+    #   Unable to find server plugin version, this should be impossible,open a GitHub issue if you cannot figure this issue out yourself.
+    #
+    echo '{"ServerApp": {"root_dir": "${rootDirectoryImpure}", "jpserver_extensions":{"nbclassic":true,"jupyterlab":true,"jupyterlab_code_formatter":true}}}' >"$JUPYTER_CONFIG_DIR/jupyter_server_config.json"
+
+    #------------------------
+    # jupyter_notebook_config
+    #------------------------
+    # The packages listed by 'jupyter-serverextension list' come from
+    # what is specified in ./config/jupyter_notebook_config.json.
+    # Yes, it does appear that 'server extensions' are indeed specified in
+    # jupyter_notebook_config, not jupyter_server_config. That's confusing.
+    #
+    echo '{ "NotebookApp": { "nbserver_extensions": { "jupyterlab": true, "jupytext": true, "jupyter_lsp": true, "jupyterlab_code_formatter": true }}}' >"$JUPYTER_CONFIG_DIR/jupyter_notebook_config.json"
+
+    #-------------------
+    # widgetsnbextension
+    #-------------------
+    # Not completely sure why this is needed, but without it, things didn't work.
+    mkdir -p "$JUPYTER_CONFIG_DIR/nbconfig/notebook.d"
+    echo '{"load_extensions":{"jupyter-js-widgets/extension":true}}' >"$JUPYTER_CONFIG_DIR/nbconfig/notebook.d/widgetsnbextension.json"
+
+    #################################
+    # symlink prebuilt lab extensions
+    #################################
+
+    rm -rf "$JUPYTER_DATA_DIR/labextensions"
+    mkdir -p "$JUPYTER_DATA_DIR/labextensions"
+
+    # Note the prebuilt lab extensions are distributed via PyPI as "python"
+    # packages, even though they are really JS, HTML and CSS.
+    #
+    # Symlink targets may generally use snake-case, but not always.
+    #
+    # The lab extension code appears to be in two places in the python packge:
+    # 1) lib/python3.8/site-packages/snake_case_pkg_name/labextension
+    # 2) share/jupyter/labextensions/dash-case-pkg-name
+    # These directories are identical, except share/... has file install.json.
+
+    # jupyterlab_hide_code
+    #
+    # When the symlink target is 'jupyterlab-hide-code' (dash case), the lab extension
+    # works, but not when the symlink target is 'jupyterlab_hide_code' (snake_case).
+    #
+    # When using target share/..., the command 'jupyter-labextension list'
+    # adds some extra info to the end:
+    #   jupyterlab-hide-code v3.0.1 enabled OK (python, jupyterlab_hide_code)
+    # When using target lib/..., we get just this:
+    #   jupyterlab-hide-code v3.0.1 enabled OK
+    # This difference could be due to the install.json being in share/...
+    #
+    ln -s "${mynixpkgs.python3Packages.jupyterlab_hide_code}/share/jupyter/labextensions/jupyterlab-hide-code" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-hide-code"
+
+    # @axlair/jupyterlab_vim
+    mkdir -p "$JUPYTER_DATA_DIR/labextensions/@axlair"
+    ln -s "${mynixpkgs.python3Packages.jupyterlab_vim}/lib/python3.8/site-packages/jupyterlab_vim/labextension" "$JUPYTER_DATA_DIR/labextensions/@axlair/jupyterlab_vim"
+    # TODO: customize vim so 'jk' leaves insert mode
+    # https://github.com/ianhi/jupyterlab-vimrc
+    # https://github.com/jwkvam/jupyterlab-vim/issues/126
+    # https://github.com/jwkvam/jupyterlab-vim/issues/17#issuecomment-632903257
+
+    # jupyterlab-vimrc
+    ln -s "${mynixpkgs.python3Packages.jupyterlab-vimrc}/lib/python3.8/site-packages/jupyterlab-vimrc" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-vimrc"
+
+    # @krassowski/jupyterlab-lsp
+    mkdir -p "$JUPYTER_DATA_DIR/labextensions/@krassowski"
+    ln -s "${mynixpkgs.python3Packages.jupyterlab-lsp}/share/jupyter/labextensions/@krassowski/jupyterlab-lsp" "$JUPYTER_DATA_DIR/labextensions/@krassowski/jupyterlab-lsp"
+
+    # @ryantam626/jupyterlab_code_formatter
+    mkdir -p "$JUPYTER_DATA_DIR/labextensions/@ryantam626"
+    ln -s "${mynixpkgs.python3Packages.jupyterlab_code_formatter}/share/jupyter/labextensions/@ryantam626/jupyterlab_code_formatter" "$JUPYTER_DATA_DIR/labextensions/@ryantam626/jupyterlab_code_formatter"
+
+    # jupyterlab-drawio
+    ln -s "${mynixpkgs.python3Packages.jupyterlab-drawio}/lib/python3.8/site-packages/jupyterlab-drawio/labextension" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-drawio"
+
+    # TODO: the following doesn't work at the moment
+#    # @aquirdturtle/collapsible_headings
+#    mkdir -p "$JUPYTER_DATA_DIR/labextensions/@aquirdturtle/collapsible_headings"
+#    ln -s "${mynixpkgs.python3Packages.aquirdturtle_collapsible_headings}/share/jupyter/labextensions/@aquirdturtle/collapsible_headings" "$JUPYTER_DATA_DIR/labextensions/@aquirdturtle/collapsible-headings"
+
+    # TODO: check whether this works.
+#    # jupyterlab-system-monitor depends on jupyterlab-topbar and jupyter-resource-usage
+#
+#    # jupyterlab-topbar
+#    ln -s "${mynixpkgs.python3Packages.jupyterlab-topbar}/lib/python3.8/site-packages/jupyterlab-topbar/labextension" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-topbar"
+#
+#    # jupyter-resource-usage
+#    ln -s "${mynixpkgs.python3Packages.jupyter-resource-usage}/lib/python3.8/site-packages/jupyter-resource-usage/labextension" "$JUPYTER_DATA_DIR/labextensions/jupyter-resource-usage"
+#
+#    # jupyterlab-system-monitor
+#    ln -s "${mynixpkgs.python3Packages.jupyterlab-system-monitor}/lib/python3.8/site-packages/jupyterlab-system-monitor/labextension" "$JUPYTER_DATA_DIR/labextensions/jupyterlab-system-monitor"
+
+    if [ ! -d "$JUPYTERLAB_DIR" ]; then
+      # We are overwriting everything else, but we only run this section when
+      # "$JUPYTERLAB_DIR" is missing, because the build step is time intensive.
+
+      mkdir -p "$JUPYTERLAB_DIR"
+      mkdir -p "$JUPYTERLAB_DIR/staging"
+
+      #########################
+      # build jupyter lab alone
+      #########################
+
+      # Note: we pipe stdout to stderr because otherwise $(cat "$\{dump\}")
+      # would contain something that should not be evaluated.
+      # Look at 'eval $(cat "$\{dump\}")' in ./.envrc file.
+
+      chmod -R +w "$JUPYTERLAB_DIR/staging/"
+      jupyter lab build 1>&2
+
+      ###########################
+      # add source lab extensions
+      ###########################
+
+      # A source lab extension is a raw JS package, and it must be compiled.
+
+      # https://github.com/arbennett/jupyterlab-themes
+      chmod -R +w "$JUPYTERLAB_DIR/staging/"
+      jupyter labextension install --no-build @arbennett/base16-gruvbox-dark 1>&2
+      chmod -R +w "$JUPYTERLAB_DIR/staging/"
+      jupyter labextension install --no-build @arbennett/base16-gruvbox-light 1>&2
+
+      ############################################
+      # build jupyter lab w/ source lab extensions
+      ############################################
+
+      # It would be nice to be able to just build once here at the end, but the
+      # build process appears to fail unless I build once for jupyter lab alone
+      # then again after adding source lab extensions.
+
+      chmod -R +w "$JUPYTERLAB_DIR/staging/"
+      jupyter lab build 1>&2
+
+      chmod -R -w "$JUPYTERLAB_DIR/staging/"
+    fi
+
+    ###########
+    # Settings
+    ###########
+
+    # Specify a font for the Terminal to make the Powerline prompt look OK.
+    # TODO: should we install the fonts as part of this Nix definition?
+    # TODO: one setting is '"theme": "inherit"'. Where does it inherit from?
+    # is it @jupyterlab/apputils-extension:themes.theme?
+
+    mkdir -p "$JUPYTERLAB_DIR/settings"
+    touch "$JUPYTERLAB_DIR/settings/overrides.json"
+    rm "$JUPYTERLAB_DIR/settings/overrides.json"
+    echo '{"jupyterlab-vimrc:vimrc": {"imap": [["jk", "<Esc>"]]}, "@jupyterlab/apputils-extension:themes": {"theme": "base16-gruvbox-dark"}, "@jupyterlab/terminal-extension:plugin":{"fontFamily":"Meslo LG S DZ for Powerline,monospace"}}' >"$JUPYTER_DATA_DIR/lab/settings/overrides.json"
+
+    # Setting for tab manager being on the right is something like this:
+    # "@jupyterlab/application-extension:sidebar": {"overrides": {"tab-manager": "right"}}
+    #
+    # "@jupyterlab/extensionmanager-extension:plugin": {"enabled": false}
+    #
     '';
   })
