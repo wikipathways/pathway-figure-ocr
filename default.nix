@@ -1,6 +1,6 @@
 with builtins;
 let
-  #4
+  #20
   # this corresponds to notebook_dir (impure)
   rootDirectoryImpure = toString ./.;
   shareDirectoryImpure = "${rootDirectoryImpure}/share-jupyter";
@@ -11,11 +11,12 @@ let
     rev = "35eb565c6d00f3c61ef5e74e7e41870cfa3926f7";
   };
 
-  myoverlay = import (builtins.fetchGit {
-    url = https://github.com/ariutta/mynixpkgs;
-    rev = "49f0c1bcdc79a5f6b3dd6f58c988e8c90d024fb1";
-    ref = "overlay";
-  });
+#  myoverlay = import (builtins.fetchGit {
+#    url = https://github.com/ariutta/mynixpkgs;
+#    rev = "ec3e48c4abcaadbc3d1ec83e9d2e5ebccce240e8";
+#    ref = "main";
+#  });
+  myoverlay = import ../mynixpkgs/overlay.nix;
 
   overlays = [
     myoverlay
@@ -34,6 +35,8 @@ let
     # Declare all server extensions in here, plus anything else needed.
 
     jupyterlab
+    
+    jupyter_console
 
     #-----------------
     # Language Server
@@ -83,15 +86,6 @@ let
   #########################
 
   myRPackages = p: with p; [
-    #------------
-    # for Jupyter
-    #------------
-    formatR
-    languageserver
-
-    #----------------
-    # not for Jupyter
-    #----------------
     pacman
 
     tidyverse
@@ -105,6 +99,7 @@ let
     # * readr   
     # * forcats 
 
+    feather
     knitr
   ];
 
@@ -163,16 +158,69 @@ let
       # Non-Jupyter-specific packages
       ################################
 
+      lxml
+      seaborn
+      skosmos_client
+      wikidata2df
+
+      ############
+      # requests+
+      ############
+      requests
+      requests-cache
+
+      ############
+      # Pandas+
+      ############
       numpy
       pandas
+      pyarrow # needed for pd.read_feather()
 
+      ########
+      # rpy2
+      ########
+      rpy2
+      # tzlocal is needed to make rpy2 work
+      tzlocal
+      # TODO: is simplegeneric also needed?
+      simplegeneric
+
+      ##################
+      # Parse messy HTML
+      ##################
       beautifulsoup4
       soupsieve
 
-      seaborn
+      ########
+      # Text
+      ########
 
-      requests
-      requests-cache
+      # for characters that look like each other
+      confusable-homoglyphs
+      homoglyphs
+
+      # fix encodings
+      ftfy
+
+      pyahocorasick
+      spacy
+      unidecode
+
+      ########
+      # Images
+      ########
+
+      # Python interface to the libmagic file type identification library
+      # I don't think this has anything to do w/ Jupyter magics
+      python_magic
+      # python bindings for imagemagick
+      Wand
+      # Python Imaging Library
+      pillow
+
+      ########
+      # Google
+      ########
 
       #google_api_core
       #google_cloud_core
@@ -180,33 +228,6 @@ let
       #google_cloud_testutils
       #google_cloud_automl
       #google_cloud_storage
-
-      # some of these may be needed to make rpy2 work
-      simplegeneric
-      # tzlocal is needed to make rpy2 work
-      tzlocal
-      rpy2
-
-      pyahocorasick
-      spacy
-
-      unidecode
-      homoglyphs
-      confusable-homoglyphs
-
-      # Python interface to the libmagic file type identification library
-      python_magic
-      # python bindings for imagemagick
-      Wand
-      # Python Imaging Library
-      pillow
-
-      # fix encodings
-      ftfy
-
-      lxml
-      wikidata2df
-      skosmos_client
     ];
   };
 
@@ -214,7 +235,13 @@ let
     jupyter.jupyterlabWith {
       directory = jupyterlabDirectoryImpure;
       kernels = [ iPython irkernel ];
+
+      # Add extra packages to the JupyterWith environment
       extraPackages = p: [
+        ####################
+        # For Jupyter
+        ####################
+
         # needed by nbconvert
         p.pandoc
         # see https://github.com/jupyter/nbconvert/issues/808
@@ -222,22 +249,23 @@ let
         # more info: https://nixos.wiki/wiki/TexLive
         p.texlive.combined.scheme-full
 
-        # TODO: these dependencies are only required when want to build a lab
-        # extension from source.
+        # TODO: these dependencies are only required when we want to build a
+        # lab extension from source.
         # Does jupyterWith allow me to specify them as buildInputs?
         p.nodejs
         p.yarn
+
+        # Note: has packages for augmenting Jupyter and for other purposes.
+        # TODO: should it be specified here?
+        jupyterExtraPython
 
         # jupyterlab-lsp must be specified here in order for the LSP for R to work.
         # TODO: why isn't it enough that this is specified for jupyterExtraPython?
         pkgs.python3Packages.jupyterlab-lsp
 
-        # Note: has packages for augmenting Jupyter and for other purposes.
-        jupyterExtraPython
-
-        ################################
-        # non-Jupyter-specific packages
-        ################################
+        #############
+        # Non-Jupyter
+        #############
 
         p.imagemagick
 
@@ -249,13 +277,37 @@ let
         # to get perceptual hash values of images
         # p.phash
         p.blockhash
-      ];
+      ] ++ (with pkgs.rPackages; [
+        ################################################
+        # For server extensions that rely on R or R pkgs
+        ################################################
+        # TODO: is it possible to specify these via extraJupyterPath instead?
+        #       I haven't managed to do it, but it should be possible.
+        #       I tried adding the following to extraJupyterPath, but that
+        #       didn't seem to do it.
+        #"${pkgs.R}/lib/R" 
+        #"${pkgs.R}/lib/R/library"
+        #"${pkgs.rPackages.formatR}/library"
+        #"${pkgs.rPackages.languageserver}/library"
 
+        languageserver
+
+        #----------------
+        # code formatting
+        #----------------
+        formatR
+        ## an alternative formatter:
+        #styler
+        #prettycode # seems to be needed by styler
+      ]);
+
+      # Bring all inputs from a package in scope:
+      #extraInputsFrom = p: [ ];
+
+      # Make paths available to Jupyter itself, generally for server extensions
       extraJupyterPath = pkgs:
         concatStringsSep ":" [
           "${jupyterExtraPython}/lib/${jupyterExtraPython.libPrefix}/site-packages"
-          "${pkgs.rPackages.formatR}/library/formatR/R"
-          "${pkgs.rPackages.languageserver}/library/languageserver/R"
         ];
     };
 in
@@ -484,7 +536,29 @@ in
     rm "$JUPYTERLAB_DIR/settings/overrides.json"
     echo '{"jupyterlab-vimrc:vimrc": {"imap": [["jk", "<Esc>"]]}, "@jupyterlab/apputils-extension:themes": {"theme": "base16-gruvbox-dark"}, "@jupyterlab/terminal-extension:plugin":{"fontFamily":"Meslo LG S DZ for Powerline,monospace"}}' >"$JUPYTER_DATA_DIR/lab/settings/overrides.json"
 
-    # Setting for tab manager being on the right is something like this:
+    #{
+    #    "language_servers": {
+    #     pyls: {
+    #       serverSettings: {
+    #         "pyls.plugins.pydocstyle.enabled": true,
+    #         "pyls.plugins.pyflakes.enabled": false,
+    #         "pyls.plugins.flake8.enabled": true
+    #       }
+    #     }
+    #    }
+    #}
+
+    ## If I want to use styler as the R formatter, I'll need to add a setting like this:
+    #{
+    #    "preferences": {
+    #        "default_formatter": {
+    #            //"r": ["formatR", "styler"]
+    #            "r": "styler"
+    #        }
+    #    },
+    #}
+
+    # The setting for tab manager being on the right is something like this:
     # "@jupyterlab/application-extension:sidebar": {"overrides": {"tab-manager": "right"}}
     #
     # "@jupyterlab/extensionmanager-extension:plugin": {"enabled": false}
