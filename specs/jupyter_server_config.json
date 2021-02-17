@@ -1,0 +1,10 @@
+{
+  "ServerApp": {
+    "root_dir": "@rootDirectoryImpure@",
+    "jpserver_extensions": {
+      "nbclassic": true,
+      "jupyterlab": true,
+      "jupyterlab_code_formatter": true
+    }
+  }
+}

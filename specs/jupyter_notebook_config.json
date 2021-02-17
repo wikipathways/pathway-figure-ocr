@@ -1,0 +1,12 @@
+{
+  "NotebookApp": {
+    "nbserver_extensions": {
+      "jupyterlab": true,
+      "jupyterlab_sql": true,
+      "jupytext": true,
+      "jupyter_lsp": true,
+      "jupyterlab_code_formatter": true,
+      "jupyter_resource_usage": true
+    }
+  }
+}

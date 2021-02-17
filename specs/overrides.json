@@ -1,0 +1,30 @@
+{
+  "jupyterlab-vimrc:vimrc": {
+    "imap": [
+      [
+        "jk",
+        "<Esc>"
+      ]
+    ]
+  },
+  "@jupyterlab/apputils-extension:themes": {
+    "theme": "base16-gruvbox-dark"
+  },
+  "@jupyterlab/terminal-extension:plugin": {
+    "fontFamily": "Meslo LG S DZ for Powerline,monospace"
+  },
+  "@jupyterlab/extensionmanager-extension:plugin": {
+    "enabled": false
+  },
+  "@krassowski/jupyterlab-lsp:plugin": {
+    "language_servers": {
+      "pyls": {
+        "serverSettings": {
+          "pyls.plugins.pydocstyle.enabled": true,
+          "pyls.plugins.pyflakes.enabled": false,
+          "pyls.plugins.flake8.enabled": true
+        }
+      }
+    }
+  }
+}

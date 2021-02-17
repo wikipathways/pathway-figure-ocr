@@ -18,3 +18,4 @@ shiny-screen/images/
 share-jupyter/
 .ipynb_checkpoints/
 .virtual_documents/
+venv/
