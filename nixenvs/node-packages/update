@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+touch package.json 
+rm package.json
+wget "https://raw.githubusercontent.com/arbennett/jupyterlab-themes/master/base16-gruvbox-dark/package.json"
+mv package.json old-package.json
+jq '. * ({"devDependencies": {"@jupyterlab/builder": "3.0.3"}})' old-package.json >package.json
+rm old-package.json
+node2nix --development

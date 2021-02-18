@@ -8,5 +8,8 @@
       "jupyterlab_code_formatter": true,
       "jupyter_resource_usage": true
     }
+  },
+  "KernelSpecManager": {
+    "ensure_native_kernel": false
   }
 }
