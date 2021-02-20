@@ -25,16 +25,16 @@ Contact us via [Issues](https://github.com/wikipathways/pathway-figure-ocr/issue
 
 ### poetry2nix
 
-To update Python dependencies:
+To add Python a package:
 
 ```
-nix-shell dev.nix
-poetry lock
+cd nixenvs/python-modules/
+poetry add --lock jupytext
 ```
 
-To add a package:
+To update Python packages:
 
 ```
-nix-shell dev.nix
-poetry add --lock jupytext jupyterlab
+cd nixenvs/python-modules/
+poetry update --lock
 ```

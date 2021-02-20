@@ -2,7 +2,7 @@
 , buildPythonPackage
 , fetchPypi
 , jupyterlab
-, jupyter_packaging
+, jupyter-packaging
 , setuptools
 #, distutils
 , wheel
@@ -28,7 +28,7 @@ buildPythonPackage rec {
 
   #nativeBuildInput = [ setuptools wheel nodePackages.typescript ];
   nativeBuildInput = [ setuptools wheel ];
-  buildInputs = [ jupyter_packaging ];
+  buildInputs = [ jupyter-packaging ];
   #propagatedBuildInputs = [ jupyterlab nodejs ];
   propagatedBuildInputs = [ jupyterlab ];
 

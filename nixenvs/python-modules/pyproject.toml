@@ -9,6 +9,11 @@ python = "^3.8"
 jupyter = "^1.0.0"
 jupyterlab = "^3.0.8"
 
+# These failed to install:
+# Could not find a version that satisfies the requirement certifi>=2020.06.20
+#seaborn = "^0.11.1"
+#scipy = "^1.6.1"
+#matplotlib = "^3.3.4"
 # infinite recursion error
 #jupytext = "^1.10.2"
 
@@ -30,6 +35,11 @@ jupyterlab-vim = "^0.13.0"
 jupyterlab-vimrc = "^0.5.2"
 jupyterlab-drawio = "^0.8.0"
 jupyterlab-system-monitor = "^0.8.0"
+rpy2 = "^3.4.2"
+pydocstyle = "^5.1.1"
+pylint = "^2.6.2"
+yapf = "^0.30.0"
+flake8 = "^3.8.4"
 
 [tool.poetry.dev-dependencies]
 jupyter-packaging = "^0.7.12"

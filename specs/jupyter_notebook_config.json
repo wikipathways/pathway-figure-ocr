@@ -1,15 +1,14 @@
 {
   "NotebookApp": {
     "nbserver_extensions": {
-      "jupyterlab": true,
-      "jupyterlab_sql": true,
-      "jupytext": true,
-      "jupyter_lsp": true,
-      "jupyterlab_code_formatter": true,
-      "jupyter_resource_usage": true
+      "jupyter_lsp": true
     }
   },
   "KernelSpecManager": {
-    "ensure_native_kernel": false
+    "ensure_native_kernel": false,
+    "whitelist": [
+      "ipython_mypkgs",
+      "ir_mypkgs"
+    ]
   }
 }

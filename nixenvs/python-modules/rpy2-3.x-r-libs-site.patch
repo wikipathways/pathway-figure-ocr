@@ -1,0 +1,19 @@
+--- a/rpy2/rinterface_lib/embedded.py	2021-02-18 17:41:10.420303267 -0800
++++ b/rpy2/rinterface_lib/embedded.py	2021-02-18 17:41:21.638313412 -0800
+@@ -138,6 +138,16 @@
+             _setinitialized()
+             return None
+         os.environ['R_HOME'] = openrlib.R_HOME
++
++        # path to libraries
++        existing = os.environ.get('R_LIBS_SITE')
++        if existing is not None:
++            prefix = existing + ':'
++        else:
++            prefix = ''
++        additional = '@NIX_R_LIBS_SITE@'
++        os.environ['R_LIBS_SITE'] = prefix + additional
++
+         options_c = [ffi.new('char[]', o.encode('ASCII')) for o in _options]
+         n_options = len(options_c)
+         n_options_c = ffi.cast('int', n_options)

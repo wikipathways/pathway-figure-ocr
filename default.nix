@@ -1,28 +1,36 @@
 with builtins;
+
 let
   # this corresponds to notebook_dir (impure)
   rootDirectoryImpure = toString ./.;
   shareDirectoryImpure = "${rootDirectoryImpure}/share-jupyter";
-
   # Path to the JupyterWith folder.
   jupyterWithPath = builtins.fetchGit {
     url = https://github.com/tweag/jupyterWith;
-
     rev = "35eb565c6d00f3c61ef5e74e7e41870cfa3926f7";
   };
 
+  # Path to the poetry2nix folder.
+  poetry2nixPath = builtins.fetchGit {
+    url = https://github.com/nix-community/poetry2nix;
+    rev = "e72ff71c3cc8bbc708dbc13941888eb08a65f651";
+  };
+
   # for dev
-  myoverlay = import ../mynixpkgs/overlay.nix;
+  #myoverlay = import ../mynixpkgs/overlay.nix;
   # for prod
-#  myoverlay = import (builtins.fetchGit {
-#    url = https://github.com/ariutta/mynixpkgs;
-#    rev = "4cd485f8fc2f43fcefdbdc838558ca9d6c174313";
-#    ref = "main";
-#  });
+  myoverlay = import (builtins.fetchGit {
+    url = https://github.com/ariutta/mynixpkgs;
+    rev = "ebd930f4d67ff658084281a9a71c6400ac2b912a";
+    ref = "main";
+  });
 
   myspecs = ./specs;
 
+  # Importing overlays
   overlays = [
+    # makes poetry2nix available
+    (import "${poetry2nixPath}/overlay.nix")
     myoverlay
     # jupyterWith overlays
     # Only necessary for Haskell kernel
@@ -33,28 +41,7 @@ let
   ];
 
   # Your Nixpkgs snapshot, with JupyterWith packages.
-  pkgs = import <nixpkgs> { inherit overlays; };
-
-  jupyterExtraPython = import ./nixenvs/python-modules/python-with-pkgs.nix;
-  jupyter = pkgs.jupyterWith;
-
-  jupyterlab-vim = pkgs.python3Packages.callPackage ./nixenvs/python-modules/jupyterlab-vim.nix {
-    jupyterlab=jupyterExtraPython.pkgs.jupyterlab;
-    jupyter_packaging=jupyterExtraPython.pkgs.jupyter-packaging;
-  };
-  jupyterlab-vimrc = pkgs.python3Packages.callPackage ./nixenvs/python-modules/jupyterlab-vimrc.nix {
-    jupyterlab=jupyterExtraPython.pkgs.jupyterlab;
-  };
-
-  # TODO: may have to change something to get multiple, not just gruvbox dark
-  #myNodePackages = import ./nixenvs/node-packages/node-packages.nix;
-  base16-gruvbox-dark-labextension = pkgs.callPackage ./nixenvs/node-packages/labextension.nix {
-    jq=pkgs.jq;
-    nodejs=pkgs.nodejs;
-    jupyter=jupyterExtraPython.pkgs.jupyter;
-    jupyterlab=jupyterExtraPython.pkgs.jupyterlab;
-    setuptools=jupyterExtraPython.pkgs.setuptools;
-  };
+  pkgs = import <nixpkgs> { inherit overlays; config.allowUnfree = true; };
 
   #########################
   # R
@@ -82,13 +69,13 @@ let
 
   myR = [ pkgs.R ] ++ (myRPackages pkgs.rPackages);
 
-  # 'jupyter-kernelspec list' will make everything lowercase and join the
-  # internal kernel name with this descriptor, e.g., for descriptor 'mypkgs':
+  # 'jupyter-kernelspec list' makes everything lowercase and joins the
+  # internal kernel name with this descriptor. Example for descriptor 'mypkgs':
   #   ipython_mypkgs
   #   ir_mypkgs
   #
-  # In the JupyterLab GUI, we'll see the language name joined to this
-  # descriptor with a dash, e.g.:
+  # In the JupyterLab GUI, we see the language name joined to the descriptor
+  # with a dash. Example for descriptor 'mypkgs':
   #   Python3 - mypkgs
   #   R - mypkgs
   kernel_descriptor = "mypkgs";
@@ -106,7 +93,7 @@ let
 #  # It appears juniper doesn't work anymore
 #  juniper = jupyter.kernels.juniperWith {
 #    # Identifier that will appear on the Jupyter interface.
-#    name = "JuniperKernel";
+#    name = kernel_descriptor;
 #    # Libraries (R packages) to be available to the kernel.
 #    packages = myRPackages;
 #    # Optional definition of `rPackages` to be used.
@@ -119,9 +106,22 @@ let
   # Python
   #########################
 
+  jupyterExtraPython = pkgs.callPackage ./nixenvs/python-modules/python-with-pkgs.nix {};
+  python3 = jupyterExtraPython;
+
+  jupyter = pkgs.jupyterWith;
+
   # TODO: take a look at xeus-python
   # https://github.com/jupyter-xeus/xeus-python#what-are-the-advantages-of-using-xeus-python-over-ipykernel-ipython-kernel
   # It supports the jupyterlab debugger. But it's not packaged for nixos yet.
+
+  # TODO: I was getting the following error message:
+  # Generating grammar tables from /nix/store/sr8r3k029wvgdbv2zr36wr976dk1lya6-python3-3.8.7-env/lib/python3.8/site-packages/blib2to3/Grammar.txt
+  # Writing grammar tables to /home/ariutta/.cache/black/20.8b1/Grammar3.8.7.final.0.pickle
+  # Writing failed: [Errno 2] No such file or directory: '/home/ariutta/.cache/black/20.8b1/tmppem8fqj6'
+
+  # I made it go away by manually adding the directory, but shouldn't this be automatic?
+  # mkdir -p /home/ariutta/.cache/black/20.8b1/
 
   iPython = jupyter.kernels.iPythonWith {
     name = kernel_descriptor;
@@ -134,12 +134,10 @@ let
       # intended only for augmenting jupyter, where should I specify it?
       nb_black
 
-      #jupytext
-
-      # TODO: for code formatting, compare nb_black with jupyterlab_code_formatter.
+      # TODO: for code formatting, compare nb_black with jupyterlab-code-formatter.
       # One difference:
       # nb_black is an IPython Magic (%), whereas
-      # jupyterlab_code_formatter is a combo lab & server extension.
+      # jupyterlab-code-formatter is a combo lab & server extension.
 
       # similar question for nbconvert: where should we specify it?
       nbconvert
@@ -149,7 +147,6 @@ let
       ################################
 
       lxml
-      #pkgs.qbatch
       seaborn
       skosmos_client
       wikidata2df
@@ -222,6 +219,17 @@ let
     ];
   };
 
+  # TODO: may have to change something if I want to use multiple NPM packages.
+  # Right now, it's just the gruvbox dark package in ./nixenvs/node-packages
+  #myNodePackages = import ./nixenvs/node-packages/node-packages.nix;
+  base16-gruvbox-dark-labextension = pkgs.callPackage ./nixenvs/node-packages/labextension.nix {
+    jq=pkgs.jq;
+    nodejs=pkgs.nodejs;
+    jupyter=jupyterExtraPython.pkgs.jupyter;
+    jupyterlab=jupyterExtraPython.pkgs.jupyterlab;
+    setuptools=jupyterExtraPython.pkgs.setuptools;
+  };
+
   jupyterEnvironment =
     jupyter.jupyterlabWith {
       directory = "${rootDirectoryImpure}/share-jupyter/lab";
@@ -234,6 +242,7 @@ let
         ####################
 
         # labextension
+        #p.base16-gruvbox-dark-labextension
         base16-gruvbox-dark-labextension
 
         # needed by nbconvert
@@ -249,15 +258,16 @@ let
         p.nodejs
         p.yarn
 
-        # Note: has packages for augmenting Jupyter and for other purposes.
+        # Note: jupyterExtraPython has packages for augmenting Jupyter as well
+        # as for other purposes.
         # TODO: should it be specified here?
         jupyterExtraPython
 
-        #p.qbatch
-
         # jupyterlab-lsp must be specified here in order for the LSP for R to work.
         # TODO: why isn't it enough that this is specified for jupyterExtraPython?
-        #jupyterExtraPython.pkgs.jupyterlab-lsp
+        jupyterExtraPython.pkgs.jupyter-lsp
+        jupyterExtraPython.pkgs.jupyterlab-lsp
+        #python3.pkgs.jupyterlab-code-formatter
 
         #############
         # Non-Jupyter
@@ -273,6 +283,8 @@ let
         # to get perceptual hash values of images
         # p.phash
         p.blockhash
+
+        p.R
       ] ++ (with pkgs.rPackages; [
         ################################################
         # For server extensions that rely on R or R pkgs
@@ -309,8 +321,12 @@ let
 in
   jupyterEnvironment.env.overrideAttrs (oldAttrs: {
     shellHook = oldAttrs.shellHook + ''
+    #################
+    # General Purpose
+    #################
+
     # this is needed in order that tools like curl and git can work with SSL
-    # possibly only for direnv?
+    # or maybe even just  for direnv?
     if [ ! -f "$SSL_CERT_FILE" ] || [ ! -f "$NIX_SSL_CERT_FILE" ]; then
       candidate_ssl_cert_file=""
       if [ -f "$SSL_CERT_FILE" ]; then
@@ -333,6 +349,28 @@ in
 
     # set SOURCE_DATE_EPOCH so that we can use python wheels
     SOURCE_DATE_EPOCH=$(date +%s)
+
+    ######################
+    # Jupyter + JupyterLab
+    ######################
+
+    #export R_HOME="${pkgs.R}/lib/R"
+    #export R_LIBS_SITE="$R_LIBS_SITE''${R_LIBS_SITE:+:}${pkgs.R}/lib/R/library:${pkgs.rPackages.languageserver}/library:${pkgs.rPackages.xml2}/library:${pkgs.rPackages.R6}/library"
+    
+    # TODO: this general format came from the nixpkgs generic R package builder.
+    # What does it do?
+    #export LD_LIBRARY_PATH="$LD_LIBRARY_PATH''${LD_LIBRARY_PATH:+:}${pkgs.R}/lib/R/lib"
+
+    # this doesn't work. it gives this message:
+    #   R cannot be found in the PATH and RHOME cannot be found.
+    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH''${LD_LIBRARY_PATH:+:}$(python -m rpy2.situation LD_LIBRARY_PATH)"
+    #export LD_LIBRARY_PATH="$LD_LIBRARY_PATH''${LD_LIBRARY_PATH:+:}$(python -m rpy2.situation LD_LIBRARY_PATH)"
+    # but strangely, this gives a result
+    #direnv exec Documents/sandbox/pathway-figure-ocr/ sh -c 'python -m rpy2.situation LD_LIBRARY_PATH'
+    # and so does this:
+    #direnv exec Documents/sandbox/pathway-figure-ocr/ sh -c 'which R'
+    # and this:
+    #direnv exec Documents/sandbox/pathway-figure-ocr/ R --version
 
     export JUPYTER_DATA_DIR="${shareDirectoryImpure}"
     export JUPYTER_CONFIG_DIR="${shareDirectoryImpure}/config"
@@ -488,41 +526,42 @@ in
     #   jupyterlab-hide-code v3.0.1 enabled OK
     # This difference could be due to the install.json being in share/...
     #
-    ln -s "${jupyterExtraPython.pkgs.jupyterlab-hide-code}/share/jupyter/labextensions/jupyterlab-hide-code" "${shareDirectoryImpure}/labextensions/jupyterlab-hide-code"
+    ln -s "${python3.pkgs.jupyterlab-hide-code}/share/jupyter/labextensions/jupyterlab-hide-code" "${shareDirectoryImpure}/labextensions/jupyterlab-hide-code"
 
     # @axlair/jupyterlab_vim
     mkdir -p "${shareDirectoryImpure}/labextensions/@axlair"
-    ln -s "${jupyterlab-vim}/lib/${jupyterExtraPython.python.libPrefix}/site-packages/jupyterlab_vim/labextension" "${shareDirectoryImpure}/labextensions/@axlair/jupyterlab_vim"
+    ln -s "${python3.pkgs.jupyterlab-vim}/lib/${python3.libPrefix}/site-packages/jupyterlab_vim/labextension" "${shareDirectoryImpure}/labextensions/@axlair/jupyterlab_vim"
 
     # jupyterlab-vimrc
-    ln -s "${jupyterlab-vimrc}/lib/${jupyterExtraPython.python.libPrefix}/site-packages/jupyterlab-vimrc" "${shareDirectoryImpure}/labextensions/jupyterlab-vimrc"
+    ln -s "${python3.pkgs.jupyterlab-vimrc}/lib/${python3.libPrefix}/site-packages/jupyterlab-vimrc" "${shareDirectoryImpure}/labextensions/jupyterlab-vimrc"
 
     # @krassowski/jupyterlab-lsp
     mkdir -p "${shareDirectoryImpure}/labextensions/@krassowski"
-    ln -s "${jupyterExtraPython.pkgs.jupyterlab-lsp}/share/jupyter/labextensions/@krassowski/jupyterlab-lsp" "${shareDirectoryImpure}/labextensions/@krassowski/jupyterlab-lsp"
+    ln -s "${python3.pkgs.jupyterlab-lsp}/share/jupyter/labextensions/@krassowski/jupyterlab-lsp" "${shareDirectoryImpure}/labextensions/@krassowski/jupyterlab-lsp"
 
     # @ryantam626/jupyterlab_code_formatter
     mkdir -p "${shareDirectoryImpure}/labextensions/@ryantam626"
-    ln -s "${jupyterExtraPython.pkgs.jupyterlab-code-formatter}/share/jupyter/labextensions/@ryantam626/jupyterlab_code_formatter" "${shareDirectoryImpure}/labextensions/@ryantam626/jupyterlab_code_formatter"
+    #ln -s "${python3.pkgs.jupyterlab-code-formatter}/share/jupyter/labextensions/@ryantam626/jupyterlab_code_formatter" "${shareDirectoryImpure}/labextensions/@ryantam626/jupyterlab_code_formatter"
+    ln -s "${python3.pkgs.jupyterlab-code-formatter}/lib/${python3.libPrefix}/site-packages/jupyterlab_code_formatter/labextension" "${shareDirectoryImpure}/labextensions/@ryantam626/jupyterlab_code_formatter"
 
     # jupyterlab-drawio
-    ln -s "${jupyterExtraPython.pkgs.jupyterlab-drawio}/lib/${jupyterExtraPython.python.libPrefix}/site-packages/jupyterlab-drawio/labextension" "${shareDirectoryImpure}/labextensions/jupyterlab-drawio"
+    ln -s "${python3.pkgs.jupyterlab-drawio}/lib/${python3.libPrefix}/site-packages/jupyterlab-drawio/labextension" "${shareDirectoryImpure}/labextensions/jupyterlab-drawio"
 
     # @aquirdturtle/collapsible_headings
     mkdir -p "${shareDirectoryImpure}/labextensions/@aquirdturtle"
-    ln -s "${jupyterExtraPython.pkgs.aquirdturtle-collapsible-headings}/share/jupyter/labextensions/@aquirdturtle/collapsible_headings" "${shareDirectoryImpure}/labextensions/@aquirdturtle/collapsible_headings"
+    ln -s "${python3.pkgs.aquirdturtle-collapsible-headings}/share/jupyter/labextensions/@aquirdturtle/collapsible_headings" "${shareDirectoryImpure}/labextensions/@aquirdturtle/collapsible_headings"
 
     # jupyterlab-system-monitor depends on jupyterlab-topbar and jupyter-resource-usage
 
     # jupyterlab-topbar
-    ln -s "${jupyterExtraPython.pkgs.jupyterlab-topbar}/lib/${jupyterExtraPython.python.libPrefix}/site-packages/jupyterlab-topbar/labextension" "${shareDirectoryImpure}/labextensions/jupyterlab-topbar-extension"
+    ln -s "${python3.pkgs.jupyterlab-topbar}/lib/${python3.libPrefix}/site-packages/jupyterlab-topbar/labextension" "${shareDirectoryImpure}/labextensions/jupyterlab-topbar-extension"
 
     # jupyter-resource-usage
     mkdir -p "${shareDirectoryImpure}/labextensions/@jupyter-server"
-    ln -s "${jupyterExtraPython.pkgs.jupyter-resource-usage}/share/jupyter/labextensions/@jupyter-server/resource-usage" "${shareDirectoryImpure}/labextensions/@jupyter-server/resource-usage"
+    ln -s "${python3.pkgs.jupyter-resource-usage}/share/jupyter/labextensions/@jupyter-server/resource-usage" "${shareDirectoryImpure}/labextensions/@jupyter-server/resource-usage"
 
     # jupyterlab-system-monitor
-    ln -s "${jupyterExtraPython.pkgs.jupyterlab-system-monitor}/lib/${jupyterExtraPython.python.libPrefix}/site-packages/jupyterlab-system-monitor/labextension" "${shareDirectoryImpure}/labextensions/jupyterlab-system-monitor"
+    ln -s "${python3.pkgs.jupyterlab-system-monitor}/lib/${python3.libPrefix}/site-packages/jupyterlab-system-monitor/labextension" "${shareDirectoryImpure}/labextensions/jupyterlab-system-monitor"
 
 
     # @arbennett/base16-gruvbox-dark
@@ -535,7 +574,8 @@ in
     # JupyterLab + source lab extensions
     ####################################
 
-    # A source lab extension is an uncompiled JS package (e.g., from NPM)
+    # A source lab extension is an uncompiled JS package (e.g., from NPM).
+    # Source extensions are built into JupyterLab.
     # To install one, we compile it together with JupyterLab, producing
     # a built version of JupyterLab that incorporates the lab extension.
     #
@@ -598,7 +638,7 @@ in
       chmod -R +w "${shareDirectoryImpure}/lab/staging/"
       rm -rf "${shareDirectoryImpure}/lab/staging/"
     else
-      echo "Skipping build of JupyterLab and source extensions" >&2
+      echo "jupyterlab: skipping build of self + source extensions" >&2
     fi
     '';
   })
