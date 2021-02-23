@@ -1,4 +1,4 @@
-{poetry2nix, R}:
+{poetry2nix, R, lib, pythonOlder}:
 # For more info, see
 # http://datakurre.pandala.org/2015/10/nix-for-python-developers.html
 # https://nixos.org/nixos/nix-pills/developing-with-nix-shell.html
@@ -8,6 +8,36 @@ with builtins;
 poetry2nix.mkPoetryEnv {
   projectDir = ./.;
   overrides = poetry2nix.overrides.withDefaults (self: super: {
+
+    ndex2 = super.ndex2.overridePythonAttrs(oldAttrs: {
+      # The source requiremets.txt appears to want:
+      #   if python < 3, use enum
+      #   if python 3 but < 3.4, use enum34
+      # But the way it's specified doesn't work for python >= 3.4.
+      # I'm just telling it to use enum34 whenever python < 3.4
+      prePatch = (oldAttrs.prePatch or "") + ''
+        substituteInPlace setup.py \
+            --replace 'enum34' 'enum34; python_version < "3.4"'
+      '';
+
+#      propagatedBuildInputs = [
+#        six ijson requests requests-toolbelt networkx urllib3 pandas pysolr numpy
+#      ] ++ lib.optionals (pythonOlder "3.4") [ enum34 ];
+
+      propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ lib.optionals (pythonOlder "3.4") [ enum34 ];
+
+#      checkInputs = [
+#        nose six ijson requests requests-toolbelt networkx urllib3 pandas pysolr numpy
+#      ];
+#
+#      checkPhase = ''
+#        nosetests -v
+#      '';
+
+      # Tests try to make network requests, so we can't run them
+      doCheck = false;
+    });
+
     aquirdturtle-collapsible-headings = super.aquirdturtle-collapsible-headings.overridePythonAttrs(oldAttrs: {
       nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [
         super.jupyter-packaging

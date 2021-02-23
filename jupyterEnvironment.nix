@@ -111,7 +111,9 @@ let
   # Python
   #########################
 
-  jupyterExtraPython = pkgs.callPackage ./nixenvs/python-modules/python-with-pkgs.nix {};
+  jupyterExtraPython = pkgs.callPackage ./nixenvs/python-modules/python-with-pkgs.nix {
+    pythonOlder = pkgs.python3.pythonOlder;
+  };
   python3 = jupyterExtraPython;
 
   jupyter = pkgs.jupyterWith;
