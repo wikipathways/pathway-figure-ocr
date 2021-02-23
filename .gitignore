@@ -15,7 +15,10 @@ shiny-25years/rsconnect
 enrichment_results/
 shiny-screen/images/
 .direnv
-share-jupyter/
 .ipynb_checkpoints/
 .virtual_documents/
 venv/
+share/
+share-jupyter/
+data/
+/deleteme/
