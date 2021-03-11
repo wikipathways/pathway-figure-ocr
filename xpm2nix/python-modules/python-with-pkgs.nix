@@ -89,7 +89,7 @@ poetry2nix.mkPoetryEnv {
       # * put original file in a
       # * put edited file in b
       # * ran the following:
-      # diff -u a/rpy2/rinterface_lib/embedded.py b/rpy2/rinterface_lib/embedded.py >nixenvs/python-modules/rpy2-3.x-r-libs-site.patch
+      # diff -u a/rpy2/rinterface_lib/embedded.py b/rpy2/rinterface_lib/embedded.py >xpm2nix/python-modules/rpy2-3.x-r-libs-site.patch
 
       postPatch = ''
         substituteInPlace 'rpy2/rinterface_lib/embedded.py' --replace '@NIX_R_LIBS_SITE@' "$R_LIBS_SITE"

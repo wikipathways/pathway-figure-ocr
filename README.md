@@ -23,18 +23,22 @@ This work is supported by NIGMS, [R01GM100039](https://app.dimensions.ai/details
 The [codebook](codebook.md) is a good place to start to see how we assemble and run the PFOCR pipeline. Be forewarned, however, this project is still in development and is not ready for production or even dev releases. So, don't expect things to work :)
 Contact us via [Issues](https://github.com/wikipathways/pathway-figure-ocr/issues) if you're interested in contributing to the development. All our code are open source.
 
-### poetry2nix
+### xpm2nix: external package manager to Nix
+
+#### Python: poetry2nix
 
 To add Python a package:
 
 ```
-cd nixenvs/python-modules/
+cd xpm2nix/python-modules/
 poetry add --lock jupytext
 ```
 
 To update Python packages:
 
 ```
-cd nixenvs/python-modules/
+cd xpm2nix/python-modules/
 poetry update --lock
 ```
+
+#### JavaScript: node2nix

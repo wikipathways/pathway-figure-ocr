@@ -111,7 +111,7 @@ let
   # Python
   #########################
 
-  jupyterExtraPython = pkgs.callPackage ./nixenvs/python-modules/python-with-pkgs.nix {
+  jupyterExtraPython = pkgs.callPackage ./xpm2nix/python-modules/python-with-pkgs.nix {
     pythonOlder = pkgs.python3.pythonOlder;
   };
   python3 = jupyterExtraPython;
@@ -227,9 +227,9 @@ let
   };
 
   # TODO: may have to change something if I want to use multiple NPM packages.
-  # Right now, it's just the gruvbox dark package in ./nixenvs/node-packages
-  #myNodePackages = import ./nixenvs/node-packages/node-packages.nix;
-  base16-gruvbox-dark-labextension = pkgs.callPackage ./nixenvs/node-packages/labextension.nix {
+  # Right now, it's just the gruvbox dark package in ./xpm2nix/node-packages
+  #myNodePackages = import ./xpm2nix/node-packages/node-packages.nix;
+  base16-gruvbox-dark-labextension = pkgs.callPackage ./xpm2nix/node-packages/labextension.nix {
     jq=pkgs.jq;
     nodejs=pkgs.nodejs;
     jupyter=jupyterExtraPython.pkgs.jupyter;
