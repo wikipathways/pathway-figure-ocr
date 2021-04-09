@@ -9,10 +9,22 @@ library(magrittr)
 
 
 ## Read in PFOCR analysis set
-pfocr.figs.df <- readRDS("~/Dropbox (Gladstone)/PFOCR_25Years/pfocr_figures_fixed.rds")
+pfocr.figs.df <- readRDS("~/Dropbox (Gladstone)/PFOCR_25Years/titles/pfocr_figures_curating.rds")
 afigs <- read.table("~/Dropbox (Gladstone)/PFOCR_25Years/analysis_set_figure_ids.tsv", sep="\t", stringsAsFactors = F)
-pfocr.df <- pfocr.figs.df %>% filter(figid %in% afigs$V1)
-  
+pfocr.df <- pfocr.figs.df %>% dplyr::filter(figid %in% afigs$V1)
+pfocr.df.ori <- pfocr.df # stash complete df for preamble calc
+### filter by analysis hits
+# hits.rsea.pf <- readRDS("~/Dropbox (Gladstone)/PFOCR_25Years/tables/hits_rsea_pfocr.rds")
+# pfocr.df <- pfocr.df %>% dplyr::filter(figid %in% hits.rsea.pf$set_id == F)
+### filter by titles <10 and >150
+# pfocr.df <- pfocr.df %>%
+#   dplyr::filter(nchar(figtitle) > 200)
+### filter by labels
+# pfocr.df <- pfocr.df %>%
+#   dplyr::filter(!is.na(plant)) #latin, plant
+### filter by (A) and (B)
+pfocr.df <- pfocr.df %>% filter(grepl("^\\(A\\).*\\(B\\)",figtitle))
+
 fig.list <- unlist(unname(as.list(pfocr.df[,1])))
 
 # set headers for output files
@@ -103,6 +115,7 @@ ui <- fluidPage(
           });
         })")),
         actionButton("save", label = "Save"), #right arrow
+        
         tags$script(HTML("$(function(){ 
           $(document).keyup(function(e) {
             if (e.which == 38) {
@@ -111,7 +124,9 @@ ui <- fluidPage(
           });
         })")),
         actionButton("reload", label = "Reload"), #up arrow
+        
         actionButton("reject", label = "Reject"),
+        
         tags$script(HTML("$(function(){ 
                          $(document).keyup(function(e) {
                          if (e.which == 40) {
@@ -120,6 +135,7 @@ ui <- fluidPage(
                          });
                          })")),
         actionButton("other", label = "Non-human"), #down arrow
+        
         tags$script(HTML("$(function(){ 
                          $(document).keyup(function(e) {
                          if (e.which == 37) {
@@ -195,13 +211,13 @@ server <- function(input, output, session) {
     # Check for preamble
     ## update top 20 preambles so far
     df.cur <- readRDS("pfocr_curated.rds")
-    df.ori <- as.data.frame(pfocr.df %>%
+    df.ori <- as.data.frame(pfocr.df.ori %>%
                               filter(figid %in% df.cur$figid))
     df.diff <- merge(df.ori, df.cur, by="figid")
     df.diff <- droplevels(df.diff)
     sub_v <- Vectorize(sub, c("pattern", "x"))
     df.diff <- df.diff %>%
-      mutate(diff = unname(sub_v(tolower(figtitle.y), "XXXXXX", tolower(figtitle.x)))) %>%
+      mutate(diff = unname(sub_v(tolower(gsub("[\\[\\]]","",figtitle.y, perl=T)), "XXXXXX", tolower(gsub("[\\[\\]]","",figtitle.x, perl=T))))) %>%
       tidyr::separate(diff, c("diff.pre","diff.suf"),"XXXXXX", remove = F, fill="right") %>%
       mutate(diff.pre = ifelse(diff.pre == diff|diff.pre == "", NA, diff.pre))
     pre.20 <- names(sort(table(df.diff$diff.pre),decreasing = T)[1:40])
@@ -245,9 +261,10 @@ server <- function(input, output, session) {
       }
     }
     
-    ## Un-Greek, every time!
-    ungreek.title <- ungreekText(cur.title)
-    updateTextInput(session, "fig.title", value=ungreek.title) 
+    ## Remove last period and un-Greek, every time!
+    update.title <- ungreekText(cur.title)
+    update.title <- sub("\\.$", "", update.title)
+    updateTextInput(session, "fig.title", value=update.title) 
 
     # Check for "XXX pathway"
     pattern <- "^.*?\\s*?([A-Za-z0-9_/-]+\\s([Ss]ignaling\\s)*pathway).*$"
@@ -308,7 +325,9 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$papertitle, {
-    updateTextInput(session, "fig.title", value=rv$fig.df$papertitle) 
+    paper.title <- rv$fig.df$papertitle
+    paper.title <- sub("\\.$", "", paper.title)
+    updateTextInput(session, "fig.title", value=paper.title) 
   })
   
   observeEvent(input$xxxpathway, {
