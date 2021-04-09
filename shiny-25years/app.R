@@ -39,7 +39,7 @@ ui <- fixedPage(
                      multiple = TRUE #, options = list(maxItems = 1)
       ),
       selectizeInput('genes', 'Gene content', 
-                     choices = sort(unique(df.genes$hgnc_symbol)), 
+                     choices = NULL, # see server-side selectize
                      multiple = TRUE
       ),
       selectizeInput('years', 'Publication Years', 
@@ -86,6 +86,9 @@ ui <- fixedPage(
 
 server <- function(input, output, session) {
   
+  ## SERVER-SIDE SELECTIZE (for performance)
+  updateSelectizeInput(session, 'genes', choices = sort(unique(df.genes$hgnc_symbol)), server = TRUE)
+  
   ## DEBUG
   output$debug.annots <- renderPrint({
     str(input$annots)
@@ -111,16 +114,30 @@ server <- function(input, output, session) {
       {if (!is.null(input$annots)) filter(., figid %in% as.list(df.annots %>% 
                                                                   filter(jensenknow7 %in% input$annots) %>% 
                                                                   distinct(figid))[[1]]) else filter(., TRUE) } %>%
-      {if (!is.null(input$genes)) filter(., figid %in% as.list(df.genes %>% 
-                                                                 filter(hgnc_symbol %in% input$genes) %>% 
-                                                                 distinct(figid))[[1]]) else filter(., TRUE) }
+      {if (!is.null(input$genes)) filter(., figid %in% as.list(df.genes %>% ## AND logic
+                                                                 dplyr::filter(hgnc_symbol %in% input$genes) %>%
+                                                                 dplyr::select(c(figid, hgnc_symbol))%>%
+                                                                 dplyr::mutate(value=TRUE) %>%
+                                                                 dplyr::distinct(figid,hgnc_symbol, value) %>%
+                                                                 tidyr::spread(hgnc_symbol, value, convert=T, fill=F) %>%
+                                                                 dplyr::filter_if(is.logical, all_vars(.==TRUE)) %>%
+                                                                 dplyr::select(figid))[[1]]) else filter(., TRUE) }
+    ## OR logic
+    # {if (!is.null(input$genes)) filter(., figid %in% as.list(df.genes %>%
+    #                                                            filter(hgnc_symbol %in% input$genes) %>%
+    #                                                            distinct(figid))[[1]]) else filter(., TRUE) }
   })
   
   df.reactive.genes <- reactive({
     df.genes %>%
-      {if (!is.null(input$genes)) filter(., figid %in% as.list(df.genes %>% 
-                                                                 filter(hgnc_symbol %in% input$genes) %>% 
-                                                                 distinct(figid))[[1]]) else filter(., TRUE) } %>%
+      {if (!is.null(input$genes)) filter(., figid %in% as.list(df.genes %>%  ## AND logic
+                                                                 dplyr::filter(hgnc_symbol %in% input$genes) %>%
+                                                                 dplyr::select(c(figid, hgnc_symbol))%>%
+                                                                 dplyr::mutate(value=TRUE) %>%
+                                                                 dplyr::distinct(figid,hgnc_symbol, value) %>%
+                                                                 tidyr::spread(hgnc_symbol, value, convert=T, fill=F) %>%
+                                                                 dplyr::filter_if(is.logical, all_vars(.==TRUE)) %>%
+                                                                 dplyr::select(figid))[[1]]) else filter(., TRUE) } %>%
       {if (!is.null(input$annots)) filter(., figid %in% as.list(df.annots %>% 
                                                                   filter(jensenknow7 %in% input$annots) %>% 
                                                                   distinct(figid))[[1]]) else filter(., TRUE) } %>%
@@ -135,9 +152,14 @@ server <- function(input, output, session) {
       {if (!is.null(input$annots)) filter(., figid %in% as.list(df.annots %>% 
                                                                   filter(jensenknow7 %in% input$annots) %>% 
                                                                   distinct(figid))[[1]]) else filter(., !is.na(jensenknow7)) } %>%
-      {if (!is.null(input$genes)) filter(., figid %in% as.list(df.genes %>% 
-                                                                 filter(hgnc_symbol %in% input$genes) %>% 
-                                                                 distinct(figid))[[1]]) else filter(., TRUE) } %>%
+      {if (!is.null(input$genes)) filter(., figid %in% as.list(df.genes %>%  ## AND logic
+                                                                 dplyr::filter(hgnc_symbol %in% input$genes) %>%
+                                                                 dplyr::select(c(figid, hgnc_symbol))%>%
+                                                                 dplyr::mutate(value=TRUE) %>%
+                                                                 dplyr::distinct(figid,hgnc_symbol, value) %>%
+                                                                 tidyr::spread(hgnc_symbol, value, convert=T, fill=F) %>%
+                                                                 dplyr::filter_if(is.logical, all_vars(.==TRUE)) %>%
+                                                                 dplyr::select(figid))[[1]]) else filter(., TRUE) } %>%
       {if (!is.null(input$years)) filter(., figid %in% as.list(df.years %>% 
                                                                  filter(year %in% input$years) %>% 
                                                                  distinct(figid))[[1]]) else filter(., TRUE) } 
@@ -150,9 +172,14 @@ server <- function(input, output, session) {
       {if (!is.null(input$annots)) filter(., figid %in% as.list(df.annots %>% 
                                                                   filter(jensenknow7 %in% input$annots) %>% 
                                                                   distinct(figid))[[1]]) else filter(., TRUE) } %>%
-      {if (!is.null(input$genes)) filter(., figid %in% as.list(df.genes %>% 
-                                                                 filter(hgnc_symbol %in% input$genes) %>% 
-                                                                 distinct(figid))[[1]]) else filter(., TRUE) }
+      {if (!is.null(input$genes)) filter(., figid %in% as.list(df.genes %>%  ## AND logic
+                                                                 dplyr::filter(hgnc_symbol %in% input$genes) %>%
+                                                                 dplyr::select(c(figid, hgnc_symbol))%>%
+                                                                 dplyr::mutate(value=TRUE) %>%
+                                                                 dplyr::distinct(figid,hgnc_symbol, value) %>%
+                                                                 tidyr::spread(hgnc_symbol, value, convert=T, fill=F) %>%
+                                                                 dplyr::filter_if(is.logical, all_vars(.==TRUE)) %>%
+                                                                 dplyr::select(figid))[[1]]) else filter(., TRUE) }
   })
   
   ## UPDATE FILTERS
