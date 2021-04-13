@@ -30,7 +30,7 @@ pfocr.genes.sub <- pfocr.genes %>%
 upset.df <- pfocr.genes.sub %>%
   tidyr::spread(hgnc_symbol, value, convert=T, fill=F)
 
-#### UpSetR: PFOCR and PubTator Genes
+#### UpSetR on PFOCR 
 
 library(UpSetR)
 
