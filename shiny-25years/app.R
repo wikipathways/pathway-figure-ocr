@@ -9,10 +9,21 @@ library(magrittr)
 library(ggplot2)
 
 ## READ DF
-df.table <- readRDS("pfocr_table.rds")
-df.years <- readRDS("pfocr_years.rds")
-df.genes <- readRDS("pfocr_genes.rds")
-df.annots <- readRDS("pfocr_annots.rds")
+df.table <- NULL
+df.years <- NULL
+df.genes <- NULL
+df.annots <- NULL
+
+readPfocrData <- function(session,df.table,df.years,df.genes,df.annots ){
+  withProgress(message = 'Loading data...', detail = "",
+               style = getShinyOption("progress.style", default = "notification"),
+               value = NULL, {
+  df.table <<- readRDS("pfocr_table.rds")
+  df.years <<- readRDS("pfocr_years.rds")
+  df.genes <<- readRDS("pfocr_genes.rds")
+  df.annots <<- readRDS("pfocr_annots.rds")
+  })
+}
 
 # df.active <<- df.table
 # df.active.genes <<- df.genes %>% filter(figid %in% df.active$figid)
@@ -86,20 +97,42 @@ ui <- fixedPage(
 
 server <- function(input, output, session) {
   
+  ## FUNCTION TO TOGGLE FILTER INPUTS
+  #TODO: integrate this into reactive logic
+  enableFilters<-function(enable=TRUE){
+    if(enable){
+      shinyjs::enable('annots')
+      shinyjs::enable('genes')
+      shinyjs::enable('years')
+    }else {
+      shinyjs::disable('annots')
+      shinyjs::disable('genes')
+      shinyjs::disable('years')
+    }
+  }
+  
+  # READ IN DATA FILES WITH PROGRESS NOTE
+  if(is.null(df.genes)){
+    readPfocrData(session,df.table,df.years,df.genes,df.annots )
+  }
+                 
   ## SERVER-SIDE SELECTIZE (for performance)
-  updateSelectizeInput(session, 'genes', choices = sort(unique(df.genes$hgnc_symbol)), server = TRUE)
+  updateSelectizeInput(session, 'genes', 
+                       choices = sort(unique(df.genes$hgnc_symbol)), 
+                       server = TRUE)
   
   ## DEBUG
-  output$debug.annots <- renderPrint({
-    str(input$annots)
-  })
-  output$debug.genes <- renderPrint({
-    str(input$genes)
-  })
-  output$debug.years <- renderPrint({
-    str(input$years)
-  })
-  
+  # output$debug.annots <- renderPrint({
+  #   str(input$annots)
+  # })
+  # output$debug.genes <- renderPrint({
+  #   str(input$genes)
+  # })
+  # output$debug.years <- renderPrint({
+  #   str(input$years)
+  # })
+                 
+
   
   ## SUMMARY
   output$sum.figs <- renderText({paste("Figures:", as.character(formatC(length(unique(df.reactive.table()$figid)), format="d", big.mark=',')), sep=" ")})
@@ -107,9 +140,12 @@ server <- function(input, output, session) {
   output$sum.genes <- renderText({paste("Total genes:", as.character(formatC(length(df.reactive.genes()$entrez), format="d", big.mark=',')), sep=" ")})
   output$sum.genes.unique <- renderText({paste("Unique genes:", as.character(formatC(length(unique(df.reactive.genes()$entrez)), format="d", big.mark=',')), sep=" ")})
   
-  
+
   ## REACTIVE FILTER SELECTION
   df.reactive.years <- reactive({
+    withProgress(message = 'Filtering', detail = "by year",
+                 style = getShinyOption("progress.style", default = "notification"),
+                 value = NULL, {
     df.years %>%
       {if (!is.null(input$annots)) filter(., figid %in% as.list(df.annots %>% 
                                                                   filter(jensenknow7 %in% input$annots) %>% 
@@ -127,8 +163,12 @@ server <- function(input, output, session) {
     #                                                            filter(hgnc_symbol %in% input$genes) %>%
     #                                                            distinct(figid))[[1]]) else filter(., TRUE) }
   })
+  })
   
   df.reactive.genes <- reactive({
+    withProgress(message = 'Filtering', detail = "by gene",
+                 style = getShinyOption("progress.style", default = "notification"),
+                 value = NULL, {
     df.genes %>%
       {if (!is.null(input$genes)) filter(., figid %in% as.list(df.genes %>%  ## AND logic
                                                                  dplyr::filter(hgnc_symbol %in% input$genes) %>%
@@ -146,8 +186,12 @@ server <- function(input, output, session) {
                                                                  distinct(figid))[[1]]) else filter(., TRUE) } 
     
   })
+  })
   
   df.reactive.annots <- reactive({
+    withProgress(message = 'Filtering', detail = "by disease",
+                 style = getShinyOption("progress.style", default = "notification"),
+                 value = NULL, {
     df.annots %>%
       {if (!is.null(input$annots)) filter(., figid %in% as.list(df.annots %>% 
                                                                   filter(jensenknow7 %in% input$annots) %>% 
@@ -165,8 +209,12 @@ server <- function(input, output, session) {
                                                                  distinct(figid))[[1]]) else filter(., TRUE) } 
     
   })
+  })
   
   df.reactive.table <- reactive({
+    withProgress(message = 'Filtering', detail = "table",
+                 style = getShinyOption("progress.style", default = "notification"),
+                 value = NULL, {
     df.table %>%
       {if (!is.null(input$years)) filter(., year %in% input$years) else filter(., TRUE) } %>%
       {if (!is.null(input$annots)) filter(., figid %in% as.list(df.annots %>% 
@@ -181,9 +229,13 @@ server <- function(input, output, session) {
                                                                  dplyr::filter_if(is.logical, all_vars(.==TRUE)) %>%
                                                                  dplyr::select(figid))[[1]]) else filter(., TRUE) }
   })
+  })
   
   ## UPDATE FILTERS
   observe ({
+    withProgress(message = 'Updating filter', detail = "options",
+                 style = getShinyOption("progress.style", default = "notification"),
+                 value = NULL, {
     updateSelectizeInput(session, 'annots',
                          choices = sort(unique(df.reactive.annots()$jensenknow7)),
                          selected = input$annots
@@ -196,10 +248,15 @@ server <- function(input, output, session) {
                          choices = sort(unique(df.reactive.years()$year), decreasing = T),
                          selected = input$years
     )
+                 })
   })
   
+                 
    ## PLOT: DISEASE ANNOT
   output$top.annots <- renderPlot({
+    withProgress(message = 'Updating plot', detail = "by disease",
+                 style = getShinyOption("progress.style", default = "notification"),
+                 value = NULL, {
     df.reactive.annot.plot <- df.reactive.annots() %>%
       group_by(jensenknow7) %>%
       summarize(annot_cnt = n()) %>%
@@ -217,9 +274,14 @@ server <- function(input, output, session) {
       ggtitle("Top Diseases Associated with Figures") +
       xlab("") + ylab("")
   })
+  })
   
-  ## PLOT: GENE
+  #NOTE: THIS IS THE SLOWEST STEP #TODO: Optimize
+  ## PLOT: GENE   
   output$top.genes <- renderPlot({
+    withProgress(message = 'Updating plot', detail = "by gene",
+                 style = getShinyOption("progress.style", default = "notification"),
+                 value = NULL, {
     df.reactive.gene.plot <- df.reactive.genes() %>%
       group_by(figid,symbol) %>%
       summarize(fig_sym_cnt = n()) %>%
@@ -238,10 +300,14 @@ server <- function(input, output, session) {
             axis.text.y = element_text(size = 12))  +
       ggtitle("Top Gene Symbols Used in Figures") +
       xlab("") + ylab("")
+                 })
   })
   
   ## PLOT: TIMELINE
   output$years <- renderPlot({
+    withProgress(message = 'Updating plot', detail = "by year",
+                 style = getShinyOption("progress.style", default = "notification"),
+                 value = NULL, {
     df.reactive.year.plot <- df.reactive.years() %>%
       group_by(year) %>%
       summarize(fig_cnt = n())
@@ -260,11 +326,14 @@ server <- function(input, output, session) {
       ggtitle("Figures by Year") +
       xlab("") + ylab("")+
       scale_x_discrete(breaks = factor(1995:2019), drop=FALSE)
-    
+                 })
   })
   
   ## TABLE OF FILTERED FIGURES
   output$table <- DT::renderDataTable(
+    withProgress(message = 'Updating table...', detail = "",
+                 style = getShinyOption("progress.style", default = "notification"),
+                 value = NULL, {
     DT::datatable(df.reactive.table()[,c('pmcid','paper.title','authors','year','number','figure.title' )],
                   extensions = 'Buttons',
                   filter = 'top',
@@ -307,6 +376,7 @@ server <- function(input, output, session) {
                                  )
                   )
     )
+   })
   )
   
   ## REACTIVE TABLE SELECTION
