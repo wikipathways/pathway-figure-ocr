@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
-touch package.json 
-rm package.json
-wget "https://raw.githubusercontent.com/arbennett/jupyterlab-themes/master/base16-gruvbox-dark/package.json"
-mv package.json old-package.json
-jq '. * ({"devDependencies": {"@jupyterlab/builder": "3.0.3"}})' old-package.json >package.json
-rm old-package.json
-node2nix --development
+#npm install --package-lock-only --save @arbennett/base16-gruvbox-dark
+#npm install --package-lock-only --save-dev @jupyterlab/builder
+
+npm update --package-lock-only
+npm audit fix --package-lock-only
+
+#rm package-lock.json
+#node2nix --development
+
+node2nix --development --lock package-lock.json

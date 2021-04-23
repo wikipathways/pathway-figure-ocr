@@ -1,9 +1,8 @@
 To update:
 
-```
-nix-shell ../dev.nix
-./update
-```
+Enter the Nix environment automatically using direnv, or do it manually: `nix-shell ../shell.nix`.
+
+Run the update: `./update`
 
 ## Building
 
@@ -35,7 +34,7 @@ wget $(npm view @arbennett/base16-gruvbox-dark dist.tarball)
 - add a missing devDep to package.json
 
 ```
-"@jupyterlab/builder": "3.0.2",
+"@jupyterlab/builder": "3.0.5",
 ```
 
 - build

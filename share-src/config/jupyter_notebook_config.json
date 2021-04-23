@@ -1,9 +1,4 @@
 {
-  "NotebookApp": {
-    "nbserver_extensions": {
-      "jupyter_lsp": true
-    }
-  },
   "KernelSpecManager": {
     "ensure_native_kernel": false,
     "whitelist": [

@@ -1,11 +1,13 @@
 {
   "ServerApp": {
-    "root_dir": "@rootDirectoryImpure@",
+    "root_dir": "@notebookDir@",
+    "notebook_dir": "@notebookDir@",
     "jpserver_extensions": {
       "jupyter_lsp": true,
       "jupyter_resource_usage": true,
       "jupyterlab": true,
       "jupyterlab_code_formatter": true,
+      "jupytext": true,
       "nbclassic": true
     }
   }

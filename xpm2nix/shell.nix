@@ -25,6 +25,7 @@ in
 
       # for node
       pkgs.nodePackages.node2nix
+      pkgs.nodejs # includes npm
 
       # yarn.lock <-> package-lock.json
       #pkgs.nodePackages.synp
