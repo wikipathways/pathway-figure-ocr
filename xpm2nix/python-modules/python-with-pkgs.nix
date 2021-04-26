@@ -1,4 +1,4 @@
-{pkgs, poetry2nix, R, lib, pythonOlder}:
+{pkgs, poetry2nix, R, lib, pythonOlder, stdenv ? pkgs.stdenv}:
 
 with builtins;
 let
@@ -46,28 +46,6 @@ let
       ];
     });
 
-    nbconvert = super.nbconvert.overridePythonAttrs(oldAttrs: {
-      propagatedBuildInputs = (oldAttrs.propagatedBuildInputs or []) ++ [ pkgs.pandoc pkgs.texlive.combined.scheme-full ];
-    });
-
-    # nbconvert dependencies:
-    #p.pandoc
-    # see https://github.com/jupyter/nbconvert/issues/808
-    # TODO: is tectonic needed? It appears I can convert to pdf & latex w/out it.
-    #p.tectonic
-    # more info: https://nixos.wiki/wiki/TexLive
-    #p.texlive.combined.scheme-full
-
-    # still getting some errors for certain types of conversions:
-    # nbconvert failed: Pyppeteer is not installed to support Web PDF conversion. Please install `nbconvert[webpdf]` to enable.
-    # - and -
-    # nbconvert failed: PDF creating failed, captured latex output:
-    # Failed to run "['xelatex', 'notebook.tex', '-quiet']" command:
-    # ...
-    # (/nix/store/llmvlb5wpjrmp4ckxw4g21qn4syyhjpv-texlive-combined-full-2020.2021010
-    # 9/share/texmf/tex/latex/base/size11.cloFontconfig warning: "/etc/fonts/fonts.conf", line 86: unknown element "blank"
-    # ))
-
     jupyterlab-system-monitor = super.jupyterlab-system-monitor.overridePythonAttrs(oldAttrs: {
       nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [
         super.jupyter-packaging
@@ -80,8 +58,57 @@ let
       ];
     });
 
-    jupyterlab-vim = self.callPackage ./jupyterlab-vim.nix {jupyter-packaging=self.jupyter-packaging;};
-    jupyterlab-vimrc = self.callPackage ./jupyterlab-vimrc.nix {};
+    ##############################################
+    # jupyterlab-vim & jupyterlab-vimrc
+    # TODO: can we use the "normal" build process?
+    ##############################################
+
+    jupyterlab-vim = super.jupyterlab-vim.overridePythonAttrs(oldAttrs: {
+      nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [
+        super.jupyter-packaging
+      ];
+
+      doCheck = false;
+
+      format = "other";
+
+      buildPhase = ''
+        mkdir -p "$out/lib/python3.8/site-packages"
+        cp -r ./jupyterlab_vim "$out/lib/python3.8/site-packages/jupyterlab_vim"
+
+        mkdir -p "$out/share/jupyter/labextensions/@axlair"
+        cp -r ./jupyterlab_vim/labextension "$out/share/jupyter/labextensions/@axlair/jupyterlab_vim"
+        cp ./install.json "$out/share/jupyter/labextensions/@axlair/jupyterlab_vim/install.json"
+      '';
+
+      installPhase = ''
+        echo "installPhase" 1>&2
+      '';
+    });
+
+    jupyterlab-vimrc = super.jupyterlab-vimrc.overridePythonAttrs(oldAttrs: {
+      nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [
+        super.jupyter-packaging
+      ];
+
+      doCheck = false;
+
+      format = "other";
+
+      buildPhase = ''
+        # diff -r ../binder-nix-demo/jupyterlab-vimrc-0.5.2/jupyterlab-vimrc/static/ .venv/share/jupyter/labextensions/jupyterlab-vimrc/
+
+        mkdir -p "$out/lib/python3.8/site-packages"
+        cp -r ./jupyterlab-vimrc/static "$out/lib/python3.8/site-packages/jupyterlab-vimrc"
+
+        mkdir -p "$out/share/jupyter/labextensions"
+        cp -r ./jupyterlab-vimrc/static "$out/share/jupyter/labextensions/jupyterlab-vimrc"
+      '';
+
+      installPhase = ''
+        echo "installPhase" 1>&2
+      '';
+    });
 
     jupyterlab-widgets = super.jupyterlab-widgets.overridePythonAttrs(oldAttrs: {
       nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [
@@ -134,6 +161,88 @@ let
       # so maybe we still do test markdown-it-py that way?
       doCheck = false;
     });
+
+    ############
+    # matplotlib
+    ############
+
+    matplotlib = super.matplotlib.overridePythonAttrs (
+      old:
+      let 
+        enableGhostscript = old.passthru.enableGhostscript or false;
+        enableGtk3 = old.passthru.enableTk or false;
+        enableQt = old.passthru.enableQt or false;
+        enableTk = old.passthru.enableTk or false;
+
+        inherit (pkgs.darwin.apple_sdk.frameworks) Cocoa;
+      in  
+      {   
+        NIX_CFLAGS_COMPILE = lib.optionalString stdenv.isDarwin "-I${pkgs.libcxx}/include/c++/v1";
+
+        XDG_RUNTIME_DIR = "/tmp";
+
+        buildInputs = (old.buildInputs or [ ])
+          ++ lib.optional enableGhostscript pkgs.ghostscript
+          ++ lib.optional stdenv.isDarwin [ Cocoa ];
+
+        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [
+          pkgs.pkg-config
+        ];  
+
+        postPatch = ''
+          cat > setup.cfg <<EOF
+          [libs]
+          system_freetype = true
+          system_qhull = true
+          EOF
+        '';
+
+        propagatedBuildInputs = old.propagatedBuildInputs ++ [
+          pkgs.libpng
+          pkgs.freetype
+          pkgs.qhull
+          super.certifi
+        ]   
+          ++ lib.optionals enableGtk3 [ pkgs.cairo self.pycairo pkgs.gtk3 pkgs.gobject-introspection self.pygobject3 ]
+          ++ lib.optionals enableTk [ pkgs.tcl pkgs.tk self.tkinter pkgs.libX11 ]
+          ++ lib.optionals enableQt [ self.pyqt5 ]
+        ;   
+
+        doCheck = false;
+
+        inherit (super.matplotlib) patches;
+      }   
+    );
+
+    ###########
+    # nbconvert
+    ###########
+
+    nbconvert = super.nbconvert.overridePythonAttrs(oldAttrs: {
+      propagatedBuildInputs = (oldAttrs.propagatedBuildInputs or []) ++ [ pkgs.pandoc pkgs.texlive.combined.scheme-full ];
+    });
+
+    # nbconvert dependencies:
+    #p.pandoc
+    # see https://github.com/jupyter/nbconvert/issues/808
+    # TODO: is tectonic needed? It appears I can convert to pdf & latex w/out it.
+    #p.tectonic
+    # more info: https://nixos.wiki/wiki/TexLive
+    #p.texlive.combined.scheme-full
+
+    # still getting some errors for certain types of conversions:
+    # nbconvert failed: Pyppeteer is not installed to support Web PDF conversion. Please install `nbconvert[webpdf]` to enable.
+    # - and -
+    # nbconvert failed: PDF creating failed, captured latex output:
+    # Failed to run "['xelatex', 'notebook.tex', '-quiet']" command:
+    # ...
+    # (/nix/store/llmvlb5wpjrmp4ckxw4g21qn4syyhjpv-texlive-combined-full-2020.2021010
+    # 9/share/texmf/tex/latex/base/size11.cloFontconfig warning: "/etc/fonts/fonts.conf", line 86: unknown element "blank"
+    # ))
+
+    ###########
+    # ndex2
+    ###########
 
     ndex2 = super.ndex2.overridePythonAttrs(oldAttrs: {
       # The source requiremets.txt appears to want:
@@ -218,6 +327,17 @@ let
 #      ];
 #    });
 
+
+    ##############
+    # spacy & deps
+    ##############
+
+    blis = super.blis.overridePythonAttrs (
+      old: {
+        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ self.cython ];
+      }
+    );
+
     cymem = super.cymem.overridePythonAttrs (
       old: {
         nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ self.cython ];
@@ -230,19 +350,13 @@ let
       }
     );
 
-    blis = super.blis.overridePythonAttrs (
+    preshed = super.preshed.overridePythonAttrs (
       old: {
         nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ self.cython ];
       }
     );
 
     srsly = super.srsly.overridePythonAttrs (
-      old: {
-        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ self.cython ];
-      }
-    );
-
-    preshed = super.preshed.overridePythonAttrs (
       old: {
         nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ self.cython ];
       }
