@@ -218,6 +218,48 @@ let
 #      ];
 #    });
 
+    cymem = super.cymem.overridePythonAttrs (
+      old: {
+        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ self.cython ];
+      }
+    );
+
+    murmurhash = super.murmurhash.overridePythonAttrs (
+      old: {
+        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ self.cython ];
+      }
+    );
+
+    blis = super.blis.overridePythonAttrs (
+      old: {
+        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ self.cython ];
+      }
+    );
+
+    srsly = super.srsly.overridePythonAttrs (
+      old: {
+        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ self.cython ];
+      }
+    );
+
+    preshed = super.preshed.overridePythonAttrs (
+      old: {
+        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ self.cython ];
+      }
+    );
+
+    thinc = super.thinc.overridePythonAttrs (
+      old: {
+        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ self.cython ];
+      }
+    );
+
+    spacy = super.spacy.overridePythonAttrs (
+      old: {
+        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ self.cython ];
+      }
+    );
+
   });
 in
   {
