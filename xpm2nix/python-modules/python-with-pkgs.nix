@@ -1,7 +1,23 @@
-{pkgs, poetry2nix, R, lib, pythonOlder, stdenv ? pkgs.stdenv}:
+{pkgs, poetry2nix, R, lib, stdenv ? pkgs.stdenv}:
 
 with builtins;
 let
+
+#  python3 = let
+#    packageOverrides = self: super: {
+#      pandas = super.pandas.overridePythonAttrs(old: rec {
+#        version = "0.19.1";
+#        src =  super.fetchPypi {
+#          pname = "pandas";
+#          inherit version;
+#          sha256 = "08blshqj9zj1wyjhhw3kl2vas75vhhicvv72flvf1z3jvapgw295";
+#        };
+#      });
+#    };
+#  in pkgs.python3.override {inherit packageOverrides; self = python;};
+
+  #python3 = pkgs.python3.withPackages(ps: with ps; []);
+
   overrides = poetry2nix.overrides.withDefaults (self: super: {
 
     aquirdturtle-collapsible-headings = super.aquirdturtle-collapsible-headings.overridePythonAttrs(oldAttrs: {
@@ -58,10 +74,11 @@ let
       ];
     });
 
-    ##############################################
+    ################################################
     # jupyterlab-vim & jupyterlab-vimrc
-    # TODO: can we use the "normal" build process?
-    ##############################################
+    # TODO: Can we use the "normal" build & install
+    #       somehow? I got an error when I tried it.
+    ################################################
 
     jupyterlab-vim = super.jupyterlab-vim.overridePythonAttrs(oldAttrs: {
       nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [
@@ -257,9 +274,9 @@ let
 
 #      propagatedBuildInputs = [
 #        six ijson requests requests-toolbelt networkx urllib3 pandas pysolr numpy
-#      ] ++ lib.optionals (pythonOlder "3.4") [ enum34 ];
+#      ] ++ lib.optionals (pkgs.python3.pythonOlder "3.4") [ enum34 ];
 
-      #propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ lib.optionals (pythonOlder "3.4") [ enum34 ];
+      #propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ lib.optionals (pkgs.python3.pythonOlder "3.4") [ enum34 ];
 
 #      checkInputs = [
 #        nose six ijson requests requests-toolbelt networkx urllib3 pandas pysolr numpy
@@ -318,16 +335,6 @@ let
       '';
     });
 
-#    seaborn = super.seaborn.overridePythonAttrs(oldAttrs: {
-#      nativeBuildInputs = (oldAttrs.nativeBuildInputs or []) ++ [
-#        super.jupyter-packaging
-#      ];
-#      buildInputs = (oldAttrs.buildInputs or []) ++ [
-#        super.certifi
-#      ];
-#    });
-
-
     ##############
     # spacy & deps
     ##############
@@ -381,8 +388,8 @@ in
       projectDir = ./.;
       overrides = overrides;
     };
-    topLevelPythonPackages = (poetry2nix.mkPoetryPackages {
+    poetryPackages = poetry2nix.mkPoetryPackages {
       projectDir = ./.;
       overrides = overrides;
-    }).poetryLock.package;
+    };
   }

@@ -1,4 +1,5 @@
 with builtins;
+#4
 
 # TODO: clean up how to specify extensions
 #
@@ -111,22 +112,83 @@ let
   # Python
   #########################
 
-  jupyterExtraPythonResult = pkgs.callPackage ./xpm2nix/python-modules/python-with-pkgs.nix {
+  poetry2nixOutput = pkgs.callPackage ./xpm2nix/python-modules/python-with-pkgs.nix {
     inherit pkgs;
-    pythonOlder = pkgs.python3.pythonOlder;
   };
-  pythonEnv = jupyterExtraPythonResult.poetryEnv;
-  topLevelPythonPackages = jupyterExtraPythonResult.topLevelPythonPackages;
+  pythonEnv = poetry2nixOutput.poetryEnv;
+  # TODO: why does the following gives an error about rpy2 not being available?
+  #pythonEnv = poetry2nixOutput.poetryPackages.python;
+
+  # the dep names specified in pyproject.toml
+  pyProjectDepNames = pkgs.lib.attrNames poetry2nixOutput.poetryPackages.pyProject.tool.poetry.dependencies;
+  # the deps as translated by poetry from pyproject.toml to poetry.lock
+  poetryLockDeps = poetry2nixOutput.poetryPackages.poetryLock.package;
+  # just the names
+  poetryLockDepNames = pkgs.lib.lists.map (x: x.name) poetryLockDeps;
+
+  #pyProjectDeps = pkgs.lib.lists.filter (x: (pkgs.lib.lists.elem x.name intersectedDepNames)) poetryLockDeps;
+
+  #jupyterDepNames = poetry2nixOutput.poetryPackages.poetryLock.extras.jupyter;
+  #jupyterDeps = pkgs.lib.lists.filter (x: (pkgs.lib.lists.elem x.name jupyterDepNames)) poetryLockDeps;
+  jupyterDeps = builtins.filter (x: builtins.pathExists "${x}/share/jupyter") poetry2nixOutput.poetryPackages.poetryPackages;
+  jupyterDepNames = pkgs.lib.lists.map (x: x.name) jupyterDeps;
+
+  intersectedDepNames = (pkgs.lib.lists.intersectLists pyProjectDepNames poetryLockDepNames);
+
+  nonJupyterDepNames = pkgs.lib.lists.subtractLists jupyterDepNames intersectedDepNames;
+  nonJupyterDeps = pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x) pythonEnv.pkgs) nonJupyterDepNames;
+
+#  boo = 1
+#  boo = 1
+#
+#  poetry2nixOutput = pkgs.callPackage ./xpm2nix/python-modules/python-with-pkgs.nix {
+#    inherit pkgs;
+#    pythonOlder = pkgs.python3.pythonOlder;
+#  }
+#
+#  # the dep names specified in pyproject.toml
+#  pyProjectDepNames = pkgs.lib.attrNames poetry2nixOutput.poetryPackages.pyProject.tool.poetry.dependencies
+#  # the deps as translated by poetry from pyproject.toml to poetry.lock
+#  poetryLockDeps = poetry2nixOutput.poetryPackages.poetryLock.package
+#  # just the names
+#  poetryLockDepNames = pkgs.lib.lists.map (x: x.name) poetryLockDeps
+#
+#  pyProjectDepNames = pkgs.lib.attrNames poetry2nixOutput.poetryPackages.pyProject.tool.poetry.dependencies
+#
+#  intersectedDepNames = (pkgs.lib.lists.intersectLists pyProjectDepNames poetryLockDepNames)
+#
+#  (pkgs.lib.lists.map (x: pkgs.lib.lists.elem x.name intersectedDepNames))
+#
+#
+#    (pkgs.lib.lists.map (x: x) (
+#      pkgs.lib.lists.filter (x: ! (
+#        (x ? dependencies.jupyter) || (x ? dependencies.jupyterlab) || (x == "python")
+#      )) pyProjectDeps
+#    ))
+#
+#
+#    (pkgs.lib.lists.map (x: x) (
+#      pkgs.lib.lists.filter (x: ! (
+#        (x ? dependencies.jupyter) || (x ? dependencies.jupyterlab) || (x == "python")
+#      )) (pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x) poetryLockDeps) (pkgs.lib.lists.subtractLists [ "python" "jupyter" "jupyterlab" ] pyProjectDepNames))
+#    ))
+
+  # pyProjectDepNames and poetryLockDepNames are not identical.
+  # pyProjectDepNames is top-level only, but poetryLockDepNames also includes dependencies.
+  #
+  # pkgs.lib.lists.subtractLists (pkgs.lib.lists.map (x: x.name)
+  #   poetry2nixOutput.poetryPackages.poetryLock.package)
+  #   (pkgs.lib.attrNames poetry2nixOutput.poetryPackages.pyProject.tool.poetry.dependencies)
 
   # TODO: can we auto-fill whatever is needed for the following?
   # iPython.packages
   # jupyterEnvironment.extraPackages
   # jupyterEnvironment.extraJupyterPath
   #
-  # Those all seem to need at least some packages from jupyterExtraPythonResult.
+  # Those all seem to need at least some packages from poetry2nixOutput.
   # It would be great to auto-fill them like I'm doing for extensions.
   #
-  # Maybe this one could also use something from jupyterExtraPythonResult?
+  # Maybe this one could also use something from poetry2nixOutput?
   # jupyterEnvironment.extraInputsFrom
 
   python3 = pythonEnv;
@@ -146,98 +208,109 @@ let
 
     # Python libraries to be available to the kernel.
     # 'p: with p;' tells this to work w/ the packages in whatever is specified
-    # as python3 above. It prefixes each item in the list w/ 'python3.pkgs.'.
-    packages = p: with p; [
-      # TODO: which packages exactly are supposed to be in here?
-      # It appears extensions like jupyter-code-formatter, jupytext and nbconvert
-      # are all working without being specified here.
-      # Is this supposed to be for non-Jupyter/JupyterLab packages?
-      # Could I just add to this section every package in pyproject.toml that
-      # doesn't depend on jupyter or jupyterlab?
+    # as python3 above. It adds 'python3.pkgs.' as a prefix for each item.
+#    packages = p: with p; (pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x) pythonEnv.pkgs) (
+#      pkgs.lib.lists.filter (x: ! (
+#        (x ? dependencies.jupyter) || (x ? dependencies.jupyterlab) || (x == "python")
+#      )) pyProjectDepNames 
+#    ));
 
-      lxml
+    packages = p: with p; nonJupyterDeps;
 
-      skosmos-client
-
-      # the following isn't automatically working w/ poetry2nix (maybe disable tests?)
-      #wikidata2df
-
-      ############
-      # requests+
-      ############
-      requests
-      requests-cache
-
-      ############
-      # Pandas+
-      ############
-      numpy
-      pandas
-      pyarrow # needed for pd.read_feather()
-
-      scipy
-
-      # the following two aren't automatically working w/ poetry2nix
-      #seaborn
-      #matplotlib
-
-      ########
-      # rpy2
-      ########
-      rpy2
-      # tzlocal is needed to make rpy2 work
-      tzlocal
-      # TODO: is simplegeneric also needed?
-      simplegeneric
-
-      ##################
-      # Parse messy HTML
-      ##################
-      beautifulsoup4
-      soupsieve
-
-      ########
-      # Text
-      ########
-
-      # for characters that look like each other
-      confusable-homoglyphs
-      # the following isn't automatically working w/ poetry2nix
-      #homoglyphs
-
-      # fix encodings
-      ftfy
-
-      pyahocorasick
-      # the following isn't automatically working w/ poetry2nix (Cython issue)
-      #spacy
-      unidecode
-
-      ########
-      # Images
-      ########
-
-      # Python interface to the libmagic file type identification library
-      # This has nothing to do w/ Jupyter magics or ImageMagick.
-      python_magic
-
-      # python bindings for imagemagick
-      Wand
-
-      # Python Imaging Library
-      pillow
-
-      ########
-      # Google
-      ########
-
-      google-api-core
-      #google_cloud_core
-      #google-cloud-sdk
-      #google_cloud_testutils
-      #google_cloud_automl
-      #google_cloud_storage
-    ];
+#    # Python libraries to be available to the kernel.
+#    # 'p: with p;' tells this to work w/ the packages in whatever is specified
+#    # as python3 above. It adds 'python3.pkgs.' as a prefix for each item.
+#    packages = p: with p; [
+#      # TODO: which packages exactly are supposed to be in here?
+#      # It appears extensions like jupyter-code-formatter, jupytext and nbconvert
+#      # are all working without being specified here.
+#      # Is this supposed to be for non-Jupyter/JupyterLab packages?
+#      # Could I just add to this section every package in pyproject.toml that
+#      # doesn't depend on jupyter or jupyterlab?
+#
+#      lxml
+#
+#      skosmos-client
+#
+#      # the following isn't automatically working w/ poetry2nix (maybe disable tests?)
+#      #wikidata2df
+#
+#      ############
+#      # requests+
+#      ############
+#      requests
+#      requests-cache
+#
+#      ############
+#      # Pandas+
+#      ############
+#      numpy
+#      pandas
+#      pyarrow # needed for pd.read_feather()
+#
+#      scipy
+#
+#      # the following two aren't automatically working w/ poetry2nix
+#      #seaborn
+#      #matplotlib
+#
+#      ########
+#      # rpy2
+#      ########
+#      rpy2
+#      # tzlocal is needed to make rpy2 work
+#      tzlocal
+#      # TODO: is simplegeneric also needed?
+#      simplegeneric
+#
+#      ##################
+#      # Parse messy HTML
+#      ##################
+#      beautifulsoup4
+#      soupsieve
+#
+#      ########
+#      # Text
+#      ########
+#
+#      # for characters that look like each other
+#      confusable-homoglyphs
+#      # the following isn't automatically working w/ poetry2nix
+#      #homoglyphs
+#
+#      # fix encodings
+#      ftfy
+#
+#      pyahocorasick
+#      # the following isn't automatically working w/ poetry2nix (Cython issue)
+#      #spacy
+#      unidecode
+#
+#      ########
+#      # Images
+#      ########
+#
+#      # Python interface to the libmagic file type identification library
+#      # This has nothing to do w/ Jupyter magics or ImageMagick.
+#      python_magic
+#
+#      # python bindings for imagemagick
+#      Wand
+#
+#      # Python Imaging Library
+#      pillow
+#
+#      ########
+#      # Google
+#      ########
+#
+#      google-api-core
+#      #google_cloud_core
+#      #google-cloud-sdk
+#      #google_cloud_testutils
+#      #google_cloud_automl
+#      #google_cloud_storage
+#    ];
   };
 
   ######################
@@ -255,13 +328,46 @@ let
   shareSrc = ./share-src;
   shareJupyter = pkgs.symlinkJoin {
     name = "my-share-jupyter";
-    paths = (pkgs.lib.lists.map (x: "${x}/share/jupyter") (
-      (pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x.name) pythonEnv.pkgs) (
-        pkgs.lib.lists.filter (x: x ? dependencies.jupyterlab) topLevelPythonPackages
-      )) ++ (
-        with pythonEnv.pkgs; [jupyterlab jupyterlab-code-formatter jupytext widgetsnbextension jupyter-resource-usage nbconvert]
+
+#    paths = (pkgs.lib.lists.map (x: "${x}/share/jupyter") (
+#      (pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x) pythonEnv.pkgs) (
+#        pkgs.lib.lists.filter (x: x ? dependencies.jupyterlab) pyProjectDepNames
+#      )) ++ (
+#        with pythonEnv.pkgs; [jupyterlab jupyterlab-code-formatter jupytext widgetsnbextension jupyter-resource-usage nbconvert]
+#      ))
+#    ) ++ [npmLabextensions shareSrc];
+
+#    paths = (pkgs.lib.lists.map (x: "${x}/share/jupyter") (
+#      (pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x) pythonEnv.pkgs) (
+#        pkgs.lib.lists.filter (x: x ? dependencies.jupyterlab) jupyterDepNames
+#      )) ++ (
+#        with pythonEnv.pkgs; [jupyterlab jupyterlab-code-formatter jupytext widgetsnbextension jupyter-resource-usage nbconvert]
+#      ))
+#    ) ++ [npmLabextensions shareSrc];
+
+#    paths = (pkgs.lib.lists.map (x: "${x}/share/jupyter") (
+#        (pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x.name) pythonEnv.pkgs) (
+#          pkgs.lib.lists.filter (x: (x ? dependencies.jupyter) || (x ? dependencies.jupyter-core) || (x ? dependencies.notebook) || (x ? dependencies.jupyterlab)) jupyterDeps
+#        ))
+##        ++ (pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x) pythonEnv.pkgs) (
+##          ["jupyterlab" "jupyterlab-code-formatter" "jupytext" "widgetsnbextension" "jupyter-resource-usage"]
+##        ))
+#      ))
+##        ++ (
+##          with pythonEnv.pkgs; [jupyterlab jupyterlab-code-formatter jupytext widgetsnbextension jupyter-resource-usage nbconvert]
+##        ))
+#      ++ [npmLabextensions shareSrc];
+
+#    paths = (pkgs.lib.lists.map (x: "${x}/share/jupyter") (
+#      jupyterDepNames)
+#    ) ++ [npmLabextensions shareSrc];
+
+    paths =
+      (pkgs.lib.lists.map (x: "${x}/share/jupyter") (
+        builtins.filter (x: builtins.pathExists "${x}/share/jupyter") poetry2nixOutput.poetryPackages.poetryPackages
       ))
-    ) ++ [npmLabextensions shareSrc];
+      ++ [npmLabextensions shareSrc];
+
     postBuild = ''
       rm "$out/config/jupyter_server_config.json"
       substitute "${shareSrc}/config/jupyter_server_config.json" "$out/config/jupyter_server_config.json" --subst-var-by notebookDir "${notebookDir}"
