@@ -1,5 +1,4 @@
 with builtins;
-#4
 
 # TODO: clean up how to specify extensions
 #
@@ -116,11 +115,22 @@ let
     inherit pkgs;
   };
   pythonEnv = poetry2nixOutput.poetryEnv;
+  # TODO: try to simplify the export from python-with-pkgs.nix
+  # Ideally, I could do something like this:
+  #   with (poetry2nixOutput = pkgs.callPackage ./xpm2nix/python-modules/python-with-pkgs.nix {}):
+  # making these variables available: { python, poetryPackages, pyProject, poetryLock }
+  # But right now, mkPoetryPackages yields a python that gives an error for rpy2,
+  # and mkPoetryEnv yields a python with no rpy2 error message.
+  #
   # TODO: why does the following gives an error about rpy2 not being available?
   #pythonEnv = poetry2nixOutput.poetryPackages.python;
 
+  # pyProjectDepNames and poetryLockDepNames below are not identical.
+  # pyProjectDepNames is top-level only, but poetryLockDepNames also includes dependencies.
+
   # the dep names specified in pyproject.toml
   pyProjectDepNames = pkgs.lib.attrNames poetry2nixOutput.poetryPackages.pyProject.tool.poetry.dependencies;
+
   # the deps as translated by poetry from pyproject.toml to poetry.lock
   poetryLockDeps = poetry2nixOutput.poetryPackages.poetryLock.package;
   # just the names
@@ -133,65 +143,17 @@ let
   jupyterDeps = builtins.filter (x: builtins.pathExists "${x}/share/jupyter") poetry2nixOutput.poetryPackages.poetryPackages;
   jupyterDepNames = pkgs.lib.lists.map (x: x.name) jupyterDeps;
 
+  # the packages in both pyProjectDepNames poetryLockDepNames
   intersectedDepNames = (pkgs.lib.lists.intersectLists pyProjectDepNames poetryLockDepNames);
 
   nonJupyterDepNames = pkgs.lib.lists.subtractLists jupyterDepNames intersectedDepNames;
   nonJupyterDeps = pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x) pythonEnv.pkgs) nonJupyterDepNames;
 
-#  boo = 1
-#  boo = 1
-#
-#  poetry2nixOutput = pkgs.callPackage ./xpm2nix/python-modules/python-with-pkgs.nix {
-#    inherit pkgs;
-#    pythonOlder = pkgs.python3.pythonOlder;
-#  }
-#
-#  # the dep names specified in pyproject.toml
-#  pyProjectDepNames = pkgs.lib.attrNames poetry2nixOutput.poetryPackages.pyProject.tool.poetry.dependencies
-#  # the deps as translated by poetry from pyproject.toml to poetry.lock
-#  poetryLockDeps = poetry2nixOutput.poetryPackages.poetryLock.package
-#  # just the names
-#  poetryLockDepNames = pkgs.lib.lists.map (x: x.name) poetryLockDeps
-#
-#  pyProjectDepNames = pkgs.lib.attrNames poetry2nixOutput.poetryPackages.pyProject.tool.poetry.dependencies
-#
-#  intersectedDepNames = (pkgs.lib.lists.intersectLists pyProjectDepNames poetryLockDepNames)
-#
-#  (pkgs.lib.lists.map (x: pkgs.lib.lists.elem x.name intersectedDepNames))
-#
-#
-#    (pkgs.lib.lists.map (x: x) (
-#      pkgs.lib.lists.filter (x: ! (
-#        (x ? dependencies.jupyter) || (x ? dependencies.jupyterlab) || (x == "python")
-#      )) pyProjectDeps
-#    ))
-#
-#
-#    (pkgs.lib.lists.map (x: x) (
-#      pkgs.lib.lists.filter (x: ! (
-#        (x ? dependencies.jupyter) || (x ? dependencies.jupyterlab) || (x == "python")
-#      )) (pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x) poetryLockDeps) (pkgs.lib.lists.subtractLists [ "python" "jupyter" "jupyterlab" ] pyProjectDepNames))
-#    ))
-
-  # pyProjectDepNames and poetryLockDepNames are not identical.
-  # pyProjectDepNames is top-level only, but poetryLockDepNames also includes dependencies.
-  #
-  # pkgs.lib.lists.subtractLists (pkgs.lib.lists.map (x: x.name)
-  #   poetry2nixOutput.poetryPackages.poetryLock.package)
-  #   (pkgs.lib.attrNames poetry2nixOutput.poetryPackages.pyProject.tool.poetry.dependencies)
-
-  # TODO: can we auto-fill whatever is needed for the following?
+  # TODO: look at how to properly auto-fill whatever is needed for the following:
   # iPython.packages
   # jupyterEnvironment.extraPackages
   # jupyterEnvironment.extraJupyterPath
-  #
-  # Those all seem to need at least some packages from poetry2nixOutput.
-  # It would be great to auto-fill them like I'm doing for extensions.
-  #
-  # Maybe this one could also use something from poetry2nixOutput?
   # jupyterEnvironment.extraInputsFrom
-
-  python3 = pythonEnv;
 
   jupyter = pkgs.jupyterWith;
 
@@ -207,114 +169,15 @@ let
     python3 = pythonEnv;
 
     # Python libraries to be available to the kernel.
-    # 'p: with p;' tells this to work w/ the packages in whatever is specified
-    # as python3 above. It adds 'python3.pkgs.' as a prefix for each item.
-#    packages = p: with p; (pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x) pythonEnv.pkgs) (
-#      pkgs.lib.lists.filter (x: ! (
-#        (x ? dependencies.jupyter) || (x ? dependencies.jupyterlab) || (x == "python")
-#      )) pyProjectDepNames 
-#    ));
-
+    # 'p: with p;' means use the packages for 'iPython.python3' (specified above)
+    #              so we can just list a package name and the prefix
+    #              'python3.pkgs.' will be understood.
     packages = p: with p; nonJupyterDeps;
 
-#    # Python libraries to be available to the kernel.
-#    # 'p: with p;' tells this to work w/ the packages in whatever is specified
-#    # as python3 above. It adds 'python3.pkgs.' as a prefix for each item.
-#    packages = p: with p; [
-#      # TODO: which packages exactly are supposed to be in here?
-#      # It appears extensions like jupyter-code-formatter, jupytext and nbconvert
-#      # are all working without being specified here.
-#      # Is this supposed to be for non-Jupyter/JupyterLab packages?
-#      # Could I just add to this section every package in pyproject.toml that
-#      # doesn't depend on jupyter or jupyterlab?
-#
-#      lxml
-#
-#      skosmos-client
-#
-#      # the following isn't automatically working w/ poetry2nix (maybe disable tests?)
-#      #wikidata2df
-#
-#      ############
-#      # requests+
-#      ############
-#      requests
-#      requests-cache
-#
-#      ############
-#      # Pandas+
-#      ############
-#      numpy
-#      pandas
-#      pyarrow # needed for pd.read_feather()
-#
-#      scipy
-#
-#      # the following two aren't automatically working w/ poetry2nix
-#      #seaborn
-#      #matplotlib
-#
-#      ########
-#      # rpy2
-#      ########
-#      rpy2
-#      # tzlocal is needed to make rpy2 work
-#      tzlocal
-#      # TODO: is simplegeneric also needed?
-#      simplegeneric
-#
-#      ##################
-#      # Parse messy HTML
-#      ##################
-#      beautifulsoup4
-#      soupsieve
-#
-#      ########
-#      # Text
-#      ########
-#
-#      # for characters that look like each other
-#      confusable-homoglyphs
-#      # the following isn't automatically working w/ poetry2nix
-#      #homoglyphs
-#
-#      # fix encodings
-#      ftfy
-#
-#      pyahocorasick
-#      # the following isn't automatically working w/ poetry2nix (Cython issue)
-#      #spacy
-#      unidecode
-#
-#      ########
-#      # Images
-#      ########
-#
-#      # Python interface to the libmagic file type identification library
-#      # This has nothing to do w/ Jupyter magics or ImageMagick.
-#      python_magic
-#
-#      # python bindings for imagemagick
-#      Wand
-#
-#      # Python Imaging Library
-#      pillow
-#
-#      ########
-#      # Google
-#      ########
-#
-#      google-api-core
-#      #google_cloud_core
-#      #google-cloud-sdk
-#      #google_cloud_testutils
-#      #google_cloud_automl
-#      #google_cloud_storage
-#    ];
   };
 
   ######################
-  # Extensions & configs
+  # extensions & configs
   ######################
 
   npmLabextensions = pkgs.callPackage ./xpm2nix/node-packages/labextensions.nix {
@@ -329,45 +192,16 @@ let
   shareJupyter = pkgs.symlinkJoin {
     name = "my-share-jupyter";
 
-#    paths = (pkgs.lib.lists.map (x: "${x}/share/jupyter") (
-#      (pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x) pythonEnv.pkgs) (
-#        pkgs.lib.lists.filter (x: x ? dependencies.jupyterlab) pyProjectDepNames
-#      )) ++ (
-#        with pythonEnv.pkgs; [jupyterlab jupyterlab-code-formatter jupytext widgetsnbextension jupyter-resource-usage nbconvert]
-#      ))
-#    ) ++ [npmLabextensions shareSrc];
-
-#    paths = (pkgs.lib.lists.map (x: "${x}/share/jupyter") (
-#      (pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x) pythonEnv.pkgs) (
-#        pkgs.lib.lists.filter (x: x ? dependencies.jupyterlab) jupyterDepNames
-#      )) ++ (
-#        with pythonEnv.pkgs; [jupyterlab jupyterlab-code-formatter jupytext widgetsnbextension jupyter-resource-usage nbconvert]
-#      ))
-#    ) ++ [npmLabextensions shareSrc];
-
-#    paths = (pkgs.lib.lists.map (x: "${x}/share/jupyter") (
-#        (pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x.name) pythonEnv.pkgs) (
-#          pkgs.lib.lists.filter (x: (x ? dependencies.jupyter) || (x ? dependencies.jupyter-core) || (x ? dependencies.notebook) || (x ? dependencies.jupyterlab)) jupyterDeps
-#        ))
-##        ++ (pkgs.lib.lists.map (x: pkgs.lib.attrsets.getAttr(x) pythonEnv.pkgs) (
-##          ["jupyterlab" "jupyterlab-code-formatter" "jupytext" "widgetsnbextension" "jupyter-resource-usage"]
-##        ))
-#      ))
-##        ++ (
-##          with pythonEnv.pkgs; [jupyterlab jupyterlab-code-formatter jupytext widgetsnbextension jupyter-resource-usage nbconvert]
-##        ))
-#      ++ [npmLabextensions shareSrc];
-
-#    paths = (pkgs.lib.lists.map (x: "${x}/share/jupyter") (
-#      jupyterDepNames)
-#    ) ++ [npmLabextensions shareSrc];
-
+    # we use this directory of symlinks in the jupyterWith shellHook
     paths =
       (pkgs.lib.lists.map (x: "${x}/share/jupyter") (
         builtins.filter (x: builtins.pathExists "${x}/share/jupyter") poetry2nixOutput.poetryPackages.poetryPackages
       ))
       ++ [npmLabextensions shareSrc];
 
+    # We also add config files from shareSrc
+    # I think we need to specify them like this because Jupyter needs the config
+    # directory to be writable, so symlinks to the Nix store won't work.
     postBuild = ''
       rm "$out/config/jupyter_server_config.json"
       substitute "${shareSrc}/config/jupyter_server_config.json" "$out/config/jupyter_server_config.json" --subst-var-by notebookDir "${notebookDir}"
@@ -394,10 +228,6 @@ let
       # Add extra packages to the JupyterWith environment
       # TODO: which packages exactly are supposed to be here?
       extraPackages = p: [
-        #############
-        # Non-Jupyter
-        #############
-
         p.dos2unix
         p.inkscape
 
@@ -411,24 +241,27 @@ let
         # to get perceptual hash values of images
         # p.phash
         p.blockhash
-
-        ####################
-        # For Jupyter
-        ####################
-
-        # TODO: is there a way to either add these all automatically, or else
-        # specify them somehow in ./xpm2nix/python-modules/?
-
-        # Note: pythonEnv has packages for augmenting Jupyter as well
-        # as for other purposes.
-        # TODO: should it be specified here?
-        # At present, if I comment out both pythonEnv and
+      ]
+      #------------
+      # below are extraPackages required by Jupyter/JupyterLab
+      #------------
+      # TODO: figure out a cleaner way of doing this
+      ++ [
+        # Some pythonEnv packages are for augmenting Jupyter, while others are
+        # just regular Python packages, unrelated to Jupyter.
+        #
+        # TODO: it appears some of the packages for augmenting Jupyter need to
+        # be specified here. if I comment out both pythonEnv and
         # pythonEnv.pkgs.jupyterlab-code-formatter, then
-        # jupyterlab-code-formatter complains it can't find its server extension.
+        # jupyterlab-code-formatter complains it can't find its server extension,
+        # and I get this error about rpy2:
+        #
+        #   Error while finding module specification for 'rpy2.situation'
+        #   (ModuleNotFoundError: No module named 'rpy2')
         # 
-        # But if I enable either of the two lines below, jupyterlab-code-formatter works.
-        pythonEnv
-        #pythonEnv.pkgs.jupyterlab-code-formatter
+        # But if I enable either of the two lines below, I get no errors;
+        #pythonEnv
+        pythonEnv.pkgs.jupyterlab-code-formatter
 
         # Likewise, if pythonEnv isn't enabled above, I need to explicitly
         # specify the Python/PyPI extensions below for them to work:
@@ -436,22 +269,9 @@ let
         # jupyterlab-lsp must be specified here in order for the LSP for R to work.
         #pythonEnv.pkgs.jupyter-lsp
         #pythonEnv.pkgs.jupyterlab-lsp
-
-        # jupytext: ipynb <-> other notebook-ish formats
-        #     like py:sphinx, py:hydrogen, py:light and Rmd
-        # tests:
-        # jupytext notebooks/testthis.ipynb --to py
-
-        #pythonEnv.pkgs.jupytext
-
-        # jupyter-nbconvert : ipynb -> read-only formats like pdf, html, etc.
-        # tests:
-        # jupyter-nbconvert notebooks/testthis.ipynb --to html
-        # jupyter-nbconvert notebooks/testthis.ipynb --to pdf
-        # jupyter-nbconvert notebooks/testthis.ipynb --to latex
-
-        # TODO: is this the best way to specify the R deps below?
-
+      ]
+      # TODO: is the code below the best way to specify the R deps?
+      ++ [
         p.R
       ] ++ (with pkgs.rPackages; [
         ################################################
@@ -476,6 +296,14 @@ let
         #styler
         #prettycode # seems to be needed by styler
       ]);
+
+      #----------------
+      # extraInputsFrom
+      #----------------
+
+      # TODO: automatically detect which packages need to be specified here
+      # for now, I just manually specify the deps for nbconvert:
+      extraInputsFrom = p: [ p.pkgs.pandoc p.pkgs.texlive.combined.scheme-full ];
 
       # Bring all inputs from a package in scope.
       # This is required to make deps available when needed, e.g.,
@@ -504,19 +332,20 @@ let
       # Using pythonImportsCheckPhase
       # Sourcing python-namespaces-hook
 
-      # so for now, I'll just manually specify these deps for nbconvert:
-      extraInputsFrom = p: [ p.pkgs.pandoc p.pkgs.texlive.combined.scheme-full ];
-
       # I also tried these, but they didn't work:
       #extraInputsFrom = p: p.pythonPackages.nbconvert.propagatedBuildInputs;
       #extraInputsFrom = p: pythonEnv.pkgs.nbconvert.propagatedBuildInputs;
 
+      #-----------------
+      # extraJupyterPath
+      #-----------------
+
       # Make paths available to Jupyter itself, generally for server extensions
       # TODO: is what I have here OK (w/ everything included in pythonEnv), or
-      # should I just specify server extensions?
+      # should I specify only the server extensions?
       extraJupyterPath = pkgs:
         concatStringsSep ":" [
-          "${pythonEnv}/${python3.sitePackages}"
+          "${pythonEnv}/${pythonEnv.sitePackages}"
         ];
     };
 in

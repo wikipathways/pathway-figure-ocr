@@ -1,23 +1,7 @@
-{pkgs, poetry2nix, R, lib, stdenv ? pkgs.stdenv}:
+{pkgs, poetry2nix, substituteAll, R, lib, stdenv ? pkgs.stdenv}:
 
 with builtins;
 let
-
-#  python3 = let
-#    packageOverrides = self: super: {
-#      pandas = super.pandas.overridePythonAttrs(old: rec {
-#        version = "0.19.1";
-#        src =  super.fetchPypi {
-#          pname = "pandas";
-#          inherit version;
-#          sha256 = "08blshqj9zj1wyjhhw3kl2vas75vhhicvv72flvf1z3jvapgw295";
-#        };
-#      });
-#    };
-#  in pkgs.python3.override {inherit packageOverrides; self = python;};
-
-  #python3 = pkgs.python3.withPackages(ps: with ps; []);
-
   overrides = poetry2nix.overrides.withDefaults (self: super: {
 
     aquirdturtle-collapsible-headings = super.aquirdturtle-collapsible-headings.overridePythonAttrs(oldAttrs: {
@@ -133,6 +117,12 @@ let
       ];
     });
 
+    # jupytext is for ipynb <-> other notebook-ish formats, e.g.:
+    #     py:sphinx, py:hydrogen, py:light and Rmd
+    #
+    # Sample conversion:
+    # jupytext notebooks/sandbox.py.ipynb --to py
+
     jupytext = super.jupytext.overridePythonAttrs(oldAttrs: {
       nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [
         super.jupyter-packaging
@@ -147,6 +137,28 @@ let
         cp -r ./jupytext/labextension/* "$out/share/jupyter/labextensions/jupytext/"
       '';
     });
+
+    python_magic = super.python_magic.overridePythonAttrs(oldAttrs: {
+      propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [pkgs.file];
+
+      # Using the same patch as what's in nixpkgs.
+      # strangely, 'python_magic' works here but 'python-magic' does not:
+      patches = pkgs.python3.pkgs.python_magic.patches or [ ];
+
+      checkInputs = [ pkgs.glibcLocales ];
+      doCheck = true;
+      # TODO: Do the full test. It currently fails because ./test/testdata/ is
+      #       not available. Maybe that dir isn't downloaded via PyPI?
+      checkPhase = ''
+        if python -c 'import magic; print(magic)'; then
+          echo "python-magic is at least importable" >&2
+        else
+          echo "python-magic test failed" >&2
+          exit 1
+        fi
+      '';
+    });
+    python-magic = super.python_magic;
 
     # markdown-it-py and mdit-py-plugins are currently cyclic dependencies.
     #
@@ -234,6 +246,14 @@ let
     ###########
     # nbconvert
     ###########
+
+    # jupyter-nbconvert is for ipynb -> read-only formats, e.g., pdf, html, etc.
+    #
+    # Sample conversions:
+    # jupyter-nbconvert notebooks/sandbox.py.ipynb --to html
+    # jupyter-nbconvert notebooks/sandbox.py.ipynb --to pdf
+    # jupyter-nbconvert notebooks/sandbox.py.ipynb --to latex
+
 
     nbconvert = super.nbconvert.overridePythonAttrs(oldAttrs: {
       propagatedBuildInputs = (oldAttrs.propagatedBuildInputs or []) ++ [ pkgs.pandoc pkgs.texlive.combined.scheme-full ];

@@ -46,8 +46,9 @@ nbconvert = "^6.0.7"
 
 # non-jupyter libs (but may still be used in my notebooks)
 
-matplotlib = "^3.4.1"
+pandas = "^1.2.4"
 scipy = "^1.6.2"
+matplotlib = "^3.4.1"
 seaborn = "^0.11.1"
 
 rpy2 = "^3.4.3"
@@ -69,7 +70,9 @@ confusable-homoglyphs = "^3.2.0"
 #homoglyphs = "^2.0.4"
 
 # detect filetypes
-python-magic = "^0.4.22"
+# TODO: I need to specify the libmagic dependency:
+# https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/development/python-modules/python-magic/default.nix#L36
+python_magic = "^0.4.22"
 
 # image analysis
 wand = "^0.6.6"
@@ -78,15 +81,24 @@ pillow = "^8.2.0"
 pyarrow = "^3.0.0"
 ftfy = "^6.0"
 
-google-api-core = "^1.26.3"
-skosmos-client = "^0.3.0"
 ndex2 = "^3.3.1"
+skosmos-client = "^0.3.0"
 #wikidata2df = "^0.1.0"
 
-qbatch = "^2.2.1"
-pandas = "^1.2.4"
+google-api-core = "^1.26.3"
+google-cloud-core = "^1.6.0"
+google-cloud-testutils = "^0.2.0"
+google-cloud-automl = "^2.3.0"
+google-cloud-storage = "^1.38.0"
+
 requests = "^2.25.1"
 requests-cache = "^0.6.3"
+
+lxml = "^4.6.3"
+beautifulsoup4 = "^4.9.3"
+soupsieve = "^2.2.1"
+
+qbatch = "^2.2.1"
 
 [tool.poetry.dev-dependencies]
 jupyter-packaging = "^0.7.12"
