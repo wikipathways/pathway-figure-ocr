@@ -5,5 +5,10 @@
       "ipython_mypkgs",
       "ir_mypkgs"
     ]
+  },
+  "ResourceUseDisplay": {
+    "mem_limit": 4294967296,
+    "track_cpu_percent": true,
+    "cpu_limit": 2
   }
 }

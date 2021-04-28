@@ -70,9 +70,7 @@ confusable-homoglyphs = "^3.2.0"
 #homoglyphs = "^2.0.4"
 
 # detect filetypes
-# TODO: I need to specify the libmagic dependency:
-# https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/development/python-modules/python-magic/default.nix#L36
-python_magic = "^0.4.22"
+python-magic = "^0.4.22"
 
 # image analysis
 wand = "^0.6.6"
@@ -99,6 +97,9 @@ beautifulsoup4 = "^4.9.3"
 soupsieve = "^2.2.1"
 
 qbatch = "^2.2.1"
+jupyterlab-pygments = "^0.1.2"
+jupyterlab-topbar = "^0.6.1"
+jupyterlab-widgets = "^1.0.0"
 
 [tool.poetry.dev-dependencies]
 jupyter-packaging = "^0.7.12"
