@@ -1,30 +1,11 @@
 with builtins;
 
-# TODO: clean up how to specify extensions
-#
-# Types of extensions:
-# --------------------
-# Jupyter lab extensions
-# Jupyter server extensions
-# notebook extensions
-# bundler extensions (not sure what this is)
-# --------------------
-# Python magics (not really extensions)
-# --------------------
-# CLI dependencies for any of the above
-
-# TODO: look at how to properly auto-fill whatever is needed for the following:
-# iPython.packages
-# jupyterEnvironment.extraPackages
-# jupyterEnvironment.extraJupyterPath
-# jupyterEnvironment.extraInputsFrom
-
-# I also want to be able to run my python both from a notebook
-# and also from the command line.
-
 let
   repoDir = toString ./.;
+
   # If desired, notebookDir can be the same as repoDir
+  #notebookDir = repoDir;
+  # or it can be a different directory:
   notebookDir = "${repoDir}/notebooks";
 
   # for local settings, workspaces, etc.
@@ -43,8 +24,13 @@ let
     rev = "e72ff71c3cc8bbc708dbc13941888eb08a65f651";
   };
 
+  #############
+  # My overlays
+  #############
+
   # for dev
   #myoverlay = import ../mynixpkgs/overlay.nix;
+
   # for prod
   myoverlay = import (builtins.fetchGit {
     url = https://github.com/ariutta/mynixpkgs;
@@ -83,7 +69,17 @@ let
   # R
   #########################
 
-  myRPackages = p: with p; [
+  # this is a function that accepts an input like pkgs.rPackages
+  # It takes that input and selects a subset of packages from
+  # the input collection.
+  # TODO: how/where should we specify R itself as a dependency?
+  selectedRPackagesFn = p: with p; [
+    # R itself
+    pkgs.R
+
+    # R libraries
+    feather
+    knitr
     pacman
 
     tidyverse
@@ -97,20 +93,57 @@ let
     # * readr   
     # * forcats 
 
-    feather
-    knitr
+    conflicted
+    RSelenium
+    rvest
+    xml2
+
+    ################################################
+    # For Jupyter/JupyterLab
+    # I have installed an extension that formats code on save. I think it's a
+    # server extensions. To format R code, the formatter appears to rely on the
+    # Python library 'rpy2' as well as the R pkg 'formatR'.
+    # I also have an extension for LSP capabilities. To make it work with R,
+    # I use the R pkg 'languageserver'.
+    ################################################
+    # TODO: is it possible to specify these via extraJupyterPath or extraInputsFrom?
+    #       I haven't managed to do it, but it should be possible.
+    #       I tried adding the following to extraJupyterPath, but that
+    #       didn't seem to do it.
+    #"${pkgs.R}/lib/R" 
+    #"${pkgs.R}/lib/R/library"
+    #"${pkgs.rPackages.formatR}/library"
+    #"${pkgs.rPackages.languageserver}/library"
+
+    languageserver
+
+    #----------------
+    # code formatting
+    #----------------
+    formatR
+
+    ## an alternative formatter:
+    #styler
+    #prettycode # seems to be needed by styler
   ];
 
-  myR = [ pkgs.R ] ++ (myRPackages pkgs.rPackages);
+  allRPackages = pkgs.rPackages;
+
+  # the content above is a function.
+  # below, we get a list
+  # TODO: Is this actually an R env, similar to the Py env we get from Nix?
+  #       Or is it just a list containing R itself and some packages?
+  myREnv = (selectedRPackagesFn allRPackages);
 
   irkernel = jupyter.kernels.iRWith {
     # Identifier that will appear on the Jupyter interface.
     name = kernel_descriptor;
     # Libraries to be available to the kernel.
-    packages = myRPackages;
+    # accepts a function like p: with p; [ p.ggplot2 ]
+    packages = selectedRPackagesFn;
     # Optional definition of `rPackages` to be used.
     # Useful for overlaying packages.
-    rPackages = pkgs.rPackages;
+    rPackages = allRPackages;
   };
 
   #########################
@@ -167,10 +200,6 @@ let
 
   jupyter = pkgs.jupyterWith;
 
-  # TODO: take a look at xeus-python
-  # https://github.com/jupyter-xeus/xeus-python#what-are-the-advantages-of-using-xeus-python-over-ipykernel-ipython-kernel
-  # It supports the jupyterlab debugger. But it's not packaged for nixos yet.
-
   iPython = jupyter.kernels.iPythonWith {
     name = kernel_descriptor;
 
@@ -212,17 +241,6 @@ let
     # I think we need to specify them like this because Jupyter needs the config
     # directory to be writable, so symlinks to the Nix store won't work.
     postBuild = ''
-#      echo "" >&2
-#      echo "shareJupyterPyDepNames: ${builtins.toString shareJupyterPyDepNames}" >&2
-#      echo "" >&2
-#      echo "nonJupyterPyDepNames: ${builtins.toString nonJupyterPyDepNames}" >&2
-#      echo "" >&2
-#      echo "pyProjectDepNamesNotLock: ${builtins.toString pyProjectDepNamesNotLock}" >&2
-#      echo "" >&2
-#      echo "poetryLockNotPyProj: ${builtins.toString poetryLockNotPyProj}" >&2
-#      echo "" >&2
-#      exit 1
-
       rm "$out/config/jupyter_server_config.json"
       substitute "${shareSrc}/config/jupyter_server_config.json" "$out/config/jupyter_server_config.json" --subst-var-by notebookDir "${notebookDir}"
 
@@ -245,8 +263,6 @@ let
 
       kernels = [ iPython irkernel ];
 
-      # Add extra packages to the JupyterWith environment
-      # TODO: which packages exactly are supposed to be here?
       extraPackages = p: [
         p.dos2unix
         p.inkscape
@@ -293,30 +309,7 @@ let
         #pythonEnv.pkgs.jupyterlab-lsp
       ]
       # TODO: is the code below the best way to specify the R deps?
-      ++ [ p.R ]
-      ++ (with pkgs.rPackages; [
-        ################################################
-        # For server extensions that rely on R or R pkgs
-        ################################################
-        # TODO: is it possible to specify these via extraJupyterPath or extraInputsFrom?
-        #       I haven't managed to do it, but it should be possible.
-        #       I tried adding the following to extraJupyterPath, but that
-        #       didn't seem to do it.
-        #"${pkgs.R}/lib/R" 
-        #"${pkgs.R}/lib/R/library"
-        #"${pkgs.rPackages.formatR}/library"
-        #"${pkgs.rPackages.languageserver}/library"
-
-        languageserver
-
-        #----------------
-        # code formatting
-        #----------------
-        formatR
-        ## an alternative formatter:
-        #styler
-        #prettycode # seems to be needed by styler
-      ]);
+      ++ myREnv;
 
       #----------------
       # extraInputsFrom
@@ -325,36 +318,7 @@ let
       # Bring all inputs from a package in scope.
       # This is required to make deps available when needed, e.g.,
       # to make pandoc available to nbconvert.
-
-      # TODO: Automatically detect which packages need to be specified here.
-      # For now, I just manually specify the deps for nbconvert:
       extraInputsFrom = p: [ p.pkgs.pandoc p.pkgs.texlive.combined.scheme-full ];
-
-      # TODO: these were some attempts that did not work:
-      #extraInputsFrom = p: [ pythonEnv.pkgs.nbconvert ];
-      #extraInputsFrom = p: [ p.pythonPackages.nbconvert ];
-      #extraInputsFrom = p: p.pythonPackages.nbconvert.propagatedBuildInputs;
-      #extraInputsFrom = p: pythonEnv.pkgs.nbconvert.propagatedBuildInputs;
-
-      # TODO: extraInputsFrom as specified above gives an error when using direnv:
-      #
-      # ./.envrc:109: Sourcing: command not found
-      #
-      # This is presumably because the dump.env file
-      # ./.direnv/wd-86452ccdf0879f88e537141a4809226d/dump.env
-      # is modified when extraInputsFrom has a python package,
-      # with the following lines being added:
-      #
-      # Sourcing python-remove-tests-dir-hook
-      # Sourcing python-catch-conflicts-hook.sh
-      # Sourcing python-remove-bin-bytecode-hook.sh
-      # Sourcing setuptools-build-hook
-      # Using setuptoolsBuildPhase
-      # Sourcing pip-install-hook
-      # Using pipInstallPhase
-      # Sourcing python-imports-check-hook.sh
-      # Using pythonImportsCheckPhase
-      # Sourcing python-namespaces-hook
 
       #-----------------
       # extraJupyterPath
@@ -436,10 +400,11 @@ in
       export JUPYTER_DATA_DIR="${mutableJupyterDir}"
       mkdir -p "$JUPYTER_DATA_DIR"
 
-
-      # TODO: Can I automatically generate the file
+      # TODO: Can I automatically generate the info contained in this file?
       # ./share-src/config/nbconfig/notebook.d/load_nbextensions.json
-      # by looking at what's in ${shareJupyter}/nbextensions?
+      #
+      # It seems I could get that info by looking at the contents
+      # of ${shareJupyter}/nbextensions
 
       if [ -e "${mutableJupyterDir}/config/nbconfig" ]; then
         rm -rf "${mutableJupyterDir}/config/nbconfig"
@@ -461,101 +426,31 @@ in
       # other stuff
       #------------
 
-      #export R_HOME="${pkgs.R}/lib/R"
-      #export R_LIBS_SITE="$R_LIBS_SITE''${R_LIBS_SITE:+:}${pkgs.R}/lib/R/library:${pkgs.rPackages.languageserver}/library:${pkgs.rPackages.xml2}/library:${pkgs.rPackages.R6}/library"
-      
-      # TODO: this general format came from the nixpkgs generic R package builder.
-      # What does it do?
+      # This line is from the nixpkgs generic R package builder:
       #export LD_LIBRARY_PATH="$LD_LIBRARY_PATH''${LD_LIBRARY_PATH:+:}${pkgs.R}/lib/R/lib"
 
-      # this doesn't work. it gives this message:
-      #   R cannot be found in the PATH and RHOME cannot be found.
+      # I modified it a bit to work with rpy2:
       export LD_LIBRARY_PATH="$LD_LIBRARY_PATH''${LD_LIBRARY_PATH:+:}$(python -m rpy2.situation LD_LIBRARY_PATH)"
-      #export LD_LIBRARY_PATH="$LD_LIBRARY_PATH''${LD_LIBRARY_PATH:+:}$(python -m rpy2.situation LD_LIBRARY_PATH)"
-      # but strangely, this gives a result
-      #direnv exec Documents/sandbox/pathway-figure-ocr/ sh -c 'python -m rpy2.situation LD_LIBRARY_PATH'
-      # and so does this:
-      #direnv exec Documents/sandbox/pathway-figure-ocr/ sh -c 'which R'
-      # and this:
-      #direnv exec Documents/sandbox/pathway-figure-ocr/ R --version
 
-      # mybinder gave this message when launching:
+      # Without that line above, I get the following error when I launch JupyterLab:
+      #
+      # Jupyterlab Code Formatter Error
+      # Unable to find server plugin version, this should be impossible,open a GitHub issue if you cannot figure this issue out yourself.
+      #
+      # TODO: what is this code doing and how should it be configured?
+
+      # Message from mybinder when launching:
+      #
       # Installation finished!  To ensure that the necessary environment
       # variables are set, either log in again, or type
       # 
       #   . /home/jovyan/.nix-profile/etc/profile.d/nix.sh
       # 
       # in your shell.
-
+      #
+      # Hence, the code below to make everything work on mybinder:
       if [ -f /home/jovyan/.nix-profile/etc/profile.d/nix.sh ]; then
          . /home/jovyan/.nix-profile/etc/profile.d/nix.sh
       fi
     '';
   })
-
-  # TODO: rename directory variables to match what Jupyter uses.
-  # https://jupyter.readthedocs.io/en/latest/use/jupyter-directories.html
-  # https://jupyterlab.readthedocs.io/en/stable/user/directories.html#jupyterlab-application-directory
-  # https://jupyter-notebook.readthedocs.io/en/stable/config.html
-  # https://jupyter-server.readthedocs.io/en/latest/search.html?q=jupyter_server_config.json
-  # https://jupyterlab.readthedocs.io/en/stable/user/directories.html
-
-  # TODO: ./.envrc:109: Sourcing: command not found
-
-  # TODO: @krassowski/jupyterlab-lsp:signature settings schema could not be found and was not loaded
-
-  # NOTE: If JUPYTER_DATA_DIR is made immutable, I get the following error:
-  # Unexpected error while saving file: Untitled.ipynb HTTP 500: Internal Server Error
-  # (Unexpected error while saving file: Untitled.ipynb [Errno 30] Read-only file system: '/nix/store/rjcbrkd1br3d4kckw1m1ppn9ksv6sm0c-my-share-jupyter-0.0.0/notebook_secret')
-
-  # I also got an error when I created an R ipynb file and tried saving it:
-  #
-  # File Save Error for Untitled1.ipynb
-  # Unexpected error while saving file: Untitled1.ipynb HTTP 500: Internal Server Error (Unexpected error while saving file: Untitled1.ipynb attempt to write a readonly database)
-  #
-  # Possibly because this file changes when we create a new notebook:
-  # .share/jupyter/nbsignatures.db
-
-  # To identify which files must be mutable, make all dirs mutable and then:
-  #
-  # newer .share
-  # find .share/ -newermt '2021-04-12 19:00'
-  #
-  # or
-  #
-  # find .share/ -newer .share/jupyter/nbextensions/jupytext/jupytext_menu.png
-
-  # .share/jupyter/nbconvert/templates
-  # .share/jupyter/notebook_secret
-  # .share/jupyter/nbsignatures.db
-  # .share/jupyter/runtime/jupyter_cookie_secret
-  # .share/jupyter/runtime/jpserver-26238.json
-  #
-  # R or Python kernel launched:
-  # .share/jupyter/runtime/kernel-87d047eb-f646-473a-9f17-fac7fcfe7d75.json
-  #
-  # .share/jupyter/runtime/jpserver-26238-open.html
-  # .share/jupyter/config/lab/user-settings/@jupyterlab/application-extension/sidebar.jupyterlab-settings
-  # .share/jupyter/config/lab/workspaces/default-37a8.jupyterlab-workspace
-
-  # TODO: I was getting the following error message:
-  # Generating grammar tables from /nix/store/sr8r3k029wvgdbv2zr36wr976dk1lya6-python3-3.8.7-env/lib/python3.8/site-packages/blib2to3/Grammar.txt
-  # Writing grammar tables to /home/ariutta/.cache/black/20.8b1/Grammar3.8.7.final.0.pickle
-  # Writing failed: [Errno 2] No such file or directory: '/home/ariutta/.cache/black/20.8b1/tmppem8fqj6'
-
-  # I made it go away by manually adding the directory, but shouldn't this be automatic?
-  # mkdir -p /home/ariutta/.cache/black/20.8b1/
-
-  # nix-store -q --roots /nix/store/93hc8xfc1krv8ab2wi1z246q415iaaw5-python3.8-rpy2-3.4.1    
-  # nix-store -q --referrers /nix/store/93hc8xfc1krv8ab2wi1z246q415iaaw5-python3.8-rpy2-3.4.1    
-  # for x in $(ls -1 /nix/store | grep rpy2); do echo ""; echo "/nix/store/$x"; sudo nix-store -q --roots /nix/store/"$x"; done
-
-  # TODO: for code formatting, compare nb_black with jupyterlab-code-formatter.
-  # One difference:
-  # nb_black is an IPython Magic (%), whereas
-  # jupyterlab-code-formatter is a combo lab & server extension.
-  # https://github.com/ryantam626/jupyterlab_code_formatter
-  #
-  # For JupyterLab, call nb_black w/ %load_ext lab_black
-  # https://pypi.org/project/nb-black/
-  # https://github.com/dnanhkhoa/nb_black
