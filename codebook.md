@@ -25,12 +25,16 @@ https://www.ncbi.nlm.nih.gov/pmc/?term=signaling+pathway+AND+2016+:+2018+[pdat]&
 
 ### Scrape HTML
 
-For sample sets you can simply save dozens of pages of results and quickly get 1000s of pathway figures. _Consider automating this step when scaling up._
+For sample sets you can simply save a few pages of results and quickly get some pathway figures.
 
 ```
 Save raw html to designated folder, e.g., pmc/20150501/rawhtml
 ```
+This has been automated by this script:
 
+```
+[pfocr_fetch.R](https://github.com/wikipathways/pathway-figure-ocr/blob/master/pfocr_fetch.R)
+```
 Next, configure and run this php script to generated annotated sets of image and html files.
 
 ```
