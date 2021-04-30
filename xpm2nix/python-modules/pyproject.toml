@@ -100,6 +100,7 @@ qbatch = "^2.2.1"
 jupyterlab-pygments = "^0.1.2"
 jupyterlab-topbar = "^0.6.1"
 jupyterlab-widgets = "^1.0.0"
+Scrapy = "^2.5.0"
 
 [tool.poetry.dev-dependencies]
 jupyter-packaging = "^0.7.12"

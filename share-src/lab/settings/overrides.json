@@ -28,6 +28,27 @@
     }
   },
   "@ryantam626/jupyterlab_code_formatter:settings": {
-    "formatOnSave": true
+    "formatOnSave": true,
+    "preferences": {
+      "default_formatter": {
+        "python": [
+          "isort",
+          "black"
+        ],
+        "r": [
+          "styler"
+        ]
+      }
+    },
+    "black": {
+      "line_length": 80,
+      "string_normalization": true
+    },
+    "formatR": {
+      "indent": 2,
+      "arrow": true,
+      "wrap": true,
+      "width_cutoff": 80
+    }
   }
 }

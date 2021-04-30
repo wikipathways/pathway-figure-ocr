@@ -16,7 +16,7 @@ It supports the jupyterlab debugger. But it's not packaged for nixos yet.
 
 Also, we need to specify CLI dependencies for any/all of the above.
 
-## TODO: look at how to properly auto-fill whatever is needed for the following:
+## Look at how to properly auto-fill whatever is needed for the following:
 
 - iPython.packages
 - jupyterEnvironment.extraPackages
@@ -24,6 +24,23 @@ Also, we need to specify CLI dependencies for any/all of the above.
 - jupyterEnvironment.extraInputsFrom
 
 Also, I want to be able to run my python from a notebook as well as from the command line.
+
+## Clean up how to specify R deps
+
+I have installed an extension that formats code on save. I think it's a
+server extensions. To format R code, the formatter appears to rely on the
+Python library 'rpy2' as well as the R pkg 'formatR'.
+I also have an extension for LSP capabilities. To make it work with R,
+I use the R pkg 'languageserver'.
+
+Is it possible to specify these via extraJupyterPath or extraInputsFrom? I
+haven't managed to do it, but it should be possible. I tried adding the
+following to extraJupyterPath, but none of these seemed to do it:
+
+- `"${pkgs.R}/lib/R"`
+- `"${pkgs.R}/lib/R/library"`
+- `"${pkgs.rPackages.formatR}/library"`
+- `"${pkgs.rPackages.languageserver}/library"`
 
 TODO: Automatically detect which packages need to be specified for extraInputsFrom.
 For now, I just manually specify the deps for nbconvert:

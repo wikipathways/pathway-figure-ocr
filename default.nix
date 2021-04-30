@@ -94,37 +94,36 @@ let
     # * forcats 
 
     conflicted
+    processx
     RSelenium
     rvest
     xml2
 
-    ################################################
+    #########################
     # For Jupyter/JupyterLab
-    # I have installed an extension that formats code on save. I think it's a
-    # server extensions. To format R code, the formatter appears to rely on the
-    # Python library 'rpy2' as well as the R pkg 'formatR'.
+    #########################
+
     # I also have an extension for LSP capabilities. To make it work with R,
     # I use the R pkg 'languageserver'.
-    ################################################
-    # TODO: is it possible to specify these via extraJupyterPath or extraInputsFrom?
-    #       I haven't managed to do it, but it should be possible.
-    #       I tried adding the following to extraJupyterPath, but that
-    #       didn't seem to do it.
-    #"${pkgs.R}/lib/R" 
-    #"${pkgs.R}/lib/R/library"
-    #"${pkgs.rPackages.formatR}/library"
-    #"${pkgs.rPackages.languageserver}/library"
-
     languageserver
 
-    #----------------
-    # code formatting
-    #----------------
-    formatR
+    # I have installed an extension that formats code on save. I think it's a
+    # server extension. To format R code, the formatter appears to rely on the
+    # Python library 'rpy2' as well as the R pkg 'formatR'.
+
+    # TODO: Is this always working correctly? I think I've noticed cases where
+    # I hit save, the formatter changes the code as I see it in the notebook,
+    # and the little circle in Jupyterlab changes to indicates it's saved.
+    # But if I close and re-open the file, the code isn't formatted.
+    #
+    # formatR on Nixpkgs unstable is currently v1.7.
+    # I want at least 1.9 so I get pipe formatted correctly:
+    # https://yihui.org/formatr/#the-pipe-operator
+    #formatR
 
     ## an alternative formatter:
-    #styler
-    #prettycode # seems to be needed by styler
+    styler
+    prettycode # seems to be needed by styler
   ];
 
   allRPackages = pkgs.rPackages;
@@ -265,9 +264,11 @@ let
 
       extraPackages = p: [
         p.dos2unix
-        p.inkscape
 
+        # general image library
         p.imagemagick
+        # vector image library
+        p.inkscape
 
         # to run AutoML Vision
         p.google-cloud-sdk
@@ -309,7 +310,8 @@ let
         #pythonEnv.pkgs.jupyterlab-lsp
       ]
       # TODO: is the code below the best way to specify the R deps?
-      ++ myREnv;
+      ++ myREnv
+      ++ [ p.selenium-server-standalone p.geckodriver ];
 
       #----------------
       # extraInputsFrom
