@@ -10,6 +10,23 @@ let
       ];
     });
 
+    ipython-sql = super.ipython-sql.overridePythonAttrs(oldAttrs: {
+      prePatch = (oldAttrs.prePatch or "") + ''
+        # In the source repo, there is a file NEWS.rst, but when poetry downloads
+        # the source, it doesn't have NEWS.rst. So we generate a dummy version.
+
+        touch NEWS.rst
+
+        # The following alternative also works, but it's probably more brittle:
+        #substituteInPlace setup.py --replace "NEWS = open(os.path.join(here, 'NEWS.rst'), encoding='utf-8').read()" 'NEWS = ""'
+        # It appears substituteInPlace doesn't support regular expressions,
+        # b/c the following doesn't work:
+        #substituteInPlace setup.py --replace "^NEWS.+$" 'NEWS = ""'
+      '';
+    });
+#    # TODO: is the following needed?
+#    ipython_sql = self.ipython-sql;
+
     jupyter-resource-usage = super.jupyter-resource-usage.overridePythonAttrs(oldAttrs: {
       nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [
         super.jupyter-packaging
@@ -141,8 +158,8 @@ let
     python_magic = super.python_magic.overridePythonAttrs(oldAttrs: {
       propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [pkgs.file];
 
-      # Using the same patch as what's in nixpkgs.
-      # strangely, 'python_magic' works here but 'python-magic' does not:
+      # Re-using the patch from nixpkgs.
+      # strangely, specifying 'python_magic' works here but 'python-magic' does not.
       patches = pkgs.python3.pkgs.python_magic.patches or [ ];
 
       checkInputs = [ pkgs.glibcLocales ];
@@ -151,7 +168,7 @@ let
       #       not available. Maybe that dir isn't downloaded via PyPI?
       checkPhase = ''
         if python -c 'import magic; print(magic)'; then
-          echo "python-magic is at least importable" >&2
+          echo "python-magic is importable" >&2
         else
           echo "python-magic test failed" >&2
           exit 1
@@ -160,6 +177,8 @@ let
     });
     python-magic = super.python_magic;
 
+    # jupytext depends on markdown-it-py[plugins]
+    #
     # markdown-it-py and mdit-py-plugins are currently cyclic dependencies.
     #
     # markdown-it-py depends on mdit-py-plugins as an extension and uses
@@ -177,6 +196,12 @@ let
         substituteInPlace setup.py --replace \
           'install_requires=["attrs>=19,<21", "mdit-py-plugins~=0.2.1"],' 'install_requires=["attrs>=19,<21"],'
       '';
+
+      # markdown-it-py[plugins]>=1.0.0b3,<2.0.0
+
+
+      #ERROR: Could not find a version that satisfies the requirement mdit-py-plugins; extra == "plugins"
+      #(from markdown-it-py[plugins]<2.0.0,>=1.0.0b3->jupytext==1.11.2) (from versions: none)
        
       # TODO: right now, the only dependencies in setup.py are attrs and
       #       mdit-py-plugins, but if a new dependency is added, this
@@ -310,6 +335,28 @@ let
       doCheck = false;
     });
 
+    regex = super.regex.overridePythonAttrs (
+      old: {
+        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ self.cython ];
+
+        # from nixpkgs
+        postCheck = ''
+          if python -c 'import regex; print(regex)'; then
+            echo "regex is importable" >&2
+          else
+            echo "regex test failed" >&2
+            exit 1
+          fi
+
+          echo "We now run tests ourselves, since the setuptools installer doesn't."
+          python -c 'import test_regex; test_regex.test_main();'
+        '';
+
+        # No tests in archive
+        doCheck = false;
+      }
+    );
+
     rpy2 = super.rpy2.overridePythonAttrs(oldAttrs: {
       nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [
         R # needed at setup time to detect R_HOME (alternatively set R_HOME explicitly)
@@ -354,6 +401,28 @@ let
         fi
       '';
     });
+
+    wand = super.wand.overridePythonAttrs(oldAttrs: {
+      propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [pkgs.imagemagick7Big];
+
+      # Re-using the patch from nixpkgs.
+      #patches = pkgs.python3.pkgs.wand.patches or [ ];
+      postPatch = pkgs.python3.pkgs.Wand.postPatch;
+
+      #passthru.imagemagick = imagemagick7Big;
+      passthru = pkgs.python3.pkgs.Wand.passthru;
+
+      doCheck = true;
+      checkPhase = ''
+        if python -c 'import wand; print(wand)'; then
+          echo "wand is importable" >&2
+        else
+          echo "wand test failed" >&2
+          exit 1
+        fi
+      '';
+    });
+    Wand = super.wand;
 
     ##############
     # spacy & deps

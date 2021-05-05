@@ -211,6 +211,7 @@ let
     #              so we can just list a package name and the prefix
     #              'python3.pkgs.' will be understood.
     packages = p: with p; nonJupyterPyDeps;
+    #packages = p: with p; nonJupyterPyDeps ++ [pythonEnv.pkgs.ipython-sql pythonEnv.pkgs.psycopg2];
   };
 
   ######################

@@ -11,7 +11,7 @@ python = ">=3.8,<3.10"
 
 # jupyter, jupyterlab and friends
 jupyter = "^1.0.0"
-jupyterlab = "^3.0.8"
+jupyterlab = "3.0.14"
 
 jupyter-lsp = "^1.1.3"
 jupyterlab-lsp = "^3.4.1"
@@ -19,7 +19,6 @@ jupyterlab-lsp = "^3.4.1"
 aquirdturtle-collapsible-headings = "^3.0.1"
 
 jupyterlab-drawio = "^0.8.0"
-#jupyterlab-drawio = { version = "^0.8.0", optional = true }
 
 jupyterlab-hide-code = "^3.0.1"
 jupyterlab-vim = "^0.13.0"
@@ -53,7 +52,8 @@ seaborn = "^0.11.1"
 
 rpy2 = "^3.4.3"
 
-jupytext = "^1.11.0"
+# TODO: currently locked to specific version b/c 1.11.2 has depency that doesn't install.
+jupytext = "1.11.1"
 
 # NLP
 
@@ -83,11 +83,14 @@ ndex2 = "^3.3.1"
 skosmos-client = "^0.3.0"
 #wikidata2df = "^0.1.0"
 
+# Google libs
 google-api-core = "^1.26.3"
 google-cloud-core = "^1.6.0"
 google-cloud-testutils = "^0.2.0"
 google-cloud-automl = "^2.3.0"
 google-cloud-storage = "^1.38.0"
+google-cloud-vision = "^2.3.1"
+protobuf = "^3.15.8"
 
 requests = "^2.25.1"
 requests-cache = "^0.6.3"
@@ -97,10 +100,28 @@ beautifulsoup4 = "^4.9.3"
 soupsieve = "^2.2.1"
 
 qbatch = "^2.2.1"
+
 jupyterlab-pygments = "^0.1.2"
 jupyterlab-topbar = "^0.6.1"
 jupyterlab-widgets = "^1.0.0"
+
 Scrapy = "^2.5.0"
+sentence-diff = "^0.1"
+nltk = "^3.6.2"
+regex = "^2021.4.4"
+levenshtein = "^0.12.0"
+polyleven = "^0.7"
+Levenshtein-search = "^1.4.5"
+
+ipython-sql = "^0.4.0"
+# ipython-sql needs psycopg2
+psycopg2 = "^2.8.6"
+
+# Multiple of my dependencies depend on MarkupSafe.
+# MarkupSafe was recently upgraded to 2.0.0, and I'm currently getting
+# a 404 from files.pythonhosted.org when I try installing, so I'm
+# explicitly requiring MarkupSafe in order to be able to specify the version.
+MarkupSafe = "^1.1.1"
 
 [tool.poetry.dev-dependencies]
 jupyter-packaging = "^0.7.12"
