@@ -1,0 +1,13 @@
+name: shiny-adrd
+title: shiny-adrd
+username:
+account: gladstone-bioinformatics
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 4101302
+bundleId: 4575256
+url: https://gladstone-bioinformatics.shinyapps.io/shiny-adrd/
+when: 1620507433.29866
+lastSyncTime: 1620507433.29867
+asMultiple: FALSE
+asStatic: FALSE
