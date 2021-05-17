@@ -1,3 +1,17 @@
+# PFOCR in notebooks
+
+## Pipeline order
+1. pfocr_fetch.R.ipynb
+2. get_figures.ipynb
+3. gcv_automl.ipynb
+4. gcv_ocr.ipynb
+5. get_lexicon.ipynb
+6. pp_classic.ipynb
+
+
+
+## Other
+
 Full rebuild and check extensions:
 
 ```
