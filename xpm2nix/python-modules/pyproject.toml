@@ -45,7 +45,7 @@ nbconvert = "^6.0.7"
 
 # non-jupyter libs (but may still be used in my notebooks)
 
-pandas = "^1.2.4"
+pandas = {extras = ["xlrd", "openpyxl"], version = "^1.2.4"}
 scipy = "^1.6.2"
 matplotlib = "^3.4.1"
 seaborn = "^0.11.1"
@@ -66,7 +66,8 @@ confusables = "^1.2.0"
 # this hasn't been updated for years
 confusable-homoglyphs = "^3.2.0"
 
-# repo for this package was archived
+# this package doesn't build and the
+# associated repo is now archived
 #homoglyphs = "^2.0.4"
 
 # detect filetypes

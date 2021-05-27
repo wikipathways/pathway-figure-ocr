@@ -210,7 +210,11 @@ let
     # 'p: with p;' means use the packages for 'iPython.python3' (specified above)
     #              so we can just list a package name and the prefix
     #              'python3.pkgs.' will be understood.
-    packages = p: with p; nonJupyterPyDeps;
+    # TODO: To import from Excel w/ pandas, you need some optional dependencies.
+    # How do we make those automatically be included in nonJupyterPyDeps?
+    # TODO: note this warning:
+    #       FutureWarning: Your version of xlrd is 1.2.0. In xlrd >= 2.0, only the xls format is supported. As a result, the openpyxl engine will be used if it is installed and the engine argument is not specified. Install openpyxl instead.
+    packages = p: with p; nonJupyterPyDeps ++ (with pythonEnv.pkgs; [xlrd openpyxl]);
     #packages = p: with p; nonJupyterPyDeps ++ [pythonEnv.pkgs.ipython-sql pythonEnv.pkgs.psycopg2];
   };
 

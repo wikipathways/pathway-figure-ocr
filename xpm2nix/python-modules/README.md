@@ -14,6 +14,12 @@ To add a new dependency:
 poetry add --lock jupytext
 ```
 
+with an optional dependency:
+
+```
+poetry add --lock pandas[xlrd]
+```
+
 That will add `jupytext` to `pyproject.toml` as well as `poetry.lock`.
 
 ## For more info on working with Python + Nix:
