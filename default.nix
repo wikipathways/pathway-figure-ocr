@@ -32,11 +32,11 @@ let
   #myoverlay = import ../mynixpkgs/overlay.nix;
 
   # for prod
-  myoverlay = import (builtins.fetchGit {
+  mynixpkgsPath = builtins.fetchGit {
     url = https://github.com/ariutta/mynixpkgs;
-    rev = "ebd930f4d67ff658084281a9a71c6400ac2b912a";
-    ref = "main";
-  });
+    rev = "ed62cdbbcd98027a761e6f841cd01e60da228065";
+  };
+  myoverlay = (import "${mynixpkgsPath}/overlay.nix");
 
   # Importing overlays
   overlays = [
@@ -52,7 +52,12 @@ let
   ];
 
   # Your Nixpkgs snapshot, with JupyterWith packages.
-  pkgs = import <nixpkgs> { inherit overlays; config.allowUnfree = true; };
+  pkgs = import (builtins.fetchTarball {
+    name = "nixos-unstable-2021-04-01";
+    url = "https://github.com/nixos/nixpkgs/archive/0a62eadc3c85c0ea7a9debaacc2e1113a11e4af6.tar.gz";
+    # Hash obtained using `nix-prefetch-url --unpack <url>`
+    sha256 = "1qrx6hgi1rjya02h5wj7b1znimfhiq6i95fqgs0rrk4hs2chbzkc";
+  }) { inherit overlays; config.allowUnfree = true; };
 
   # 'jupyter-kernelspec list' makes everything lowercase and joins the
   # internal kernel name with this descriptor. Example for descriptor 'mypkgs':
