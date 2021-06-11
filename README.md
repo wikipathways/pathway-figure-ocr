@@ -18,14 +18,33 @@ The goal of this project is to extract identifyable genes, proteins and metaboli
 
 This work is supported by NIGMS, [R01GM100039](https://app.dimensions.ai/details/grant/grant.2521530)
 
-### Developers
+## Install
 
-The [codebook](codebook.md) is a good place to start to see how we assemble and run the PFOCR pipeline. Be forewarned, however, this project is still in development and is not ready for production or even dev releases. So, don't expect things to work :)
-Contact us via [Issues](https://github.com/wikipathways/pathway-figure-ocr/issues) if you're interested in contributing to the development. All our code are open source.
+Warning: this project is still in development and is not ready for production or even dev releases by external teams. So, don't expect things to work without some troubleshooting :)
+Contact us via [Issues](https://github.com/wikipathways/pathway-figure-ocr/issues) if you're interested in contributing to the development. All our code is open source.
 
-### xpm2nix: external package manager to Nix
+1. Install [Nix](https://nixos.org/nixos/nix-pills/install-on-your-running-system.html#idm140737316672400)
+2. Clone this repo: `git clone https://github.com/wikipathways/pathway-figure-ocr.git && cd pathway-figure-ocr`
+3. Launch Jupyter: `nix-shell && jupyter lab`
 
-#### Python: poetry2nix
+## Pipeline
+
+The Jupyter Notebooks used to run the PFOCR pipeline are all in `./notebooks`. Run them in the following order:
+
+1. `pfocr_fetch.R.ipynb`
+2. `get_figures.ipynb`
+3. `gcv_automl.ipynb`
+4. `gcv_ocr.ipynb`
+5. `get_lexicon.ipynb`
+6. `pp_classic.ipynb`
+
+## Internal Notes
+
+### xpm2nix
+
+In `./xpm2nix`, you'll find packages from external package manager(s) made available as Nix packages. `xpm` means any e*x*ternal *p*ackage *m*anager.
+
+- For Python, we're using poetry2nix.
 
 To add Python a package:
 
@@ -41,4 +60,4 @@ cd xpm2nix/python-modules/
 poetry update --lock
 ```
 
-#### JavaScript: node2nix
+- For JavaScript, we're using node2nix.
