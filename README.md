@@ -47,20 +47,36 @@ Note that we used a database for `20200224` but not for `20210515`. Any future r
 
 In `./xpm2nix`, you'll find packages from external package manager(s) made available as Nix packages. `xpm` is just an abbreviation we made up to refer to any e**X**ternal **P**ackage **M**anager.
 
-- For Python, we're using poetry2nix.
+#### For Python, we're using poetry2nix.
 
-To add Python a package:
+To add a package:
 
 ```
 cd xpm2nix/python-modules/
 poetry add --lock jupytext
 ```
 
-To update Python packages:
+To update packages:
 
 ```
 cd xpm2nix/python-modules/
 poetry update --lock
 ```
 
-- For JavaScript, we're using node2nix.
+#### For JavaScript / Node.js, we're using node2nix.
+
+To add a package:
+
+```
+cd xpm2nix/node-packages/
+npm install --package-lock-only --save @arbennett/base16-gruvbox-dark
+```
+
+To update packages:
+
+```
+cd xpm2nix/node-packages/
+./update
+```
+
+Manually update 
