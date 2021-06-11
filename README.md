@@ -45,7 +45,7 @@ Note that we used a database for `20200224` but not for `20210515`. Any future r
 
 ### xpm2nix
 
-In `./xpm2nix`, you'll find packages from external package manager(s) made available as Nix packages. `xpm` means any e*x*ternal *p*ackage *m*anager.
+In `./xpm2nix`, you'll find packages from external package manager(s) made available as Nix packages. `xpm` is just an abbreviation we made up to refer to any e**X**ternal **P**ackage **M**anager.
 
 - For Python, we're using poetry2nix.
 
