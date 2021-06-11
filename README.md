@@ -49,34 +49,36 @@ In `./xpm2nix`, you'll find packages from external package manager(s) made avail
 
 #### For Python, we're using poetry2nix.
 
+```
+cd xpm2nix/python-modules
+```
+
 To add a package:
 
 ```
-cd xpm2nix/python-modules/
 poetry add --lock jupytext
 ```
 
 To update packages:
 
 ```
-cd xpm2nix/python-modules/
 poetry update --lock
 ```
 
 #### For JavaScript / Node.js, we're using node2nix.
 
+```
+cd xpm2nix/node-packages
+```
+
 To add a package:
 
 ```
-cd xpm2nix/node-packages/
 npm install --package-lock-only --save @arbennett/base16-gruvbox-dark
 ```
 
 To update packages:
 
 ```
-cd xpm2nix/node-packages/
 ./update
 ```
-
-Manually update 
