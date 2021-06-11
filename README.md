@@ -37,7 +37,7 @@ The Jupyter Notebooks used to run the PFOCR pipeline are all in `./notebooks`. R
 4. [`gcv_ocr.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/gcv_ocr.ipynb)
 5. [`get_lexicon.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/get_lexicon.ipynb): note that we actually just re-used the `20200224` lexicon for `20210515`, so we didn't really finish this file.
 6. [`pp_classic.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/pp_classic.ipynb)
-7. [`merge_2020_2021.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/merge_2020_2021.ipynb): this was just for the `20200224` / `20210515` merge and obviously would require being updated for any other merge.
+7. [`merge_2020_2021.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/merge_2020_2021.ipynb): this was just for the `20200224` / `20210515` merge and obviously would require being updated for any other merge. Note this notebook is also where we get the metadata for the papers.
 
 Note that we used a database for `20200224` but not for `20210515`. Any future runs or merges will probably not need to use the old database.
 
