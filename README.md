@@ -1,6 +1,6 @@
 # Pathway Figure OCR
 
-The goal of this project is to extract identifyable genes, proteins and metabolites from publised pathway figures. In addition to all the code for assembling and running the Pathway Figure OCR pipeline, this repo contains scripts specific to the QC, analysis and figure generation involved in our publications of the work. Here we document a few of the key files and folders relevant to each paper:
+The goal of this project is to extract identifiable genes, proteins and metabolites from published pathway figures. In addition to all the code for assembling and running the Pathway Figure OCR pipeline, this repo contains scripts specific to the QC, analysis and figure generation involved in our publications of the work. Here we document a few of the key files and folders relevant to each paper:
 
 - [25 Years of Pathway Figures (BioRxiv 2020)](https://www.biorxiv.org/content/10.1101/2020.05.29.124503v1)
 
@@ -10,7 +10,7 @@ The goal of this project is to extract identifyable genes, proteins and metaboli
   - Pie chart data for top disease terms for text and figure genes: [script](pfocr-gmt-enrich.R#L329)
   - Overlap matrix for Hippo Signaling pathway figure genes: [script](matrix-visualization.R)
   - Machine learning progression plots: [script](pfocr_qc.R#L154)
-  - Local database name: `pfocr20200131`
+  - Local database name: `pfocr20200224`
 
 - [Identifying Genes in Published Pathway Figure Images (BioRxiv 2018)](https://www.biorxiv.org/content/10.1101/379446v1)
   - Performance assessment figures: [folder](performance)
