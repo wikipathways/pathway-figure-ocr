@@ -2,7 +2,7 @@
 
 The goal of this project is to extract identifiable genes, proteins and metabolites from published pathway figures. In addition to all the code for assembling and running the Pathway Figure OCR pipeline, this repo contains scripts specific to the QC, analysis and figure generation involved in our publications of the work. Here we document a few of the key files and folders relevant to each paper:
 
-- [25 Years of Pathway Figures (BioRxiv 2020)](https://www.biorxiv.org/content/10.1101/2020.05.29.124503v1)
+- [25 Years of Pathway Figures (Genome Biology 2020)](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02181-2)
 
   - Interactive search tool for 65k pathway figures and their gene content: [shiny app](https://gladstone-bioinformatics.shinyapps.io/shiny-25years) and [code](shiny-25years)
   - NIH Figshare of identified pathway figures and OCR results as RDS datasets: [collection](https://doi.org/10.35092/yhjc.c.5005697)
