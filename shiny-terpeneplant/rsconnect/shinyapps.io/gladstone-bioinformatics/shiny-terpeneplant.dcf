@@ -1,0 +1,13 @@
+name: shiny-terpeneplant
+title: shiny-terpeneplant
+username:
+account: gladstone-bioinformatics
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5347248
+bundleId: 5389196
+url: https://gladstone-bioinformatics.shinyapps.io/shiny-terpeneplant/
+when: 1639879754.80165
+lastSyncTime: 1639879754.80166
+asMultiple: FALSE
+asStatic: FALSE
