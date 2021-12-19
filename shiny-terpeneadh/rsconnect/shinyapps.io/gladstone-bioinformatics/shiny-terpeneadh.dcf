@@ -1,0 +1,14 @@
+name: shiny-terpeneadh
+title: shiny-terpeneadh
+username:
+account: gladstone-bioinformatics
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 5140223
+bundleId: 5259549
+url: https://gladstone-bioinformatics.shinyapps.io/shiny-terpeneadh/
+when: 1637095163.35264
+lastSyncTime: 1637095163.35265
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: pfocr_terpeneadh_annots.rds
