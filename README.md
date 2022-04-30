@@ -38,8 +38,8 @@ The Jupyter Notebooks used to run the PFOCR pipeline are all in `./notebooks`. R
 4. [`gcv_ocr.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/gcv_ocr.ipynb): run OCR on the figures classified as pathway
 5. [`get_lexicon.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/get_lexicon.ipynb): note that we actually just re-used the `20200224` lexicon for `20210515`, so we didn't really finish this file.
 6. [`pp_classic.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/pp_classic.ipynb): extract genes
-7. [`merge_2020_2021.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/merge_2020_2021.ipynb): this was just for the merge of `20200224` and `20210515`. Obviously, it would require being updated for any other merge. Note this notebook is also where we get the metadata for the papers.
-8. [`pubtator.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/pubtator.ipynb): Extract chemicals and diseases via PubTator.
+7. [`pubtator.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/pubtator.ipynb): Extract chemicals and diseases via PubTator.
+8. [`merge_2020_2021.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/merge_2020_2021.ipynb): this was just for the merge of `20200224` and `20210515`. Obviously, it would require being updated for any other merge. Note this notebook is also where we get the metadata for the papers.
 9. [`bte_export.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/bte_export.ipynb): Export chemicals, diseases and genes for use in BioThings Explorer.
 
 Note that we used a database for `20200224` but not for `20210515`. Any future runs or merges will probably not need to use the old database.
