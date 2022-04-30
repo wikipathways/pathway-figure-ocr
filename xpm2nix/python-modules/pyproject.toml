@@ -75,7 +75,7 @@ python-magic = "^0.4.22"
 
 # image analysis
 wand = "^0.6.6"
-pillow = "^8.2.0"
+pillow = "^9.0.1"
 
 pyarrow = "^3.0.0"
 ftfy = "^6.0"
