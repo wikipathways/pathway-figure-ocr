@@ -1471,7 +1471,7 @@ twitter = ["twython"]
 
 [[package]]
 name = "notebook"
-version = "6.4.0"
+version = "6.4.10"
 description = "A web-based notebook environment for interactive computing"
 category = "main"
 optional = false
@@ -1484,11 +1484,12 @@ ipython-genutils = "*"
 jinja2 = "*"
 jupyter-client = ">=5.3.4"
 jupyter-core = ">=4.6.1"
-nbconvert = "*"
+nbconvert = ">=5"
 nbformat = "*"
+nest-asyncio = ">=1.5"
 prometheus-client = "*"
 pyzmq = ">=17"
-Send2Trash = ">=1.5.0"
+Send2Trash = ">=1.8.0"
 terminado = ">=0.8.3"
 tornado = ">=6.1"
 traitlets = ">=4.2.1"
@@ -2247,11 +2248,16 @@ scipy = ">=1.0"
 
 [[package]]
 name = "send2trash"
-version = "1.5.0"
+version = "1.8.0"
 description = "Send file to trash natively under Mac OS X, Windows and Linux."
 category = "main"
 optional = false
 python-versions = "*"
+
+[package.extras]
+nativelib = ["pyobjc-framework-cocoa", "pywin32"]
+objc = ["pyobjc-framework-cocoa"]
+win32 = ["pywin32"]
 
 [[package]]
 name = "sentence-diff"
@@ -3775,8 +3781,8 @@ nltk = [
     {file = "nltk-3.6.2.zip", hash = "sha256:57d556abed621ab9be225cc6d2df1edce17572efb67a3d754630c9f8381503eb"},
 ]
 notebook = [
-    {file = "notebook-6.4.0-py3-none-any.whl", hash = "sha256:f7f0a71a999c7967d9418272ae4c3378a220bd28330fbfb49860e46cf8a5838a"},
-    {file = "notebook-6.4.0.tar.gz", hash = "sha256:9c4625e2a2aa49d6eae4ce20cbc3d8976db19267e32d2a304880e0c10bf8aef9"},
+    {file = "notebook-6.4.10-py3-none-any.whl", hash = "sha256:49cead814bff0945fcb2ee07579259418672ac175d3dc3d8102a4b0a656ed4df"},
+    {file = "notebook-6.4.10.tar.gz", hash = "sha256:2408a76bc6289283a8eecfca67e298ec83c67db51a4c2e1b713dd180bb39e90e"},
 ]
 numpy = [
     {file = "numpy-1.20.3-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:70eb5808127284c4e5c9e836208e09d685a7978b6a216db85960b1a112eeace8"},
@@ -4367,8 +4373,8 @@ seaborn = [
     {file = "seaborn-0.11.1.tar.gz", hash = "sha256:44e78eaed937c5a87fc7a892c329a7cc091060b67ebd1d0d306b446a74ba01ad"},
 ]
 send2trash = [
-    {file = "Send2Trash-1.5.0-py3-none-any.whl", hash = "sha256:f1691922577b6fa12821234aeb57599d887c4900b9ca537948d2dac34aea888b"},
-    {file = "Send2Trash-1.5.0.tar.gz", hash = "sha256:60001cc07d707fe247c94f74ca6ac0d3255aabcb930529690897ca2a39db28b2"},
+    {file = "Send2Trash-1.8.0-py3-none-any.whl", hash = "sha256:f20eaadfdb517eaca5ce077640cb261c7d2698385a6a0f072a4a5447fd49fa08"},
+    {file = "Send2Trash-1.8.0.tar.gz", hash = "sha256:d2c24762fd3759860a0aff155e45871447ea58d2be6bdd39b5c8f966a0c99c2d"},
 ]
 sentence-diff = [
     {file = "sentence_diff-0.1.tar.gz", hash = "sha256:014ac86917a6c7bb96b2b96362a612bec43ed6bbd0ad7f38ffda20b5475303aa"},
