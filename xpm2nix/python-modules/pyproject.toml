@@ -1,1 +1,132 @@
-../../notebooks/pyproject.toml
+[tool.poetry]
+name = "pathway-figure-ocr-python"
+version = "0.1.0"
+description = ""
+authors = ["Anders Riutta <git@andersriutta.com>"]
+
+[tool.poetry.dependencies]
+
+# range required by scipy:
+python = "3.9"
+
+# jupyter, jupyterlab and friends
+jupyter = "^1.0.0"
+jupyterlab = "3.0.14"
+
+jupyter-lsp = "^1.1.3"
+jupyterlab-lsp = "^3.4.1"
+
+aquirdturtle-collapsible-headings = "^3.0.1"
+
+jupyterlab-drawio = "^0.8.0"
+
+jupyterlab-hide-code = "^3.0.1"
+jupyterlab-vim = "^0.13.0"
+jupyterlab-vimrc = "^0.5.2"
+
+jupyterlab-system-monitor = "^0.8.0"
+jupyter-resource-usage = "^0.5.1"
+
+jupyterlab-code-formatter = "^1.4.10"
+python-language-server = "^0.36.2"
+rope = "^0.18.0"
+mccabe = "^0.6.1"
+black = "^20.8b1"
+isort = "^5.7.0"
+autopep8 = "^1.5.5"
+pydocstyle = "^5.1.1"
+pylint = "^2.6.2"
+yapf = "^0.30.0"
+flake8 = "^3.8.4"
+pyflakes = "^2.2.0"
+
+widgetsnbextension = "^3.5.1"
+nbconvert = "^6.0.7"
+
+# non-jupyter libs (but may still be used in my notebooks)
+
+pandas = {extras = ["xlrd", "openpyxl"], version = "^1.2.4"}
+scipy = "^1.6.2"
+matplotlib = "^3.4.1"
+seaborn = "^0.11.1"
+
+rpy2 = "^3.4.3"
+
+# TODO: currently locked to specific version b/c 1.11.2 has depency that doesn't install.
+
+# NLP
+
+spacy = "^3.0.6"
+pyahocorasick = "^1.4.2"
+unidecode = "^1.2.0"
+
+confusables = "^1.2.0"
+
+# this hasn't been updated for years
+confusable-homoglyphs = "^3.2.0"
+
+# this package doesn't build and the
+# associated repo is now archived
+#homoglyphs = "^2.0.4"
+
+# detect filetypes
+python-magic = "^0.4.22"
+
+# image analysis
+wand = "^0.6.6"
+pillow = "^9.0.1"
+
+ftfy = "^6.0"
+
+ndex2 = "^3.3.1"
+skosmos-client = "^0.3.0"
+#wikidata2df = "^0.1.0"
+
+# Google libs
+google-api-core = "^1.26.3"
+google-cloud-core = "^1.6.0"
+google-cloud-testutils = "^0.2.0"
+google-cloud-automl = "^2.3.0"
+google-cloud-storage = "^1.38.0"
+google-cloud-vision = "^2.3.1"
+protobuf = "^3.15.8"
+
+requests = "^2.25.1"
+
+lxml = "^4.9.1"
+beautifulsoup4 = "^4.9.3"
+soupsieve = "^2.2.1"
+
+qbatch = "^2.2.1"
+
+jupyterlab-pygments = "^0.1.2"
+jupyterlab-topbar = "^0.6.1"
+jupyterlab-widgets = "^1.0.0"
+
+Scrapy = "^2.6.0"
+sentence-diff = "^0.1"
+nltk = "^3.6.2"
+regex = "^2021.4.4"
+levenshtein = "^0.12.0"
+polyleven = "^0.7"
+Levenshtein-search = "^1.4.5"
+
+ipython-sql = "^0.4.0"
+# ipython-sql needs psycopg2
+
+# Multiple of my dependencies depend on MarkupSafe.
+# MarkupSafe was recently upgraded to 2.0.0, and I'm currently getting
+# a 404 from files.pythonhosted.org when I try installing, so I'm
+# explicitly requiring MarkupSafe in order to be able to specify the version.
+MarkupSafe = "^1.1.1"
+SetSimilaritySearch = "^0.1.7"
+requests-cache = "^0.9.4"
+
+[tool.poetry.dev-dependencies]
+jupyter-packaging = "^0.7.12"
+
+[tool.poetry.extras]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
