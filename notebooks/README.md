@@ -1,11 +1,20 @@
 # PFOCR notebooks
 
+## Initial Setup
+
 1. `pyenv shell 3.9.12`
 2. `poetry env use python3.9`
 3. `poetry lock`
 4. `poetry install`
 5. `poetry shell`
 6. `jupyter lab`
+
+## Launch (after initial setup)
+
+1. `poetry shell`
+2. `jupyter lab`
+
+## Details
 
 For information on which order these notebooks are to be run, check out the [`Pipeline` section of the main README](https://github.com/wikipathways/pathway-figure-ocr#pipeline).
 

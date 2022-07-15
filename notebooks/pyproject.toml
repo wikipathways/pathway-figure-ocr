@@ -121,6 +121,8 @@ ipython-sql = "^0.4.0"
 MarkupSafe = "^1.1.1"
 SetSimilaritySearch = "^0.1.7"
 requests-cache = "^0.9.4"
+networkx = "^2.8.3"
+fisher = "^0.1.10"
 
 [tool.poetry.dev-dependencies]
 jupyter-packaging = "^0.7.12"
