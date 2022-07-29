@@ -38,7 +38,7 @@ ui <- fixedPage(
         useShinyjs(), 
         h4("Introduction"),
         HTML('The <a href="https://www.wikipathways.org/index.php/WikiPathways:Team#Team_Members" target="_blank">WikiPathways team</a>
-          at <a hrf="https://gladstone.org/" target="_blank">Gladstone Instiutes</a> identified a subset of terpene related pathway figures
+          at <a href="https://gladstone.org/people/alex-pico" target="_blank">Gladstone Institutes</a> identified a subset of terpene related pathway figures
           in the literature. This interactive tool lets you filter, search and view their findings.'),
         h4("Summary stats"),
         textOutput("sum.figs"),
