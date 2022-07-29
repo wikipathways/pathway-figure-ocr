@@ -103,7 +103,7 @@ jupyterlab-pygments = "^0.1.2"
 jupyterlab-topbar = "^0.6.1"
 jupyterlab-widgets = "^1.0.0"
 
-Scrapy = "^2.6.0"
+Scrapy = "^2.6.2"
 sentence-diff = "^0.1"
 nltk = "^3.6.2"
 regex = "^2021.4.4"
