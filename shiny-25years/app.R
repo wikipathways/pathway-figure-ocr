@@ -38,10 +38,10 @@ ui <- fixedPage(
     sidebarPanel(
       useShinyjs(), 
       h4("Introduction"),
-      HTML('The <a href="https://www.wikipathways.org/index.php/WikiPathways:Team#Team_Members" target="_blank">WikiPathways team</a>
-          at <a href="https://gladstone.org/people/alex-pico" target="_blank">Gladstone Institutes</a> has searched the literature 
+      HTML('The WikiPathways team has searched the literature 
           over the past 27 years for pathway figures. This interactive tool lets you
-          filter, search and view their findings.'),
+          filter, search and view their findings. Visit the 
+           <a href="https://pfocr.wikipathways.org" target="_blank">Pathway Figure OCR site</a> for additional details'),
       h4("Summary stats"),
       textOutput("sum.figs"),
       textOutput("sum.papers"),
@@ -90,9 +90,11 @@ ui <- fixedPage(
     column(7,
            htmlOutput("figlink"),
            htmlOutput("figure"),
+           htmlOutput("pmclink"),
     ),
     column(5, 
            h4("Genes automatically extracted from selected figure"),
+           htmlOutput("tablelink"),
            DT::dataTableOutput('figtable'),
     )
   )
@@ -410,12 +412,16 @@ server <- function(input, output, session) {
   ## REACTIVE TABLE SELECTION
   observeEvent(input$table_rows_selected,{
     sel.figid <- df.reactive.table()$figid[c(input$table_rows_selected)]
-    sel.figlink <- df.reactive.table()$figure.link[c(input$table_rows_selected)]
+    # sel.figlink <- df.reactive.table()$figure.link[c(input$table_rows_selected)]
     figid.split <- strsplit(sel.figid, "__")[[1]]
     src <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",figid.split[1],"/bin/",figid.split[2])
-    linkout <- paste0("https://www.ncbi.nlm.nih.gov/",sel.figlink)
-    output$figlink <- renderText({c('Link to figure: <a href="',linkout,'" target="_blank">',linkout,'</a>')})
-    output$figure<-renderText({c('<a href="',linkout,'" target="_blank"><img src="',src,'", width="600px"></a>')})
+    pmc.link <- paste0("https://www.ncbi.nlm.nih.gov/pmc/articles/",figid.split[1])
+    pfocr.page <- sub(".jpg", ".html",sel.figid)
+    pfocr.link <- paste0("https://pfocr.wikipathways.org/figures/",pfocr.page)
+    output$figlink <- renderText({c('Link to <a href="',pfocr.link,'" target="_blank">pathway figure details</a><br/><br/>')})
+    output$pmclink <- renderText({c('<br/><br/>Link to <a href="',pmc.link,'" target="_blank">PMC article</a>')})
+    output$tablelink <- renderText({c('Link to <a href="',pfocr.link,'" target="_blank">gene table details</a><br/><br/>')})
+    output$figure<-renderText({c('<a href="',pfocr.link,'" target="_blank"><img src="',src,'", width="600px"></a>')})
   
     ## TABLE OF SELECTED FIGURE
     output$figtable <- DT::renderDataTable(
@@ -423,11 +429,10 @@ server <- function(input, output, session) {
                     extensions = 'Buttons',
                     rownames= FALSE,
                     selection = 'none',
-                    options = list(pageLength = 10,
+                    options = list(pageLength = 20,
                                    order = list(list(2, "asc")),
                                    autoWidth = TRUE,
-                                   dom = 'Bfrtip',
-                                   buttons = c('copy', 'csv', 'excel', 'pdf')
+                                   dom = 'Bfrtip'
                     )
       )
     )

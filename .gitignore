@@ -1,4 +1,5 @@
 __pycache__/
+*/*.Rproj
 .Rproj.user
 .Rdata
 .Rhistory
