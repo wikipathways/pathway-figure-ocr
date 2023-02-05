@@ -41,6 +41,7 @@ The Jupyter Notebooks used to run the PFOCR pipeline are all in `./notebooks`. R
 7. [`pubtator.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/pubtator.ipynb): Extract chemicals and diseases via PubTator.
 8. [`merge_2020_2021.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/merge_2020_2021.ipynb): this was just for the merge of `20200224` and `20210515`. Obviously, it would require being updated for any other merge. Note this notebook is also where we get the metadata for the papers.
 9. [`bte_export.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/bte_export.ipynb): Export chemicals, diseases and genes for use in BioThings Explorer.
+10. [`bte_export_csv_files.ipynb`](https://github.com/wikipathways/pathway-figure-ocr/blob/master/notebooks/bte_export_csv_files.ipynb): Export figure data as CSV files for use in BioThings Explorer.
 
 Note that we used a database for `20200224` but not for `20210515`. Any future runs or merges will probably not need to use the old database.
 
