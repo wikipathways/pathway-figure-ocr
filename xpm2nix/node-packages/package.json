@@ -6,6 +6,6 @@
     "@arbennett/base16-gruvbox-dark": "^0.1.5"
   },
   "devDependencies": {
-    "@jupyterlab/builder": "^3.0.9"
+    "@jupyterlab/builder": "^3.6.1"
   }
 }
