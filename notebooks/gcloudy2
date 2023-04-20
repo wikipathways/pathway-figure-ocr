@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.credentials/api-project-453052878726-f42cadc718aa.json"
+export PROJECT_ID="api-project-453052878726"
+
+location_id="us-central1"
+model_id="ICN8336211288774410240"
+
+# TRAIN
+
+#gsutil cp "$HOME/code/pathway-ocr/20191102_100k/df.training.rnd2b.csv" "gs://"$PROJECT_ID"-vcm/pfocr/csv/"
+
+# go to https://console.cloud.google.com/vision/datasets and tell it to train a new model
+
+# PREDICT
+
+# upload the file listing the figures to classify
+
+#predict_csv="predict_235k.csv"
+#gsutil cp "../data/automl/csv/$predict_csv" "gs://"$PROJECT_ID"-vcm/pfocr/csv/"
+#gsutil cp "gs://"$PROJECT_ID"-vcm/pfocr/csv/$predict_csv" ./
+
+# check/update $model_id and request.json; then run the following:
+
+#curl -X POST \
+#-H "Authorization: Bearer "$(gcloud auth application-default print-access-token) \
+#-H "Content-Type: application/json; charset=utf-8" \
+#-d @request.json \
+#https://automl.googleapis.com/v1/projects/$PROJECT_ID/locations/$location_id/models/$model_id:batchPredict |\
+#tee -a automl.log
+
+# if desired, update $operation_id below (see automl.log) and run to get status
+
+#operation_id="ICN2314486270119641088"
+#curl -X GET \
+#-H "Authorization: Bearer "$(gcloud auth application-default print-access-token) \
+#https://automl.googleapis.com/v1/projects/$PROJECT_ID/locations/$location_id/operations/$operation_id
+
+# get results
+# 1. When prediction step is completed, look at outputInfo.gcsOutputDirectory to get the output path
+# 2. Update $gcsOutputDirectory and run to copy results to local machine
+
+#gcsOutputDirectory="prediction-pfocr_20191102_si_20200211121804-2020-02-12T20:08:13.095Z"
+#gsutil -m cp -R  "gs://api-project-453052878726-vcm/pfocr/predictions/$gcsOutputDirectory" "../data/automl/predictions/"
