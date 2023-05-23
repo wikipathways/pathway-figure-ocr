@@ -38,7 +38,9 @@ swap_list = {
 'VITRONECTIN':'VTN',
 'PLASMINOGEN':'PLG',
 'PLASMIN':'PLG',
-'EB13':'EBI3'
+'EB13':'EBI3',
+'NRF-1':'NFE2L1',
+'NRF-2':'NFE2L2'
 }
 
 def multipleReplace(text, wordDict):
